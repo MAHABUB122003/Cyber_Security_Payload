@@ -42,5 +42,13 @@ GET /my-account?id=carlos
 GET /my-account?id=wiener
 GET /my-account?id=administrator
 ```
+url: https://portswigger.net/web-security/access-control/lab-insecure-direct-object-references
+Change the filename to 1.txt and review the text.
+Select the Live chat tab.
+Send a message and then select View transcript.
 
+```
+GET /download-transcript/2.txt
+GET /download-transcript/1.txt
+```
 
