@@ -15,3 +15,11 @@ convert to
  or
 "roleid:1,2,3,4" like that
 ```
+urs:https://portswigger.net/web-security/access-control/lab-user-id-controlled-by-request-parameter
+```
+GET /my-account?id=wiener
+```
+change ID parameter as carlos
+```
+GET /my-account?id=carlos
+```
