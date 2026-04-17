@@ -1,3 +1,23 @@
+
+1️⃣ Spawn TTY
+
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+2️⃣ Background shell
+
+Press:  CTRL + Z
+
+3️⃣ Fix terminal
+stty raw -echo
+fg
+
+4️⃣ Set terminal type
+export TERM=xterm
+
+5️⃣ Optional (better size)
+stty rows 40 columns 120
+
+
 whoami
 id
 uname -a
