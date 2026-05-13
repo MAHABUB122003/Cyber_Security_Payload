@@ -3,23 +3,28 @@
 > Complete payload list for detecting and exploiting CORS misconfigurations in modern web applications.
 
 🔴 পেলোড ১: Origin Reflection Test
+```
 http
 GET /api/accountDetails HTTP/1.1
 Host: target.com
 Origin: https://evil.com
 Cookie: session=abc123
+```
 Response চেক করুন:
-
+```
 http
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: https://evil.com  ← আপনার origin আসলে VULNERABLE!
 Access-Control-Allow-Credentials: true
+```
 🔴 পেলোড ২: Null Origin Test
+```
 http
 GET /api/accountDetails HTTP/1.1
 Host: target.com
 Origin: null
 Cookie: session=abc123
+```
 🔴 পেলোড ৩: Subdomain Bypass (CVEs অনুযায়ী) 
 http
 GET /api/accountDetails HTTP/1.1
