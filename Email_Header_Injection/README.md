@@ -1,4 +1,5 @@
 # Email Header Injection (& SMTP tricks)
+> **Author:** MD MAHABUBUR RAHMAN
 
 If an app builds email headers from user input (contact/subscribe/forgot-password forms), you can inject new headers → **spam, phishing, credential leak, or header bcc attackers**.
 

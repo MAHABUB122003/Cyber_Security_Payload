@@ -1,4 +1,5 @@
 # Reverse Shells (multi-language)
+> **Author:** MD MAHABUBUR RAHMAN
 
 A reverse shell is your standard payoff when you get command execution (RCE) — SQLi → file write, command injection, SSTI → RCE, deserialization, upload bypass, etc.
 

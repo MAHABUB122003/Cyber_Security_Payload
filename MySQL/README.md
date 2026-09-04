@@ -1,11 +1,5 @@
-MySQL
-Default Port: 3306
-
-MySQL is an open source relational database management system (RDBMS) widely used worldwide. Databases are used to store and manage interrelated data. MySQL is a preferred solution in many areas such as web-based applications, data storage, e-commerce, and log records. SQL (Structured Query Language) is the language MySQL uses to communicate with the database.
-```
-Connect
-Using mysql Client
 # Local connection (no password)
+> **Author:** MD MAHABUBUR RAHMAN
 mysql -u root
 
 # Local connection with password

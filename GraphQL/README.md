@@ -1,4 +1,5 @@
 # GraphQL Attacks
+> **Author:** MD MAHABUBUR RAHMAN
 
 GraphQL is now the default API layer for modern web apps. Misconfigured GraphQL endpoints give up the entire schema — and often unlimited data/abuse.
 

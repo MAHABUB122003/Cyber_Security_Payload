@@ -1,4 +1,5 @@
 # WAF Bypass Tools Collection (2026)
+> **Author:** MD MAHABUBUR RAHMAN
 
 Tooling to fingerprint WAFs, fuzz bypass encodings, and test evasions.
 Payload ladders live in `universal-cheatsheet.txt` and `per-waf-payload-ladders.txt`.

@@ -1,4 +1,5 @@
 # SQL-Injection-Payloads
+> **Author:** MD MAHABUBUR RAHMAN
 
 Curated, attack-order SQLi arsenal (2026 edition). Replace `attacker.com` with your collaborator/DNS server.
 

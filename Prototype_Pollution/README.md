@@ -1,4 +1,5 @@
 # Prototype Pollution
+> **Author:** MD MAHABUBUR RAHMAN
 
 Prototype pollution happens when user input can set properties on the global `Object.prototype` (JavaScript). It leads to:
 - **Client-side**: XSS via `src`/`href`/`innerHTML` sinks when apps read polluted properties like `location`, `src`, `srcdoc`.

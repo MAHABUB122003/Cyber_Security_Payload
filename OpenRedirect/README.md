@@ -1,4 +1,5 @@
 # Open Redirect (2026 edition)
+> **Author:** MD MAHABUBUR RAHMAN
 
 ## What to test first
 Open Redirect = OAuth `redirect_uri`, login/`next`, logout `return_to`, payment/cancel URLs, SSO relay states, referral scripts (`/out`, `/link`), and any param that ends up in a `Location:` / `javascript:` / meta-refresh.

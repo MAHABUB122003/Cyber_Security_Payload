@@ -1,4 +1,5 @@
 # Information Disclosure / Sensitive File Discovery
+> **Author:** MD MAHABUBUR RAHMAN
 
 Finding a leaked `.env`, `.git`, backup, or debug file is often the easiest critical finding. Run these paths with ffuf/gobuster on every target.
 

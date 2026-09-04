@@ -1,4 +1,5 @@
 # HTTP Request Smuggling
+> **Author:** MD MAHABUBUR RAHMAN
 
 Front-end (proxy/CDN/WAF) and back-end (app server) disagree about where one HTTP request ends and the next begins. This lets you smuggle a second request that the front-end thinks is part of the first — enabling **request queue poisoning, cache poisoning, auth bypass, and XSS**.
 

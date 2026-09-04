@@ -1,4 +1,5 @@
 # XSS_Payloads (2026 edition, curated)
+> **Author:** MD MAHABUBUR RAHMAN
 
 ## File index
 

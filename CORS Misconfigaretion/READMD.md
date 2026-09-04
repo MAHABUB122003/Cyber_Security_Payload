@@ -1,4 +1,5 @@
 # CORS Misconfiguration
+> **Author:** MD MAHABUBUR RAHMAN
 
 > A site-wide CORS misconfiguration was in place for an API domain. This allowed an attacker to make cross origin requests on behalf of the user as the application did not whitelist the Origin header and had Access-Control-Allow-Credentials: true meaning we could make requests from our attacker’s site using the victim’s credentials.
 

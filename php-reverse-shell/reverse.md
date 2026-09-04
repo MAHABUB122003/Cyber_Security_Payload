@@ -1,4 +1,5 @@
 # Reverse Shell Payload List (multi-language)
+> **Author:** MD MAHABUBUR RAHMAN
 
 Replace `YOUR-IP` / `ATTACKER-IP` and `4444`. Authorized targets only.
 Test listener: `nc -lvnp 4444` (or `socat TCP-LISTEN:4444,reuseaddr -`).

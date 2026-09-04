@@ -1,4 +1,5 @@
 # Subdomain Takeover
+> **Author:** MD MAHABUBUR RAHMAN
 
 A subdomain pointing at a cloud service (S3, GitHub Pages, Heroku, Netlify, Azure, Shopify, etc.) that no longer exists = **claim it and take over the subdomain**. Classic high-impact, low-effort bug.
 

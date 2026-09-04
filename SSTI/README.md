@@ -1,4 +1,5 @@
 # Basic Payloads for Detected
+> **Author:** MD MAHABUBUR RAHMAN
 ```
 {{7*7}}
 ${7*7}

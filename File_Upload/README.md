@@ -1,4 +1,5 @@
 # File Upload Bypass
+> **Author:** MD MAHABUBUR RAHMAN
 
 Upload vulnerabilities = arbitrary file write → often direct RCE (webshell) or stored XSS (uploaded SVG/HTML). This is one of the highest-impact bugs.
 

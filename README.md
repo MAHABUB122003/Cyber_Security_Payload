@@ -1,4 +1,5 @@
 # Cyber Security Payload List (Bug Bounty + Pentesting) 2026
+> **Author:** MD MAHABUBUR RAHMAN
 
 A curated arsenal of **working payloads** for bug bounty hunting, penetration testing, WordPress security testing, plugin testing, and exploitation.
 
@@ -14,9 +15,10 @@ All payloads in this repository are intended for **authorized security testing o
    - `waybackurls target.com > urls.txt` (and `gau target.com`)
    - `nuclei -l live.txt -t cves/` for fast low-hanging fruit
 2. **Read the priority list below** and pick the highest-value test class for your target.
-3. **Open the matching folder.** Every folder has a `README` that explains *when* and *how* to use the payloads, plus `.txt` payload lists you can paste into Burp Intruder / ffuf / your tool of choice.
-4. **Replace placeholders** (e.g. `YOUR-COLLABORATOR`, `ATTACKER-IP`, `evil.com`) with your values before testing.
-5. **Confirm impact** with a proof-of-concept, then write the report.
+3. **New in 2026: use the one-file playbook first** — `ALL_In_One_Manual_Test/bug-bounty-pentest-manual-test-a-to-z.md` walks a target A-to-Z with the most important payload per section.
+4. **Open the matching folder.** Every folder has a `README` that explains *when* and *how* to use the payloads, a `how-to-test-2026.md` step-by-step manual testing guide with worked examples, plus payload lists you can paste into Burp Intruder / ffuf / your tool of choice.
+5. **Replace placeholders** (e.g. `YOUR-COLLABORATOR`, `ATTACKER-IP`, `evil.com`) with your values before testing.
+6. **Confirm impact** with a proof-of-concept, then write the report.
 
 ---
 
@@ -77,6 +79,7 @@ Frequent, valuable, and realistic to find on modern targets:
 | `XPath_Injection/` | XPath auth bypass + data extraction | Medium |
 | `XSS_Payloads/` | Full XSS arsenal: 2026 WAF bypass, svg/image, DOM clobber/mXSS, framework matrix, PortSwigger lab solutions | Easy-Med |
 | `WAF_Bypass/` | Universal cheat sheet + tools + per-WAF payload ladders | Medium |
+| `ALL_In_One_Manual_Test/` | One-file A-to-Z manual testing playbook (all sections, top payloads, worked examples) | All |
 
 ---
 
@@ -109,3 +112,14 @@ When in doubt use the CVSS calculator for the severity score and include a recom
 ## License & Ethics
 
 This content is provided as a **learning and legitimate testing resource**. Do not use any payload against a system you do not own or have explicit authorization to test. The creator assumes no liability for misuse.
+
+---
+
+## Author
+
+**MD MAHABUBUR RAHMAN**
+
+- Created & maintained by **MD MAHABUBUR RAHMAN**.
+- Every file in this repository carries attribution to the author.
+- Built for bug bounty hunters and penetration testers; payloads are refreshed for **2026+** techniques.
+- For feedback, corrections, or new payload contributions, open an issue or pull request.

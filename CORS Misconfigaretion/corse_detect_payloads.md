@@ -1,4 +1,5 @@
 # 🚀 CORS Misconfiguration Payloads 2026
+> **Author:** MD MAHABUBUR RAHMAN
 
 > Complete payload list for detecting and exploiting CORS misconfigurations in modern web applications.
 

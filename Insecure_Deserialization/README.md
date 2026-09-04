@@ -1,4 +1,5 @@
 # Insecure Deserialization
+> **Author:** MD MAHABUBUR RAHMAN
 
 Deserialization of untrusted data → remote code execution (RCE) in Java, PHP, .NET, Python, Ruby. Found in cookies, session stores, request bodies, and API parameters. When it hits, it's Critical.
 

@@ -1,4 +1,5 @@
 # LDAP Injection
+> **Author:** MD MAHABUBUR RAHMAN
 
 LDAP injection attacks directory services (Active Directory, OpenLDAP) via web forms that build LDAP filters from user input. Effects: authentication bypass, info disclosure, filter manipulation.
 

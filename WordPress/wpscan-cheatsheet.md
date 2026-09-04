@@ -1,4 +1,5 @@
 # WPScan Cheat Sheet (WordPress Scanner)
+> **Author:** MD MAHABUBUR RAHMAN
 
 WPScan is the standard tool for WordPress security testing. Free in CLI.
 

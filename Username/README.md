@@ -1,4 +1,5 @@
 # Username Wordlists
+> **Author:** MD MAHABUBUR RAHMAN
 
 Curated usernames for login/SSH/RDP/application enumeration and spraying.
 Pair with password lists in `../Credentials/`. Authorized targets only.

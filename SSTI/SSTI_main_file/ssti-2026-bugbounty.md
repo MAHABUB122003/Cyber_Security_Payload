@@ -1,4 +1,5 @@
 # SSTI Tools Collection Guide
+> **Author:** MD MAHABUBUR RAHMAN
 
 Complete guide for installing and using SSTI detection/exploitation tools.
 Payload lists live in: `ssti-detection-2026.txt`, `ssti-detection-common-2026.txt`, `ssti-to-rce-2026.txt`, `blind-ssti-2026.txt`.

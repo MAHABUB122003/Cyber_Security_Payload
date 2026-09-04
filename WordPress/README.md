@@ -1,4 +1,5 @@
 # WordPress Security Testing
+> **Author:** MD MAHABUBUR RAHMAN
 
 WordPress powers ~43% of all websites. It is the #1 bug-bounty hunting ground for web vulnerabilities — and the easiest place to find a real bug with simple payloads.
 

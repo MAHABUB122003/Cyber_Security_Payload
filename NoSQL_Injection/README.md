@@ -1,4 +1,5 @@
 # NoSQL Injection
+> **Author:** MD MAHABUBUR RAHMAN
 
 Node.js + MongoDB (and Redis) backends are everywhere. NoSQL injection bypasses login, extracts data, and can even get you RCE via `$where` / JS engine abuse.
 

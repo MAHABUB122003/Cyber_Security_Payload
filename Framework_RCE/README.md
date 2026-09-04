@@ -1,4 +1,5 @@
 # Framework RCE Exploits (2026 reference)
+> **Author:** MD MAHABUBUR RAHMAN
 
 Modern frameworks ship classes/gadgets that convert untrusted input into code execution. The biggest bounties come from these **unauthenticated RCE** bugs.
 

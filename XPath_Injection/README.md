@@ -1,4 +1,5 @@
 # XPath Injection
+> **Author:** MD MAHABUBUR RAHMAN
 
 XPath queries on XML data (config files, SOAP, legacy apps) are injectable like SQL — auth bypass and data extraction without a database.
 

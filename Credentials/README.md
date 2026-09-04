@@ -1,4 +1,5 @@
 # Credentials (Wordlists for brute force / spraying / default logins)
+> **Author:** MD MAHABUBUR RAHMAN
 
 Password + default-credential lists for login fuzzing, credential stuffing, and default-login checks. Use with Hydra / patator / WPScan / Burp Intruder.
 

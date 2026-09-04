@@ -1,4 +1,5 @@
 # Host Header Injection
+> **Author:** MD MAHABUBUR RAHMAN
 
 If the app builds URLs or looks up users with the `Host` header, you can inject a malicious host → **password reset poisoning, cache poisoning, routing attacks, SSRF**.
 

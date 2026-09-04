@@ -1,4 +1,5 @@
 # JWT (JSON Web Token) Attacks
+> **Author:** MD MAHABUBUR RAHMAN
 
 JWTs are the default auth mechanism for modern APIs and SPAs. Misconfigured JWT validation is one of the easiest **critical-severity** bugs to find.
 
