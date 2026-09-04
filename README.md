@@ -80,7 +80,7 @@ Frequent, valuable, and realistic to find on modern targets:
 | `XPath_Injection/` | XPath auth bypass + data extraction | Medium |
 | `XSS_Payloads/` | Full XSS arsenal: 2026 WAF bypass, svg/image, DOM clobber/mXSS, framework matrix, PortSwigger lab solutions | Easy-Med |
 | `WAF_Bypass/` | Universal cheat sheet + tools + per-WAF payload ladders | Medium |
-| `ALL_In_One_Manual_Test/` | One-file A-to-Z manual testing playbook (all sections, top payloads, worked examples) | All |
+| `ALL_In_One_Manual_Test/` | One-file A-to-Z manual testing playbook + complete 20-attack payload arsenal + lab service access / enumeration / brute-force cheatsheet | All |
 
 ---
 
