@@ -23,7 +23,7 @@ A curated, categorized index of the **most important active CVEs for 2026** — 
 | `CVE_2023.md` | ⭐ Year archive 2023 — MOVEit, PaperCut, Citrix Bleed, Confluence 22515/22527, TeamCity |
 | `CVE_2024.md` | ⭐ Year archive 2024 — PAN-OS 3400, Jenkins 23897, TeamCity 27198, xz, PHP-CGI 4577 |
 | `CVE_2025.md` | ⭐ Year archive 2025 — React2Shell, Next.js bypass, Erlang SSH, Tomcat, Langflow, CitrixBleed2 |
-| `ALL_CVE_Exploit_Playbook_2020-2026.md` | ⭐⭐ **ONE-FILE master playbook** — every important CVE 2020→2026 with name + copy-paste payload/how-to-exploit |
+| `ALL_CVE_Exploit_Playbook_2020-2026.md` | ⭐⭐⭐ **ONE-FILE ULTIMATE playbook (v2)** — 100+ CVEs with payloads, advanced 8-phase workflow, 2026 full 75-index, future watchlist, encoding/WAF-bypass techniques, tool arsenal |
 | `CVE_2026_deep_dive.md` | (future) 2026 payload deep-dives on top of Priority list |
 
 ## How to use
