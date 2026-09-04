@@ -1,0 +1,169 @@
+# Sensitive Paths Wordlist (ffuf/gobuster)
+
+## Environment & secrets
+```
+.env
+.env.local
+.env.production
+.env.development
+.env.backup
+.env.bak
+.env.old
+.env.example
+config.env
+credentials
+secret
+token
+api_key
+keys
+.aws/credentials
+.aws/config
+```
+
+## Git / VCS
+```
+.git/HEAD
+.git/config
+.git/index
+.git/objects/info/packs
+.git/logs/HEAD
+.svn/entries
+.svn/wc.db
+.hg/hgrc
+CVS/Entries
+.bzr/README
+```
+
+## Backups & archives
+```
+backup.zip
+backup.tar.gz
+backup.tar
+db.sql
+database.sql
+dump.sql
+sql.zip
+site.zip
+www.zip
+old.zip
+main.zip
+wp-config.php.bak
+config.php.bak
+web.config.bak
+index.php.bak
+application.yaml.bak
+appsettings.json.bak
+```
+
+## Dev artifacts
+```
+.swp
+~$index
+/phpinfo.php
+/info.php
+/test.php
+/status
+/server-status
+/server-info
+/health
+/healthz
+/metrics
+/debug
+/.debug
+/trace
+/console
+```
+## Cloud / build
+```
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+serverless.yml
+docker-compose.yml
+Dockerfile
+.kube/config
+id_rsa
+id_rsa.pub
+authorized_keys
+.pem
+key.pem
+```
+
+## Server config samples
+```
+/.gitignore
+/.dockerignore
+/application.yml
+/application.properties
+/config.php
+/settings.php
+/configuration.aspx
+/web.config
+/api-docs
+/swagger-ui/
+/swagger.json
+/openapi.json
+/.well-known/security.txt
+/robots.txt
+/sitemap.xml
+/elb.log
+/access.log
+/error_log
+/package.json
+/Cargo.toml
+/requirements.txt
+```
+
+## Framework endpoints
+```
+/actuator
+/actuator/env
+/actuator/health
+/actuator/heapdump
+/actuator/loggers
+/actuator/mappings
+/actuator/beans
+/actuator/configprops
+/actuator/threaddump
+/actuator/prometheus
+/actuator/conditions
+/admin
+/dev
+/q/dev     (Quarkus dev UI)
+/resources
+/static
+/console     (H2, if exposed)
+/swagger-ui.html
+```
+
+## Cloud / PaaS specific
+```
+/env
+/_env
+/metrics/db
+/ws/
+/__debug
+/v1/metadata
+/apiv1
+/dyn
+```
+## Directory brute-force beats
+```
+/uploads/
+/backup/
+/db/
+/config/
+/.ssh/
+/home/
+/*_old/
+/*.sql
+```
+
+## curl spot-check one-liners
+```bash
+for p in .env .git/config wp-config.php.bak backup.zip db.sql; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" https://target.com/$p)
+  echo "$p -> $code"
+done
+```
+Any `200` and you have a finding — verify content, screenshots, then write it up.

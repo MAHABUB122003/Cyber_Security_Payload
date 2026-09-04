@@ -1,0 +1,100 @@
+# Subdomain Takeover Fingerprints
+
+## DNS side (find dangling CNAMEs)
+```bash
+# enumerate subdomains
+subfinder -d target.com -silent | anew subs.txt
+# resolve CNAMEs
+while read d; do printf "%s -> " "$d"; dig +short "$d" CNAME | head -1; done < subs.txt | grep -v " -> $" | tee cnames.txt
+# or one-shot with dnsx
+dnsx -l subs.txt -resp-only -cname | grep -Ei "amazonaws|azurewebsites|github\.io|herokuapp|netlify|shopify|fastly|cloudfront|pantheon|bitbucket|surge|wordpress\.com"
+```
+
+## Provider marker pages (grep on the response body)
+```
+# AWS S3
+<Error><Code>NoSuchBucket</Code>
+
+# Azure
+404 Web Site not found
+
+# GitHub Pages
+There isn't a GitHub Pages site here.
+
+# Heroku
+No such app
+
+# Netlify
+Not Found - Request ID
+
+# Shopify
+Sorry, this shop is currently unavailable.
+
+# Fastly
+Fastly error: unknown domain:
+
+# CloudFront
+ERROR: The request could not be satisfied
+
+# Pantheon
+404 error unknown site
+
+# Bitbucket
+Repository not found
+
+# Surge.sh
+project not found
+
+# WordPress.com
+Do you want to register
+
+# Zendesk
+Help Center Closed
+
+# pivotal
+The app you are looking for could not be found.
+
+# ReadMe.io
+Project doesn't exist... yet!
+
+# Read the docs
+The page you're looking for doesn't exist.
+
+# Terraform
+No Terraform configuration found
+
+# Aha
+There is no such service hosted here.
+
+# Teamwork
+Oops - We didn't find your site.
+
+# SmartSurvey
+Page not found
+
+# Tilda
+Domain has been assigned. Point it to your account using a CNAME on our platform.
+```
+
+## Node provider checks (quick loop)
+```bash
+dnsx -l subs.txt -cname -resp-only 2>/dev/null | awk '{print $2}' | cut -d. -f2- | sort -u
+```
+Then resolve each host to confirm it's dangling.
+
+## Post-claim test (bounty proof)
+1. Register the exact resource name on the provider.
+2. `curl -s https://vuln.target.com/ | grep "your-content-marker"` → 200 + marker.
+3. Screenshot, then delete your claim immediately.
+
+## Automation tools
+- subjack: `subjack -w subs.txt -t 100 -timeout 30 -o out.txt`
+- tko-subs: `tko-subs -domains subs.txt -data providers-data.csv -output results.csv`
+- can-i-take-over-xyz: reference fingerprint list + PoC videos
+
+## Why it's a real bounty
+A taken-over subdomain:
+- Hosts phishing pages on a trusted domain
+- Reads cookies scoped to the parent domain (session hijack)
+- Bypasses same-origin / CSP allowances
+- Malware hosting from a "trusted" hostname

