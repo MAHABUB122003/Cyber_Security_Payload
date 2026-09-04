@@ -47,6 +47,7 @@ Frequent, valuable, and realistic to find on modern targets:
 |--------|----------|------------|
 | `Access control vulnerabilities/` | IDOR, broken access control, forced browsing | Easy |
 | `CORS Misconfigaretion/` | Origin reflection, null origin, wildcard tests | Easy |
+| `CVE_Directory/` | 2026 CVE index (75 CVEs), bug-bounty priority list, tracking workflow — from SecureWithUmer/CVE-2026-PoCs | High |
 | `Credentials/` | Default creds + top passwords lists | Easy |
 | `CSRF_Clickjacking/` | CSRF PoC templates, clickjacking test | Easy |
 | `DOM XSS/` | DOM-based vectors, PortSwigger notes | Medium |
