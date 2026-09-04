@@ -5,7 +5,7 @@
 
 ## What this directory is
 
-A curated, categorized index of the **most important active CVEs for 2026** — with a priority list for bug bounty, a full 75-entry reference index, and a repeatable workflow for staying current. Most items come from the community PoC index:
+A curated, categorized index of the **most important active CVEs for 2026** — plus a **2020–2025 year-by-year archive** of the most damaging CVEs (each with real exploitation payloads) for bug-bounty and pentest history/recon. It includes a priority list for bug bounty, a full 75-entry reference index, and a repeatable workflow for staying current. The 2026 items come from the community PoC index:
 
 > **Source repo:** https://github.com/SecureWithUmer/CVE-2026-PoCs
 > (community-curated, verified 2026 CVE PoCs — clone it: `git clone https://github.com/SecureWithUmer/CVE-2026-PoCs`)
@@ -17,6 +17,13 @@ A curated, categorized index of the **most important active CVEs for 2026** — 
 | `2026_BugBounty_Priority.md` | The ~20 CVEs with the best 2026 bug-bounty ROI + detection checks |
 | `Full_2026_CVE_Index.md` | All 75 entries with product, type, PoC status |
 | `CVE_Tracking_Workflow.md` | Daily/weekly routine + tools (feeds, nuclei, exploit-db) |
+| `CVE_2020.md` | ⭐ Year archive 2020 — top CVEs + exploitation payloads (Zerologon, F5 5902, WebLogic, SMBGhost) |
+| `CVE_2021.md` | ⭐ Year archive 2021 — Log4Shell, ProxyLogon/ProxyShell, Confluence RCE, PwnKit, PrintNightmare |
+| `CVE_2022.md` | ⭐ Year archive 2022 — Spring4Shell, Confluence OGNL, F5 1388, Dirty Pipe, ProxyNotShell |
+| `CVE_2023.md` | ⭐ Year archive 2023 — MOVEit, PaperCut, Citrix Bleed, Confluence 22515/22527, TeamCity |
+| `CVE_2024.md` | ⭐ Year archive 2024 — PAN-OS 3400, Jenkins 23897, TeamCity 27198, xz, PHP-CGI 4577 |
+| `CVE_2025.md` | ⭐ Year archive 2025 — React2Shell, Next.js bypass, Erlang SSH, Tomcat, Langflow, CitrixBleed2 |
+| `CVE_2026_deep_dive.md` | (future) 2026 payload deep-dives on top of Priority list |
 
 ## How to use
 
