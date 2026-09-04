@@ -65,6 +65,7 @@ Frequent, valuable, and realistic to find on modern targets:
 | `OpenRedirect/` | 2026 payloads: protocol-relative, @-confusion, CRLF, scheme abuse, OAuth redirect_uri, cache poisoning + auto console scanner | Easy |
 | `OS_Command_Injection/` | Linux + Windows cmd injection, blind, SSI, WAF-bypass 2026 | Medium |
 | `Previlage_Esclation/` | Linux + Windows privesc cheatsheets (2026 CVEs) | Medium |
+| `Port_Scanning_Vuln_Discovery/` | Port scanning: basic code (Python/Bash/PowerShell), specific-port->vuln map, 2026+ vuln-finding mindset, lab service-access + brute-force cheatsheet (hydra/medusa/ncrack/crackmapexec/patator) | Easy-Med |
 | `Prototype_Pollution/` | Client + server-side pollution | Hard |
 | `php-reverse-shell/` | Classic + one-liners + WAF/AV-bypass obfuscated shells + stagers | Medium |
 | `Reverse_Shells/` | Multi-language reverse shell one-liners | Easy |
