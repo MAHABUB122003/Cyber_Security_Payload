@@ -16,6 +16,7 @@ WordPress powers ~43% of all websites. It is the #1 bug-bounty hunting ground fo
 
 | File | What it tests |
 |------|----------------|
+| `WordPress_AtoZ_Testing_Exploitation_2027.md` | ⭐⭐⭐ **A-to-Z ULTIMATE GUIDE (2027)** — full chain: fingerprint→users→xmlrpc→config leaks→plugin/core CVEs→upload bypass→WAF bypass→advanced chains→2027 future payloads→post-exploitation + checklist |
 | `wpscan-cheatsheet.md` | Full wpscan usage + flags for bug bounty |
 | `wp-user-enumeration.txt` | User enum via REST API, author archives, login errors, sitemaps |
 | `wp-xmlrpc-attacks.txt` | xmlrpc.php pingback (SSRF), brute-force amplification, DoS |
